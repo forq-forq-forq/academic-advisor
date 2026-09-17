@@ -81,7 +81,7 @@ public class AiService {
 
             log.info("Gemini API request succeeded with HTTP 200.");
             return extractText(response);
-        } catch (ResourceAccessException ex) {
+        } catch (ResourceAccessException | java.util.concurrent.CancellationException ex) {
             log.error("Gemini API did not respond in time.", ex);
             throw new GeminiTimeoutException("Gemini API did not respond in time.", ex);
         }
