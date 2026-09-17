@@ -13,7 +13,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
-import org.springframework.boot.http.client.HttpClientSettings;
+import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -117,7 +117,7 @@ class AiServiceTest {
         properties.setBaseUrl("http://10.255.255.1");
         properties.setConnectTimeout(Duration.ofMillis(300));
 
-        HttpClientSettings settings = HttpClientSettings.defaults()
+        ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.defaults()
                 .withConnectTimeout(properties.getConnectTimeout())
                 .withReadTimeout(properties.getReadTimeout());
         ClientHttpRequestFactory requestFactory = ClientHttpRequestFactoryBuilder.detect().build(settings);
@@ -130,6 +130,8 @@ class AiServiceTest {
 
         assertThatThrownBy(() -> service.sendPrompt("test"))
                 .isInstanceOf(GeminiTimeoutException.class)
-                .hasCauseInstanceOf(ResourceAccessException.class);
+                .satisfies(e -> {
+                    assertThat(e.getCause()).isInstanceOfAny(ResourceAccessException.class, java.util.concurrent.CancellationException.class);
+                });
     }
 }

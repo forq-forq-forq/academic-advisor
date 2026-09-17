@@ -2,7 +2,7 @@ package kz.edu.sdu.advisor.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
-import org.springframework.boot.http.client.HttpClientSettings;
+import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -24,7 +24,7 @@ public class GeminiClientConfig {
 
     @Bean
     public RestClient geminiRestClient(GeminiProperties properties) {
-        HttpClientSettings settings = HttpClientSettings.defaults()
+        ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.defaults()
                 .withConnectTimeout(properties.getConnectTimeout())
                 .withReadTimeout(properties.getReadTimeout());
         ClientHttpRequestFactory requestFactory = ClientHttpRequestFactoryBuilder.detect().build(settings);
