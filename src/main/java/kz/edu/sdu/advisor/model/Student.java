@@ -26,4 +26,12 @@ public class Student {
     private String email;
 
     private Double gpa;
+
+    @ManyToMany
+    @JoinTable(
+        name = "student_courses",
+        joinColumns = @JoinColumn(name = "student_id"),
+        inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    private java.util.Set<Course> completedCourses = new java.util.HashSet<>();
 }
