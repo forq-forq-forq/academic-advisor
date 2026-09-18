@@ -2,8 +2,10 @@ package kz.edu.sdu.advisor.config;
 
 import kz.edu.sdu.advisor.model.Course;
 import kz.edu.sdu.advisor.model.Student;
+import kz.edu.sdu.advisor.model.Prerequisite;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.StudentRepository;
+import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -12,11 +14,14 @@ public class DataSeeder implements CommandLineRunner {
 
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
+    private final PrerequisiteRepository prerequisiteRepository;
 
     public DataSeeder(StudentRepository studentRepository,
-                      CourseRepository courseRepository) {
+                      CourseRepository courseRepository,
+                      PrerequisiteRepository prerequisiteRepository) {
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
+        this.prerequisiteRepository = prerequisiteRepository;
     }
 
     @Override
@@ -28,7 +33,6 @@ public class DataSeeder implements CommandLineRunner {
             student.setName("Test Student");
             student.setEmail("student@sdu.edu.kz");
             student.setGpa(3.5);
-
             studentRepository.save(student);
         }
 
@@ -45,6 +49,11 @@ public class DataSeeder implements CommandLineRunner {
 
             courseRepository.save(course1);
             courseRepository.save(course2);
+
+            Prerequisite prerequisite = new Prerequisite();
+            prerequisite.setCourse(course2);
+            prerequisite.setPrerequisiteCourse(course1);
+            prerequisiteRepository.save(prerequisite);
         }
     }
 }
