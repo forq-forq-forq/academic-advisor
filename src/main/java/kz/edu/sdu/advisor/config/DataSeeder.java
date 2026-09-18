@@ -44,13 +44,13 @@ public class DataSeeder implements CommandLineRunner {
             log.info("Populating initial test students...");
 
             Student student = new Student();
-            student.setStudentId("SDU2023001");
-            student.setName("Aisha Nurlanovna");
-            student.setEmail("aisha@sdu.edu.kz");
+            student.setStudentId("240103000");
+            student.setName("Jhon Doe");
+            student.setEmail("240103000@sdu.edu.kz");
             student.setGpa(3.8);
 
             studentRepository.save(student);
-            log.info("Initial test student seeded: SDU2023001");
+            log.info("Initial test student seeded: 240103000");
         } else {
             log.info("Database already contains students. Skipping seeding.");
         }

@@ -98,10 +98,11 @@
     <form th:action="@{/login}" method="post">
         <label for="studentId">Student ID</label>
         <input type="text" id="studentId" name="studentId"
-               placeholder="e.g. SDU2023001" required autocomplete="off">
+               placeholder="e.g. 240103000" required autocomplete="off">
         <button type="submit">Log In</button>
     </form>
     <div class="error-msg" th:if="${error}" th:text="${error}"></div>
 </div>
 </body>
 </html>
+
