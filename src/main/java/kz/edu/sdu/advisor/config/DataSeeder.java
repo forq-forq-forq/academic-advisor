@@ -1,40 +1,50 @@
 package kz.edu.sdu.advisor.config;
 
 import kz.edu.sdu.advisor.model.Course;
+import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.repository.CourseRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import kz.edu.sdu.advisor.repository.StudentRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class DataSeeder implements CommandLineRunner {
 
+    private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
 
+    public DataSeeder(StudentRepository studentRepository,
+                      CourseRepository courseRepository) {
+        this.studentRepository = studentRepository;
+        this.courseRepository = courseRepository;
+    }
+
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
+
+        if (studentRepository.count() == 0) {
+            Student student = new Student();
+            student.setStudentId("250103018");
+            student.setName("Test Student");
+            student.setEmail("student@sdu.edu.kz");
+            student.setGpa(3.5);
+
+            studentRepository.save(student);
+        }
+
         if (courseRepository.count() == 0) {
-            log.info("Populating initial test courses...");
+            Course course1 = new Course();
+            course1.setCode("INF101");
+            course1.setName("Introduction to Programming");
+            course1.setCredits(5);
 
-            Course cs101 = new Course();
-            cs101.setCode("CS101");
-            cs101.setName("Introduction to Computer Science");
-            cs101.setCredits(3);
+            Course course2 = new Course();
+            course2.setCode("INF202");
+            course2.setName("Database Systems");
+            course2.setCredits(5);
 
-            Course math101 = new Course();
-            math101.setCode("MATH101");
-            math101.setName("Calculus I");
-            math101.setCredits(4);
-
-            courseRepository.save(cs101);
-            courseRepository.save(math101);
-
-            log.info("Initial test courses seeded.");
-        } else {
-            log.info("Database already contains courses. Skipping seeding.");
+            courseRepository.save(course1);
+            courseRepository.save(course2);
         }
     }
 }
