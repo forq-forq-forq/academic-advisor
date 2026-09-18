@@ -1,0 +1,53 @@
+name: "\U0001F4CB User Story"
+description: Define a new feature or capability for sprint planning.
+title: "US: "
+labels: ["user-story"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: User Story
+      description: Use the standard format.
+      placeholder: |
+        As a [type of user],
+        I want [an action or feature],
+        so that [benefit or value].
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the conditions that must be met for this story to be considered complete.
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: true
+
+  - type: input
+    id: story-points
+    attributes:
+      label: Story Points
+      description: Team estimate (Fibonacci scale — 1, 2, 3, 5, 8, 13).
+      placeholder: "3"
+    validations:
+      required: false
+
+  - type: input
+    id: ui-reference
+    attributes:
+      label: UI Reference
+      description: Link to wireframe or mockup (Figma, Miro, etc.), if applicable.
+      placeholder: "https://..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Notes
+      description: Any technical context, dependencies, or constraints.
+    validations:
+      required: false
