@@ -42,7 +42,7 @@ public class AuthController {
             return "redirect:/dashboard";
         }
 
-        model.addAttribute("error", "Student not found. Please check your Student ID.");
+        model.addAttribute("error", "User not found");
         return "login";
     }
 
