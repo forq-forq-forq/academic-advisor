@@ -1,136 +1,145 @@
 # AI-Powered Academic Advisor
 
-An intelligent academic planning and course recommendation system developed for SDU University students. This project is developed within the Project Management Information Systems course using an Agile/Scrum framework across 7 two-week sprints by a 5-member engineering team.
+An intelligent academic planning and course recommendation system for SDU University students. Students authenticate with their university ID and interact with an AI-powered advisor that helps with course selection, prerequisite verification, and academic planning.
+
+Built with Spring Boot, Thymeleaf, PostgreSQL, and Google Gemini AI.
 
 ---
 
 ## Tech Stack
 
-* **Language:** Java 17+
-* **Framework:** Spring Boot 3.x (Spring Web, Spring Data JPA)
-* **Frontend / Templating:** Thymeleaf, HTML5, CSS3
-* **Database:** SQLite (Sprint 1 MVP), with planned migration to PostgreSQL
-* **Build Tool:** Maven Wrapper (`mvnw`, `mvnw.cmd`)
-* **Utilities:** Project Lombok, Hibernate Community Dialects
+| | Technology |
+|---|---|
+| **Backend** | Java 17, Spring Boot 3.x, Spring Security, Spring Data JPA |
+| **Frontend** | Thymeleaf, HTML5, CSS3 |
+| **Database** | PostgreSQL 16, Flyway migrations |
+| **AI** | Google Gemini API |
+| **Infrastructure** | Docker, Docker Compose, GitHub Actions CI |
+| **Build** | Maven Wrapper |
 
 ---
 
-## Project Structure & Architecture
+## Prerequisites
 
-The repository adheres to standard Maven conventions and a classic **Layered Architecture** to keep concerns separated across team members:
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose (included with Docker Desktop)
+- A [Google Gemini API key](https://aistudio.google.com/app/apikey)
+- Git
 
-```text
-.
-├── .mvn/wrapper/              # Maven wrapper binaries and configuration
-├── src/
-│   ├── main/
-│   │   ├── java/kz/edu/sdu/advisor/
-│   │   │   ├── config/        # Security, API client configurations (Gemini AI)
-│   │   │   ├── controller/    # Web endpoints & Thymeleaf view controllers
-│   │   │   ├── service/       # Business logic (advising rules, prerequisite engine)
-│   │   │   ├── repository/    # Spring Data JPA interfaces
-│   │   │   ├── model/         # JPA entities (@Entity) and DTOs
-│   │   │   └── exception/     # Global exception handlers and error models
-│   │   └── resources/
-│   │       ├── static/        # Static assets (CSS, client-side JS, images)
-│   │       ├── templates/     # Thymeleaf HTML views
-│   │       └── application.properties # App configuration and datasources
-│   └── test/                  # Unit and integration test suites
-├── .editorconfig              # Uniform formatting rules across team IDEs
-├── .gitattributes             # Line ending normalization (LF/CRLF)
-├── .gitignore                 # Build artifacts and local cache exclusions
-├── advisor.db                 # Local SQLite database file
-├── mvnw / mvnw.cmd            # Platform-independent Maven execution scripts
-└── pom.xml                    # Project dependencies and plugins
-```
+> **Without Docker:** Java 17+ and a running PostgreSQL 16 instance.
 
 ---
 
-## Architectural Principles
+## Quick Start
 
-* **Controller Layer:** Handles incoming HTTP requests, binds inputs, and returns Thymeleaf template views or API payloads. No direct business logic belongs here.
+### 1. Clone the repository
 
-* **Service Layer:** Houses all business rules, GPA checks, AI prompt orchestration, and prerequisite validations.
-
-* **Repository Layer:** Encapsulates database interactions through Spring Data JPA interfaces.
-
-* **Model Layer:** Defines database entities (Student, Course, Prerequisite) and data transfer structures (DTOs).
-
----
-
-## Getting Started
-### Prerequisites
-
-1. JDK 17 or higher installed.
-
-2. Correctly configured JAVA_HOME environment variable:
-```bash
-echo $JAVA_HOME
-# Expected output: /path/to/jdk-17 (e.g., /usr/lib/jvm/java-17-openjdk-amd64)
-```
-
-### Local Setup & Execution
-
-1. Clone the repository:
 ```bash
 git clone git@github.com:forq-forq-forq/academic-advisor.git
 cd academic-advisor
 ```
-2. Run the application:
 
-    2.1. Linux / macOS / WSL 2:
-    ```bash
-    ./mvnw clean spring-boot:run
-    ```
-    2.2. Windows (PowerShell / Command Prompt):
-    ```bash
-    mvnw.cmd clean spring-boot:run
-    ```
-3. Access the application: Open http://localhost:8080 in your web browser.
+### 2. Configure environment variables
 
----
-
-## Database (Sprint 1 MVP)
-
-    The system uses an embedded SQLite instance running locally via advisor.db.
-
-    Schema definitions synchronize automatically on startup via spring.jpa.hibernate.ddl-auto=update.
-
-    Important: Do not write database-specific native SQL queries (nativeQuery = true). Stick strictly to Spring Data repository query methods and JPQL so the planned migration to PostgreSQL will require zero code refactoring in business services.
-
----
-
-## Team Workflow & Git Standards
-
-**Direct commits to the main branch are restricted. All contributions must go through Pull Requests.**
-### 1. Branch Naming Conventions
-
-Always create branches from the latest state of main:
 ```bash
-git checkout main
-git pull origin main
-git checkout -b feature/US<id>-short-description
-# Example: git checkout -b feature/US3-student-login
+cp .env.example .env
 ```
 
-### 2. Commit Message Guidelines (Conventional Commits)
+Open `.env` and set your Gemini API key:
 
-Format every commit message with a clear prefix:
+```env
+GEMINI_API_KEY=your_actual_api_key_here
+```
 
-* **feat:** A new user-facing feature or domain capability
+### 3. Start the application
 
-* **fix:** A bug fix
+**With Docker (recommended):**
 
-* **refactor:** Code modification without behavioral changes
+```bash
+docker compose up --build
+```
 
-* **docs:** Documentation updates
+This starts both PostgreSQL and the application. Open [http://localhost:8080](http://localhost:8080) in your browser.
 
-* **chore:** Build scripts, dependency adjustments, or tool configurations
+**Without Docker:**
 
-### 3. Pull Request Requirements
+Start the database:
+```bash
+docker compose up db
+```
 
-* Every PR must link to its corresponding User Story / Issue.
+Then run the application directly:
 
-* At least 1 peer review approval is strictly required before merging.
+```bash
+# Linux / macOS / WSL
+./mvnw spring-boot:run
 
-* Code style must follow the rules defined in .editorconfig.
+# Windows (PowerShell)
+mvnw.cmd spring-boot:run
+```
+
+### 4. Log in
+
+Use the pre-seeded demo account:
+
+| Field | Value |
+|---|---|
+| **Student ID** | `240103000` |
+| **Name** | John Doe |
+| **Email** | 240103000@sdu.edu.kz |
+| **GPA** | 3.8 |
+
+Pre-loaded courses: `CS101` (Introduction to Computer Science), `MATH101` (Calculus I).
+
+---
+
+## Running Tests
+
+```bash
+./mvnw clean test
+```
+
+Tests use an in-memory database and mocked external services — no Docker or API keys required.
+
+---
+
+## Project Structure
+
+```
+advisor/
+├── src/main/java/kz/edu/sdu/advisor/
+│   ├── config/          # Spring configuration beans
+│   ├── controller/      # Web endpoints and view controllers
+│   ├── exception/       # Custom exception hierarchy
+│   ├── model/           # JPA entities and Gemini DTOs
+│   ├── repository/      # Spring Data JPA interfaces
+│   └── service/         # Business logic layer
+├── src/main/resources/
+│   ├── db/migration/    # Flyway SQL migration scripts
+│   ├── templates/       # Thymeleaf HTML views
+│   └── application.properties
+├── docs/                # Project documentation
+├── Dockerfile           # Multi-stage application build
+└── docker-compose.yml   # PostgreSQL + app services
+```
+
+---
+
+## Documentation
+
+| Document | Description |
+|---|---|
+| [System Overview](docs/architecture/system-overview.md) | Architecture, tech stack, data model, deployment |
+| [Database Schema](docs/db/schema.md) | ER diagram and table definitions |
+| [Contributing](CONTRIBUTING.md) | Team guidelines: DoR, DoD, Git conventions |
+| [ADR Log](docs/adr/) | Architecture Decision Records |
+
+---
+
+## Team Links
+
+| Resource | Link |
+|---|---|
+| 🗺️ Roadmap & Story Map (Miro) | [Open board](https://miro.com/app/board/...) |
+| 📋 Sprint Board (GitHub Projects) | [Open board](https://github.com/orgs/.../projects/1) |
+| 🎨 Screen Mockups (Figma / Miro) | [Open sketches](https://...) |
+| 📞 Meeting Room | [Google Meet](https://meet.google.com/...) |
