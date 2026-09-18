@@ -1,7 +1,9 @@
 package kz.edu.sdu.advisor.config;
 
 import kz.edu.sdu.advisor.model.Course;
+import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.repository.CourseRepository;
+import kz.edu.sdu.advisor.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 public class DataSeeder implements CommandLineRunner {
 
     private final CourseRepository courseRepository;
+    private final StudentRepository studentRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -35,6 +38,21 @@ public class DataSeeder implements CommandLineRunner {
             log.info("Initial test courses seeded.");
         } else {
             log.info("Database already contains courses. Skipping seeding.");
+        }
+
+        if (studentRepository.count() == 0) {
+            log.info("Populating initial test students...");
+
+            Student student = new Student();
+            student.setStudentId("240103000");
+            student.setName("Jhon Doe");
+            student.setEmail("240103000@sdu.edu.kz");
+            student.setGpa(3.8);
+
+            studentRepository.save(student);
+            log.info("Initial test student seeded: 240103000");
+        } else {
+            log.info("Database already contains students. Skipping seeding.");
         }
     }
 }
