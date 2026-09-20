@@ -1,6 +1,6 @@
 # ADR-0001: Migrate from SQLite to PostgreSQL
 
-**Status:** Accepted
+**Status:** In Progress
 
 **Date:** 2026-09-18
 
@@ -18,13 +18,13 @@ The team needed a database that enforces referential integrity out of the box, s
 
 ## Decision
 
-Migrate to **PostgreSQL** as the primary relational database for all environments (development, testing, and production).
+Adopt **PostgreSQL** for Docker-based runtime, while keeping SQLite for default local and test profiles during the transition period.
 
 Key implementation details:
 
 - PostgreSQL runs as a **Docker container** defined in the project's `docker-compose.yml`, eliminating the need for manual installation and ensuring every team member runs an identical database instance.
-- **Flyway** is used for schema migration management, ensuring that all schema changes are versioned, repeatable, and tracked in source control.
-- **SQLite is fully removed** from the project. No SQLite dependencies, configuration, or database files remain.
+- Schema is currently managed via Hibernate `ddl-auto`; Flyway is planned but not yet implemented.
+- SQLite remains in use for `default` and `test` profiles during the migration phase.
 
 ## Consequences
 
@@ -33,7 +33,7 @@ Key implementation details:
 - **Concurrency support.** PostgreSQL's MVCC architecture handles concurrent reads and writes gracefully, removing the file-locking bottleneck.
 - **Production parity.** The development environment now mirrors a realistic production setup, reducing "works on my machine" issues.
 - **Reproducible environments.** Docker Compose ensures every team member and CI pipeline runs the exact same database version and configuration.
-- **Versioned migrations.** Flyway tracks every schema change as a numbered migration script, providing a clear audit trail and safe rollback path.
+- **Transitional complexity.** Supporting SQLite and PostgreSQL across profiles increases configuration complexity until migration is completed.
 
 ### Negative
 - **Docker dependency.** All developers must have Docker and Docker Compose installed on their machines to run the application locally.

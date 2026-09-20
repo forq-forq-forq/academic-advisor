@@ -45,7 +45,7 @@ public class DataSeeder implements CommandLineRunner {
 
             Student student = new Student();
             student.setStudentId("240103000");
-            student.setName("Jhon Doe");
+            student.setName("John Doe");
             student.setEmail("240103000@sdu.edu.kz");
             student.setGpa(3.8);
 

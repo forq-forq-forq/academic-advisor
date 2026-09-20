@@ -10,9 +10,10 @@ Built with Spring Boot, Thymeleaf, PostgreSQL, and Google Gemini AI.
 
 | | Technology |
 |---|---|
-| **Backend** | Java 17, Spring Boot 3.x, Spring Security, Spring Data JPA |
+| **Backend** | Java 17, Spring Boot 3.x, Spring Data JPA |
 | **Frontend** | Thymeleaf, HTML5, CSS3 |
-| **Database** | PostgreSQL 16, Flyway migrations |
+| **Database** | SQLite (default/test), PostgreSQL 16 (Docker profile) |
+| **Security** | MVP session-based auth via HttpSession (Student ID) |
 | **AI** | Google Gemini API |
 | **Infrastructure** | Docker, Docker Compose, GitHub Actions CI |
 | **Build** | Maven Wrapper |
@@ -25,7 +26,7 @@ Built with Spring Boot, Thymeleaf, PostgreSQL, and Google Gemini AI.
 - A [Google Gemini API key](https://aistudio.google.com/app/apikey)
 - Git
 
-> **Without Docker:** Java 17+ and a running PostgreSQL 16 instance.
+> **Without Docker:** Java 17+ (default profile uses local SQLite file `advisor.db`).
 
 ---
 
@@ -60,14 +61,7 @@ docker compose up --build
 
 This starts both PostgreSQL and the application. Open [http://localhost:8080](http://localhost:8080) in your browser.
 
-**Without Docker:**
-
-Start the database:
-```bash
-docker compose up db
-```
-
-Then run the application directly:
+**Without Docker (SQLite default profile):**
 
 ```bash
 # Linux / macOS / WSL
@@ -76,6 +70,8 @@ Then run the application directly:
 # Windows (PowerShell)
 mvnw.cmd spring-boot:run
 ```
+
+Optional PostgreSQL run (local process or container) is available via `docker` profile settings.
 
 ### 4. Log in
 
@@ -98,7 +94,7 @@ Pre-loaded courses: `CS101` (Introduction to Computer Science), `MATH101` (Calcu
 ./mvnw clean test
 ```
 
-Tests use an in-memory database and mocked external services — no Docker or API keys required.
+Tests use an isolated SQLite test database under `target/` and mocked external services — no Docker or API keys required.
 
 ---
 
@@ -114,7 +110,6 @@ advisor/
 │   ├── repository/      # Spring Data JPA interfaces
 │   └── service/         # Business logic layer
 ├── src/main/resources/
-│   ├── db/migration/    # Flyway SQL migration scripts
 │   ├── templates/       # Thymeleaf HTML views
 │   └── application.properties
 ├── docs/                # Project documentation
@@ -128,6 +123,7 @@ advisor/
 
 | Document | Description |
 |---|---|
+| [Current Architecture Baseline](docs/architecture/current-architecture-baseline.md) | Actual implemented architecture and policy baseline |
 | [System Overview](docs/architecture/system-overview.md) | Architecture, tech stack, data model, deployment |
 | [Database Schema](docs/db/schema.md) | ER diagram and table definitions |
 | [Contributing](CONTRIBUTING.md) | Team guidelines: DoR, DoD, Git conventions |
