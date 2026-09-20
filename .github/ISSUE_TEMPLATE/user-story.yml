@@ -32,8 +32,8 @@ body:
       label: QA Test
       description: List the conditions that must be met for this story to be considered complete.
       placeholder: |
-        - [ ] Criterion 1
-        - [ ] Criterion 2
+        - Scenario 1: Given [context], when [action], then [outcome].
+        - Scenario 2: Given [context], when [action], then [outcome].
     validations:
       required: true
 
