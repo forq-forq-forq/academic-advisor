@@ -25,6 +25,17 @@ body:
         - [ ] Criterion 2
     validations:
       required: true
+  
+  - type: textarea
+    id: qa-test
+    attributes:
+      label: QA Test
+      description: List the conditions that must be met for this story to be considered complete.
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: true
 
   - type: input
     id: story-points
@@ -48,6 +59,6 @@ body:
     id: notes
     attributes:
       label: Additional Notes
-      description: Any technical context, dependencies, or constraints.
+      description: Any technical context: responsibilites, constraints, dependencies, maintenance, etc.
     validations:
       required: false
