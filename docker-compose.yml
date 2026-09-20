@@ -24,7 +24,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/advisor
       SPRING_DATASOURCE_USERNAME: advisor
       SPRING_DATASOURCE_PASSWORD: advisor
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
