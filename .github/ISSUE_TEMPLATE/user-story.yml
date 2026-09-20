@@ -1,4 +1,4 @@
-name: "\U0001F4CB User Story"
+name: "📋 User Story"
 description: Define a new feature or capability for sprint planning.
 title: "US: "
 labels: ["user-story"]
