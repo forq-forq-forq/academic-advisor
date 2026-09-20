@@ -30,19 +30,25 @@ body:
     id: qa-test
     attributes:
       label: QA Test
-      description: List the conditions that must be met for this story to be considered complete.
+      description: Describe how the acceptance criteria should be verified with Given/When/Then scenarios.      
       placeholder: |
         - Scenario 1: Given [context], when [action], then [outcome].
         - Scenario 2: Given [context], when [action], then [outcome].
     validations:
       required: true
 
-  - type: input
+  - type: dropdown
     id: story-points
     attributes:
       label: Story Points
-      description: Team estimate (Fibonacci scale — 1, 2, 3, 5, 8, 13).
-      placeholder: "3"
+      options:
+        - "1"
+        - "2"
+        - "3"
+        - "5"
+        - "8"
+        - "13"
+        - "21"
     validations:
       required: false
 
@@ -59,6 +65,6 @@ body:
     id: notes
     attributes:
       label: Additional Notes
-      description: Any technical context: responsibilites, constraints, dependencies, maintenance, etc.
+      description: Any technical context: responsibilities, constraints, dependencies, maintenance, etc.
     validations:
       required: false
