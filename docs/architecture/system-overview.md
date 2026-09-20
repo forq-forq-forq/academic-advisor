@@ -1,5 +1,8 @@
 # System Overview
 
+> **Note:** For exact implemented state, see [Current Architecture Baseline](./current-architecture-baseline.md).  
+> This overview provides high-level architecture context.
+
 ## Project Summary
 
 Academic Advisor is an AI-powered academic planning system built for SDU University students. It helps students navigate course selection, verify prerequisite chains, and receive personalized advising through a conversational interface powered by Google Gemini AI.
@@ -17,9 +20,9 @@ The application is developed as part of the Project Management Information Syste
 | **Web** | Spring Web (embedded Tomcat) | HTTP request handling |
 | **View Engine** | Thymeleaf | Server-side HTML rendering |
 | **ORM** | Spring Data JPA + Hibernate | Database abstraction and entity mapping |
-| **Database** | PostgreSQL 16 | Primary relational data store |
-| **Migrations** | Flyway | Versioned schema management |
-| **Security** | Spring Security | Authentication, CSRF protection, session management |
+| **Database** | SQLite (default/test), PostgreSQL 16 (`docker` profile) | Relational data store by profile |
+| **Migrations** | Hibernate `ddl-auto` | Automatic schema sync (Flyway planned) |
+| **Security** | Session-based guard in controllers (`HttpSession`) | MVP authentication baseline |
 | **Validation** | Spring Validation (JSR 380) | Input validation via Bean Validation annotations |
 | **AI Integration** | Google Gemini API | Conversational academic advising |
 | **HTTP Client** | Spring `RestClient` | Outbound API calls to Gemini |
@@ -40,8 +43,8 @@ The application follows a **Layered MVC Architecture**, separating concerns acro
 └──────────────────────┬───────────────────────────────────────┘
                        │ HTTP
 ┌──────────────────────▼────────────────────────────────────────┐
-│                  Spring Security Filter Chain                 │
-│          (authentication, CSRF, session management)           │
+│              Session Guard (controller-level checks)          │
+│       (`authenticatedStudentId` in HttpSession attribute)     │
 └──────────────────────┬────────────────────────────────────────┘
                        │
 ┌──────────────────────▼─────────────────────────────────────────┐
@@ -88,11 +91,11 @@ The application follows a **Layered MVC Architecture**, separating concerns acro
         │
         │ JPA / Hibernate
 ┌───────▼──────────────┐
-│     PostgreSQL 16    │
-│     (Docker)         │
+│ SQLite (default/test)│
+│ PostgreSQL (docker)  │
 │                      │
 │  Schema managed by   │
-│  Flyway migrations   │
+│  Hibernate ddl-auto  │
 └──────────────────────┘
 ```
 
@@ -124,7 +127,6 @@ advisor/
 │   │   │   ├── repository/       # Spring Data JPA interfaces
 │   │   │   └── service/          # Business logic layer
 │   │   └── resources/
-│   │       ├── db/migration/     # Flyway SQL migration scripts
 │   │       ├── static/           # CSS, JavaScript, images
 │   │       ├── templates/        # Thymeleaf HTML views
 │   │       └── application.properties
@@ -213,7 +215,7 @@ User message → DashboardController → AiService → RestClient → Gemini API
 |---|---|---|
 | `gemini.api.key` | — (required) | `.env` file (`GEMINI_API_KEY`) |
 | `gemini.api.base-url` | `https://generativelanguage.googleapis.com/v1beta` | `application.properties` |
-| `gemini.api.model` | `gemini-3.5-flash-lite` | `.env` file |
+| `gemini.api.model` | `gemini-3.6-flash` | `.env` file |
 | `gemini.api.connect-timeout` | `5s` | `application.properties` |
 | `gemini.api.read-timeout` | `20s` | `application.properties` |
 
@@ -230,14 +232,14 @@ RuntimeException
 
 ## Security
 
-Authentication is handled by Spring Security with a session-based strategy. Students authenticate using their university Student ID, and the session is maintained via an HTTP cookie.
+Authentication currently uses an MVP session-based approach without Spring Security. Students authenticate using their university Student ID, and the session is tracked through an HTTP cookie.
 
 | Aspect | Implementation |
 |---|---|
 | **Authentication** | Student ID lookup against the `students` table |
-| **Session** | Server-side `HttpSession`, managed by Spring Security |
-| **CSRF** | Enabled by default (Spring Security auto-configuration) |
-| **Session Fixation** | Mitigated via session ID regeneration on login |
+| **Session** | Server-side `HttpSession` with `authenticatedStudentId` attribute |
+| **CSRF** | No explicit Spring Security CSRF middleware configured |
+| **Session Fixation** | No dedicated mitigation layer yet |
 | **Public Endpoints** | `/login`, static resources (`/css/**`, `/js/**`, `/images/**`) |
 | **Protected Endpoints** | `/dashboard`, `/dashboard/chat`, all other routes |
 
@@ -249,9 +251,9 @@ The application uses Spring profiles to manage environment-specific settings.
 
 | Profile | Database | AI Key Source | Usage |
 |---|---|---|---|
-| `default` | PostgreSQL (localhost:5432) | `.env` file | Local development with `docker compose up db` |
-| `docker` | PostgreSQL (db:5432) | `docker-compose.yml` env | Full Docker Compose stack |
-| `test` | H2 in-memory | Not required (mocked) | Automated test suite |
+| `default` | SQLite (`advisor.db`) | `.env` file | Local development (`./mvnw spring-boot:run`) |
+| `docker` | PostgreSQL (`db:5432`) | `docker-compose.yml` env | Full Docker Compose stack |
+| `test` | SQLite (`target/test-advisor.db`) | Not required (mocked) | Automated test suite |
 
 **Secrets Management:**
 
@@ -308,7 +310,6 @@ A GitHub Actions workflow runs on every pull request and push to `main`:
 
 1. **Checkout** the repository.
 2. **Set up** Java 17 (Eclipse Temurin) with Maven dependency caching.
-3. **Build and test** via `./mvnw clean verify`.
+3. **Build and test** via `./mvnw clean test`.
 
 > The pipeline configuration is at [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
-

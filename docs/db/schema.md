@@ -1,6 +1,6 @@
 # Database Schema
 
-This document describes the relational schema used by the Academic Advisor application. The database is managed by PostgreSQL and schema migrations are handled by Flyway. All tables follow standard JPA naming conventions and are auto-generated from entity definitions.
+This document describes the relational schema used by the Academic Advisor application. The schema is generated from JPA entities using Hibernate `ddl-auto` (current state). Database engine depends on active profile: SQLite for `default`/`test`, PostgreSQL for `docker`.
 
 ## Entity-Relationship Diagram
 
