@@ -135,7 +135,7 @@ advisor/
 
 | Resource | Link |
 |---|---|
-| 🗺️ Roadmap & Story Map (Miro) | [Open board](https://miro.com/app/board/...) |
-| 📋 Sprint Board (GitHub Projects) | [Open board](https://github.com/orgs/.../projects/1) |
+| 🗺️ Roadmap & Story Map (Miro) | [Open board](https://miro.com/app/dashboard/space/6CR8mnM7hM7RcI71EuYrdU) |
+| 📋 Sprint Board (GitHub Projects) | [Open board](https://github.com/users/forq-forq-forq/projects/4/views/1) |
 | 🎨 Screen Mockups (Figma / Miro) | [Open sketches](https://...) |
 | 📞 Meeting Room | [Google Meet](https://meet.google.com/...) |
