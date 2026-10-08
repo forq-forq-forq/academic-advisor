@@ -17,6 +17,7 @@ If any other document conflicts with this file, this file takes precedence.
 | Default database | SQLite (`application.properties`) | Implemented |
 | Docker database profile | PostgreSQL 16 (`application-docker.properties`) | Implemented |
 | Schema management | Hibernate `ddl-auto` | Flyway not implemented yet |
+| Domain model | Faculty, Major, CurriculumCourse, Course, Prerequisite, Student, StudentAccount | Implemented & Seeded |
 | Authentication | Session attribute (`authenticatedStudentId`) via `HttpSession` | Spring Security not implemented yet |
 | AI integration | Google Gemini API via `RestClient` | Implemented |
 | CI | GitHub Actions (`./mvnw clean test`, Docker build checks) | Implemented |
@@ -38,7 +39,8 @@ If any other document conflicts with this file, this file takes precedence.
 1. Login is based on Student ID lookup in the `students` table.
 2. Successful login stores `authenticatedStudentId` in `HttpSession`.
 3. `/dashboard` and `/dashboard/chat` enforce session presence at controller level.
-4. This is acceptable only as MVP-level mock authentication, not production-grade security.
+4. Domain models (`StudentAccount` linked to `Student` with password hash) are prepared for implementing full password verification and registration.
+5. This is acceptable only as MVP-level mock authentication, not production-grade security.
 
 ---
 
