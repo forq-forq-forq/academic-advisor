@@ -122,8 +122,11 @@ public class AuthController {
         }
         if (!result.hasFieldErrors("email")) {
             String email = form.getEmail().trim();
+            String studentId = StudentRegistrationService.extractStudentIdFromEmail(email);
             if (studentRepository.existsByEmailIgnoreCase(email)
-                    || studentAccountRepository.existsByEmailIgnoreCase(email)) {
+                    || studentAccountRepository.existsByEmailIgnoreCase(email)
+                    || (studentId != null && (studentRepository.findByStudentId(studentId).isPresent()
+                            || studentAccountRepository.existsByStudentId(studentId)))) {
                 result.rejectValue("email", "email.duplicate", "This email is already registered.");
             }
         }

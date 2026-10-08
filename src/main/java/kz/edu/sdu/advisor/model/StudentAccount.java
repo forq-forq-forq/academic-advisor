@@ -40,6 +40,6 @@ public class StudentAccount {
     @Column(name = "catalog_year")
     private Integer catalogYear;
 
-    @OneToOne(mappedBy = "account")
+    @OneToOne(mappedBy = "account", cascade = jakarta.persistence.CascadeType.ALL)
     private Student student;
 }
