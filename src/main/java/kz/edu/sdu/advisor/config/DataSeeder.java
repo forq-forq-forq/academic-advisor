@@ -71,7 +71,15 @@ public class DataSeeder implements CommandLineRunner {
                 Map.entry("MATH201", new CourseMeta("Linear Algebra", 3)),
                 Map.entry("PHYS101", new CourseMeta("General Physics", 4)),
                 Map.entry("CS202", new CourseMeta("Algorithms Design and Analysis", 4)),
-                Map.entry("CS204", new CourseMeta("Database Systems", 4))
+                Map.entry("CS204", new CourseMeta("Database Systems", 4)),
+                Map.entry("CS301", new CourseMeta("Operating Systems", 4)),
+                Map.entry("CS302", new CourseMeta("Software Engineering", 3)),
+                Map.entry("CS303", new CourseMeta("Computer Networks", 4)),
+                Map.entry("CS304", new CourseMeta("Artificial Intelligence", 3)),
+                Map.entry("CS401", new CourseMeta("Senior Design Project I", 4)),
+                Map.entry("CS402", new CourseMeta("Cloud Computing", 3)),
+                Map.entry("CS403", new CourseMeta("Senior Design Project II", 4)),
+                Map.entry("CS404", new CourseMeta("Professional Practice", 3))
         );
 
         for (Map.Entry<String, CourseMeta> entry : catalog.entrySet()) {
@@ -115,11 +123,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedCurriculum(Major major, Map<String, Course> courses) {
-        if (curriculumCourseRepository.count() > 0) {
-            return;
-        }
-
-        log.info("Seeding 4-year curriculum for major CS (catalog year 2024)...");
+        log.info("Seeding demo 4-year curriculum for major CS (catalog year 2024)...");
         // Semester 1
         addCurriculum(major, courses.get("CS101"), 1, 2024, "CORE");
         addCurriculum(major, courses.get("MATH101"), 1, 2024, "CORE");
@@ -141,10 +145,22 @@ public class DataSeeder implements CommandLineRunner {
         // Semester 4
         addCurriculum(major, courses.get("CS202"), 4, 2024, "CORE");
         addCurriculum(major, courses.get("CS204"), 4, 2024, "CORE");
+
+        // Semesters 5-8 are demo data until official curricula are imported.
+        addCurriculum(major, courses.get("CS301"), 5, 2024, "CORE");
+        addCurriculum(major, courses.get("CS302"), 5, 2024, "CORE");
+        addCurriculum(major, courses.get("CS303"), 6, 2024, "CORE");
+        addCurriculum(major, courses.get("CS304"), 6, 2024, "CORE");
+        addCurriculum(major, courses.get("CS401"), 7, 2024, "CORE");
+        addCurriculum(major, courses.get("CS402"), 7, 2024, "CORE");
+        addCurriculum(major, courses.get("CS403"), 8, 2024, "CORE");
+        addCurriculum(major, courses.get("CS404"), 8, 2024, "CORE");
     }
 
     private void addCurriculum(Major major, Course course, int semester, int catalogYear, String type) {
-        if (major != null && course != null) {
+        if (major != null && course != null
+                && !curriculumCourseRepository.existsByMajor_IdAndCourse_IdAndCatalogYear(
+                        major.getId(), course.getId(), catalogYear)) {
             curriculumCourseRepository.save(new CurriculumCourse(major, course, semester, catalogYear, type));
         }
     }
@@ -160,6 +176,13 @@ public class DataSeeder implements CommandLineRunner {
             acc.setPasswordHash(passwordEncoder.encode("Student123!@#"));
             return studentAccountRepository.save(acc);
         });
+        if (account.getMajor() == null) {
+            account.setMajor(major);
+        }
+        if (account.getCatalogYear() == null) {
+            account.setCatalogYear(2024);
+        }
+        studentAccountRepository.save(account);
 
         if (studentRepository.findByStudentId(studentId).isEmpty()) {
             log.info("Seeding demo student: {}", studentId);

@@ -86,5 +86,7 @@ class DataSeederConsistencyTest {
         assertThat(curriculum).anyMatch(c -> c.getSemester() == 1 && c.getCourse().getCode().equals("CS101"));
         assertThat(curriculum).anyMatch(c -> c.getSemester() == 2 && c.getCourse().getCode().equals("CS102"));
         assertThat(curriculum).anyMatch(c -> c.getSemester() == 3 && c.getCourse().getCode().equals("CS201"));
+        assertThat(curriculum.stream().map(CurriculumCourse::getSemester).distinct().sorted().toList())
+            .containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
     }
 }

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curriculum loaded — Academic Advisor</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; color: #1a202c; padding: 2rem 1rem; }
+        main { max-width: 920px; margin: 0 auto; background: #fff; padding: 2rem; border-radius: 8px; }
+        h1 { font-size: 1.6rem; margin-bottom: 0.5rem; }
+        .summary { color: #52606d; margin-bottom: 1.5rem; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { padding: 0.7rem; border-bottom: 1px solid #d9e2ec; text-align: left; }
+        th { color: #334e68; background: #f7fafc; }
+        a { display: inline-block; margin-top: 1.5rem; color: #2457c5; }
+        @media (max-width: 600px) { main { padding: 1rem; } th, td { padding: 0.5rem 0.35rem; font-size: 0.9rem; } }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Registration complete</h1>
+    <p class="summary">
+        Curriculum loaded for <strong th:text="${account.major.name}">Computer Science</strong>,
+        catalog year <strong th:text="${account.catalogYear}">2024</strong>.
+    </p>
+    <table>
+        <thead>
+        <tr><th>Semester</th><th>Course</th><th>Name</th><th>Credits</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="entry : ${curriculum}">
+            <td th:text="${entry.semester}">1</td>
+            <td th:text="${entry.course.code}">CS101</td>
+            <td th:text="${entry.course.name}">Introduction to Computer Science</td>
+            <td th:text="${entry.course.credits}">3</td>
+        </tr>
+        </tbody>
+    </table>
+    <a th:href="@{/login}">Continue to login</a>
+</main>
+</body>
+</html>

@@ -60,6 +60,28 @@
         <input type="email" id="email" th:field="*{email}" autocomplete="email" required>
         <p class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
 
+        <label for="facultyCode">Faculty</label>
+        <select id="facultyCode" th:field="*{facultyCode}" required>
+            <option value="">Select faculty</option>
+            <option th:each="faculty : ${faculties}" th:value="${faculty.code}" th:text="${faculty.name}"></option>
+        </select>
+        <p class="field-error" th:if="${#fields.hasErrors('facultyCode')}" th:errors="*{facultyCode}"></p>
+
+        <label for="majorCode">Major</label>
+        <select id="majorCode" th:field="*{majorCode}" required>
+            <option value="">Select major</option>
+            <option th:each="major : ${majors}" th:value="${major.code}" th:text="${major.name}"
+                    th:attr="data-faculty-code=${major.faculty.code}"></option>
+        </select>
+        <p class="field-error" th:if="${#fields.hasErrors('majorCode')}" th:errors="*{majorCode}"></p>
+
+        <label for="catalogYear">Catalog year</label>
+        <select id="catalogYear" th:field="*{catalogYear}" required>
+            <option value="">Select catalog year</option>
+            <option th:each="year : ${catalogYears}" th:value="${year}" th:text="${year}"></option>
+        </select>
+        <p class="field-error" th:if="${#fields.hasErrors('catalogYear')}" th:errors="*{catalogYear}"></p>
+
         <label for="password">Password</label>
         <input type="password" id="password" name="password" autocomplete="new-password" required minlength="12" maxlength="64">
         <p class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
@@ -72,5 +94,23 @@
     </form>
     <a class="login-link" th:href="@{/login}">Back to login</a>
 </main>
+<script>
+    const facultySelect = document.getElementById('facultyCode');
+    const majorSelect = document.getElementById('majorCode');
+
+    function filterMajors() {
+        for (const option of majorSelect.options) {
+            if (option.value) {
+                option.hidden = option.dataset.facultyCode !== facultySelect.value;
+            }
+        }
+        if (majorSelect.selectedOptions[0]?.hidden) {
+            majorSelect.value = '';
+        }
+    }
+
+    facultySelect.addEventListener('change', filterMajors);
+    filterMajors();
+</script>
 </body>
 </html>

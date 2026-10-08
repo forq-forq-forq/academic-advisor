@@ -46,6 +46,8 @@ erDiagram
         VARCHAR student_id "Optional Student ID link"
         VARCHAR email UK "University email"
         VARCHAR password_hash "BCrypt hash"
+        BIGINT major_id FK "Selected major"
+        INTEGER catalog_year "Selected curriculum year"
     }
 
     students {
@@ -149,6 +151,8 @@ Stores login credentials.
 | `student_id` | VARCHAR | — | Associated student ID. |
 | `email` | VARCHAR | NOT NULL, UNIQUE | Normalized university email address. |
 | `password_hash` | VARCHAR | NOT NULL | BCrypt hash. |
+| `major_id` | BIGINT | FK → `majors.id` | Major selected during registration. |
+| `catalog_year` | INTEGER | — | Curriculum version selected during registration. |
 
 ### `courses`
 
@@ -184,7 +188,7 @@ Represents directed prerequisite relationships between courses (`course_id` requ
 |---|---|---|
 | Faculty | `code = "FE&NS"` | Faculty of Engineering and Natural Sciences |
 | Major | `code = "CS"`, `total_credits = 240` | Computer Science under FE&NS |
-| Courses | 14 catalog courses | CS101, MATH101, ENG101, HIST101, CS102, MATH102, ENG102, PHIL101, CS201, CS205, MATH201, PHYS101, CS202, CS204 |
-| Curriculum | 14 curriculum mappings | CS 2024 catalog year across Semesters 1 through 4 |
+| Courses | 22 demo catalog courses | CS, MATH, ENG, PHYS, and general courses for the seeded Computer Science plan |
+| Curriculum | 22 demo mappings | CS 2024 test curriculum across Semesters 1 through 8; not an official study plan |
 | Student | `student_id = "240103000"`, `name = "John Doe"`, `email = "240103000@sdu.edu.kz"`, `GPA = 3.8`, `current_semester = 3` | Linked to account, 27 completed ECTS (Sem 1-2), 14 enrolled ECTS (Sem 3) |
 | Account | `student_id = "240103000"`, password = `Student123!@#` | Hashed password for demo student |

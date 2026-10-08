@@ -1,7 +1,10 @@
 package kz.edu.sdu.advisor.model.dto;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -24,4 +27,15 @@ public class RegistrationForm {
 
     @NotBlank(message = "Confirm your password.")
     private String confirmPassword;
+
+    @NotBlank(message = "Select a faculty.")
+    private String facultyCode;
+
+    @NotBlank(message = "Select a major.")
+    private String majorCode;
+
+    @NotNull(message = "Select a catalog year.")
+    @Min(value = 2000, message = "Select a supported catalog year.")
+    @Max(value = 2100, message = "Select a supported catalog year.")
+    private Integer catalogYear;
 }
