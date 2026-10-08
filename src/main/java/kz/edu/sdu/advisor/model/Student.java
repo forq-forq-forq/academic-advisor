@@ -25,6 +25,9 @@ public class Student {
     @Column(unique = true)
     private String email;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     private Double gpa;
 
     @ManyToMany
