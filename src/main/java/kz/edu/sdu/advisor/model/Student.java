@@ -28,6 +28,9 @@ public class Student {
     @Column(unique = true)
     private String email;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     private Double gpa;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -76,5 +79,15 @@ public class Student {
         return enrolledCourses.stream()
                 .mapToInt(c -> c.getCredits() != null ? c.getCredits() : 0)
                 .sum();
+    }
+
+    public String getEffectivePasswordHash() {
+        if (passwordHash != null && !passwordHash.isBlank()) {
+            return passwordHash;
+        }
+        if (account != null && account.getPasswordHash() != null && !account.getPasswordHash().isBlank()) {
+            return account.getPasswordHash();
+        }
+        return null;
     }
 }

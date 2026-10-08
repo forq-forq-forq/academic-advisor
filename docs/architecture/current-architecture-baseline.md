@@ -19,7 +19,7 @@ If any other document conflicts with this file, this file takes precedence.
 | Schema management | Hibernate `ddl-auto` | Flyway not implemented yet |
 | Domain model | Faculty, Major, CurriculumCourse, Course, Prerequisite, Student, StudentAccount, CartItem | Implemented & Seeded |
 | Semester Cart (US-11) | `CartItem`, `CartItemRepository`, `CartService`, `PlannerController` (`/planner`) | Implemented |
-| Authentication | Session attribute (`authenticatedStudentId`) via `HttpSession` | Spring Security not implemented yet |
+| Authentication | Session attributes (`authenticatedStudent`, `authenticatedStudentId`) with BCrypt password verification via `PasswordEncoder` | US-04 implemented |
 | AI integration | Google Gemini API via `RestClient` | Implemented |
 | CI | GitHub Actions (`./mvnw clean test`, Docker build checks) | Implemented |
 
@@ -37,11 +37,12 @@ If any other document conflicts with this file, this file takes precedence.
 
 ## Security Baseline for MVP (Current)
 
-1. Login is based on Student ID lookup in the `students` table.
-2. Successful login stores `authenticatedStudentId` in `HttpSession`.
-3. `/dashboard`, `/dashboard/chat`, and `/planner` enforce session presence at controller level.
-4. Domain models (`StudentAccount` linked to `Student` with password hash) are prepared for implementing full password verification and registration.
-5. This is acceptable only as MVP-level mock authentication, not production-grade security.
+1. Login form collects Student ID and password.
+2. Student ID is verified in the `students` table and password is verified against the stored BCrypt hash via `PasswordEncoder` (never plaintext).
+3. Successful authentication creates an active session (`authenticatedStudent` and `authenticatedStudentId` in `HttpSession`) and redirects to `/planner`.
+4. Invalid credentials display `"Invalid Student ID or password"` while preserving the entered Student ID.
+5. Client-side and server-side validation reject empty submissions and highlight required fields.
+6. Protected pages (`/dashboard`, `/dashboard/chat`, `/planner`) enforce session presence and redirect unauthenticated users back to `/login`.
 
 ---
 

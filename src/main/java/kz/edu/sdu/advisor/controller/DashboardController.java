@@ -34,6 +34,9 @@ public class DashboardController {
     @GetMapping("/dashboard")
     public String showDashboard(HttpSession session, Model model) {
         String studentId = (String) session.getAttribute("authenticatedStudentId");
+        if (studentId == null && session.getAttribute("authenticatedStudent") instanceof Student s) {
+            studentId = s.getStudentId();
+        }
 
         if (studentId == null) {
             return "redirect:/login";
@@ -62,7 +65,8 @@ public class DashboardController {
             @RequestParam("message") String message,
             HttpSession session) {
 
-        if (session.getAttribute("authenticatedStudentId") == null) {
+        if (session.getAttribute("authenticatedStudentId") == null
+                && session.getAttribute("authenticatedStudent") == null) {
             return ResponseEntity.status(401)
                     .body(Map.of("error", "Session expired. Please log in again."));
         }

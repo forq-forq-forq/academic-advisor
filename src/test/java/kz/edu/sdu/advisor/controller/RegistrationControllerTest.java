@@ -57,8 +57,10 @@ class RegistrationControllerTest {
 
     @BeforeEach
     void cleanUpTestAccount() {
-        studentAccountRepository.findByEmailIgnoreCase(EMAIL).ifPresent(studentAccountRepository::delete);
         studentRepository.findByEmailIgnoreCase(EMAIL).ifPresent(studentRepository::delete);
+        studentAccountRepository.findByEmailIgnoreCase(EMAIL).ifPresent(studentAccountRepository::delete);
+        studentRepository.findByStudentId("us01-registration").ifPresent(studentRepository::delete);
+        studentAccountRepository.findByStudentId("us01-registration").ifPresent(studentAccountRepository::delete);
     }
 
     @Test
@@ -79,13 +81,40 @@ class RegistrationControllerTest {
         assertThat(passwordEncoder.matches(PASSWORD, savedAccount.getPasswordHash())).isTrue();
         assertThat(savedAccount.getMajor().getCode()).isEqualTo(MAJOR_CODE);
         assertThat(savedAccount.getCatalogYear()).isEqualTo(2024);
+        assertThat(savedAccount.getStudentId()).isEqualTo("us01-registration");
+
+        Student savedStudent = studentRepository.findByStudentId("us01-registration").orElseThrow();
+        assertThat(savedStudent.getEmail()).isEqualTo(EMAIL.toLowerCase());
+        assertThat(savedStudent.getAccount().getId()).isEqualTo(savedAccount.getId());
 
         MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
         mockMvc.perform(get("/register/success").session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("registration-success"))
                 .andExpect(model().attribute("curriculum", hasSize(22)))
+                .andExpect(content().string(containsString("Your Student ID is")))
+                .andExpect(content().string(containsString("us01-registration")))
                 .andExpect(content().string(containsString("Semester")));
+    }
+
+    @Test
+    void registerWithValidDetails_shouldAllowImmediateLoginWithExtractedStudentId() throws Exception {
+        mockMvc.perform(post("/register")
+                        .param("email", EMAIL)
+                        .param("password", PASSWORD)
+                        .param("confirmPassword", PASSWORD)
+                        .param("facultyCode", FACULTY_CODE)
+                        .param("majorCode", MAJOR_CODE)
+                        .param("catalogYear", CATALOG_YEAR))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/register/success"));
+
+        mockMvc.perform(post("/login")
+                        .param("studentId", "us01-registration")
+                        .param("password", PASSWORD))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/planner"))
+                .andExpect(request().sessionAttribute("authenticatedStudentId", "us01-registration"));
     }
 
     @Test

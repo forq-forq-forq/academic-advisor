@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Component
@@ -184,12 +185,28 @@ public class DataSeeder implements CommandLineRunner {
         }
         studentAccountRepository.save(account);
 
-        if (studentRepository.findByStudentId(studentId).isEmpty()) {
+        Optional<Student> existingStudent = studentRepository.findByStudentId(studentId);
+        if (existingStudent.isPresent()) {
+            Student student = existingStudent.get();
+            boolean updated = false;
+            if (student.getAccount() == null) {
+                student.setAccount(account);
+                updated = true;
+            }
+            if (student.getPasswordHash() == null) {
+                student.setPasswordHash(account.getPasswordHash());
+                updated = true;
+            }
+            if (updated) {
+                studentRepository.save(student);
+            }
+        } else {
             log.info("Seeding demo student: {}", studentId);
             Student student = new Student();
             student.setStudentId(studentId);
             student.setName("John Doe");
             student.setEmail(email);
+            student.setPasswordHash(account.getPasswordHash());
             student.setGpa(3.8);
             student.setMajor(major);
             student.setCatalogYear(2024);

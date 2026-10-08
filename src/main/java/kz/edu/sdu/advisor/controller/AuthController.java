@@ -16,6 +16,7 @@ import kz.edu.sdu.advisor.repository.StudentRepository;
 import kz.edu.sdu.advisor.service.StudentRegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.ui.Model;
@@ -31,8 +32,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Handles student authentication via Student ID.
- * On success, stores the authenticated student ID in the HTTP session.
+ * Handles student authentication via Student ID and password.
+ * On success, stores the authenticated student and student ID in the HTTP session.
  */
 @Controller
 @RequiredArgsConstructor
@@ -44,29 +45,57 @@ public class AuthController {
     private final MajorRepository majorRepository;
     private final CurriculumCourseRepository curriculumCourseRepository;
     private final StudentRegistrationService studentRegistrationService;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/login")
     public String showLoginPage(HttpSession session) {
-        // If already logged in, redirect to dashboard
-        if (session.getAttribute("authenticatedStudentId") != null) {
-            return "redirect:/dashboard";
+        // If already logged in, redirect to planner
+        if (session.getAttribute("authenticatedStudentId") != null
+                || session.getAttribute("authenticatedStudent") != null) {
+            return "redirect:/planner";
         }
         return "login";
     }
 
     @PostMapping("/login")
-    public String processLogin(@RequestParam("studentId") String studentId,
+    public String processLogin(@RequestParam(value = "studentId", required = false) String studentId,
+                               @RequestParam(value = "password", required = false) String password,
                                HttpSession session,
                                Model model) {
-        Optional<Student> studentOpt = studentRepository.findByStudentId(studentId.trim());
+        String trimmedStudentId = studentId != null ? studentId.trim() : "";
+        model.addAttribute("studentId", trimmedStudentId);
 
-        if (studentOpt.isPresent()) {
-            session.setAttribute("authenticatedStudentId", studentOpt.get().getStudentId());
-            return "redirect:/dashboard";
+        if (trimmedStudentId.isEmpty() || password == null || password.isEmpty()) {
+            model.addAttribute("error", "Invalid Student ID or password");
+            return "login";
         }
 
-        model.addAttribute("error", "User not found");
-        return "login";
+        Optional<Student> studentOpt = studentRepository.findByStudentId(trimmedStudentId);
+        if (studentOpt.isEmpty()) {
+            model.addAttribute("error", "Invalid Student ID or password");
+            return "login";
+        }
+
+        Student student = studentOpt.get();
+        String storedHash = student.getEffectivePasswordHash();
+        if (storedHash == null || storedHash.isBlank()) {
+            Optional<StudentAccount> accountOpt = studentAccountRepository.findByStudentId(trimmedStudentId);
+            if (accountOpt.isEmpty() && student.getEmail() != null) {
+                accountOpt = studentAccountRepository.findByEmailIgnoreCase(student.getEmail());
+            }
+            if (accountOpt.isPresent()) {
+                storedHash = accountOpt.get().getPasswordHash();
+            }
+        }
+
+        if (storedHash == null || !passwordEncoder.matches(password, storedHash)) {
+            model.addAttribute("error", "Invalid Student ID or password");
+            return "login";
+        }
+
+        session.setAttribute("authenticatedStudent", student);
+        session.setAttribute("authenticatedStudentId", student.getStudentId());
+        return "redirect:/planner";
     }
 
     @GetMapping("/register")
@@ -93,8 +122,11 @@ public class AuthController {
         }
         if (!result.hasFieldErrors("email")) {
             String email = form.getEmail().trim();
+            String studentId = StudentRegistrationService.extractStudentIdFromEmail(email);
             if (studentRepository.existsByEmailIgnoreCase(email)
-                    || studentAccountRepository.existsByEmailIgnoreCase(email)) {
+                    || studentAccountRepository.existsByEmailIgnoreCase(email)
+                    || (studentId != null && (studentRepository.findByStudentId(studentId).isPresent()
+                            || studentAccountRepository.existsByStudentId(studentId)))) {
                 result.rejectValue("email", "email.duplicate", "This email is already registered.");
             }
         }
