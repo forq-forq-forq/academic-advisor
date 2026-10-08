@@ -28,6 +28,9 @@ public class Student {
     @Column(unique = true)
     private String email;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     private Double gpa;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -39,9 +42,6 @@ public class Student {
 
     @Column(name = "current_semester")
     private Integer currentSemester;
-
-    @Column(name = "password_hash")
-    private String passwordHash;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id")
