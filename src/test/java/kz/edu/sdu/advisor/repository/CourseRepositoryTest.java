@@ -4,7 +4,7 @@ import kz.edu.sdu.advisor.model.Course;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.jpa.JpaSystemException;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -26,6 +26,6 @@ public class CourseRepositoryTest {
 
         assertThatThrownBy(() -> {
             courseRepository.saveAndFlush(course);
-        }).isInstanceOf(DataIntegrityViolationException.class);
+        }).isInstanceOf(JpaSystemException.class);
     }
 }
