@@ -7,6 +7,11 @@ This document describes the relational schema used by the Academic Advisor appli
 ```mermaid
 erDiagram
     students ||--o{ student_courses : enrolls
+    student_accounts {
+        BIGINT id PK "Auto-generated"
+        VARCHAR email UK "University email"
+        VARCHAR password_hash "BCrypt hash"
+    }
     courses ||--o{ student_courses : includes
     courses ||--o{ prerequisites : "is required by"
     courses ||--o{ prerequisites : "depends on"
@@ -51,6 +56,16 @@ Stores registered student records. Each student is uniquely identified by a busi
 | `name`       | VARCHAR | NOT NULL          | Full name of the student.                        |
 | `email`      | VARCHAR | UNIQUE            | Email address. Nullable.                         |
 | `gpa`        | DOUBLE  | —                 | Grade point average. Nullable.                   |
+
+### `student_accounts`
+
+Stores login credentials independently from the academic student profile, which may not exist at registration time.
+
+| Column          | Type    | Constraints     | Description                                      |
+|-----------------|---------|-----------------|--------------------------------------------------|
+| `id`            | BIGINT  | PK, AUTO        | Database primary key, auto-generated.            |
+| `email`         | VARCHAR | NOT NULL, UNIQUE | Normalized university email address.             |
+| `password_hash` | VARCHAR | NOT NULL        | BCrypt hash; plaintext passwords are never stored. |
 
 ### `courses`
 

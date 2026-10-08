@@ -89,12 +89,16 @@
             color: #c53030;
             font-size: 0.875rem;
         }
+
+        .success-msg { color: #276749; margin-bottom: 1rem; font-size: 0.9rem; }
+        .register-link { display: block; margin-top: 1rem; text-align: center; color: #3b5bdb; }
     </style>
 </head>
 <body>
 <div class="login-card">
     <h1>Academic Advisor</h1>
     <p class="subtitle">Enter your Student ID to continue</p>
+    <p class="success-msg" th:if="${param.registered}">Your account has been created successfully.</p>
     <form th:action="@{/login}" method="post">
         <label for="studentId">Student ID</label>
         <input type="text" id="studentId" name="studentId"
@@ -102,6 +106,7 @@
         <button type="submit">Log In</button>
     </form>
     <div class="error-msg" th:if="${error}" th:text="${error}"></div>
+    <a class="register-link" th:href="@{/register}">Create an account</a>
 </div>
 </body>
 </html>

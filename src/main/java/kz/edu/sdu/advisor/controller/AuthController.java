@@ -1,12 +1,18 @@
 package kz.edu.sdu.advisor.controller;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import kz.edu.sdu.advisor.model.Student;
+import kz.edu.sdu.advisor.model.dto.RegistrationForm;
+import kz.edu.sdu.advisor.repository.StudentAccountRepository;
 import kz.edu.sdu.advisor.repository.StudentRepository;
+import kz.edu.sdu.advisor.service.StudentRegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -21,6 +27,8 @@ import java.util.Optional;
 public class AuthController {
 
     private final StudentRepository studentRepository;
+    private final StudentAccountRepository studentAccountRepository;
+    private final StudentRegistrationService studentRegistrationService;
 
     @GetMapping("/login")
     public String showLoginPage(HttpSession session) {
@@ -44,6 +52,41 @@ public class AuthController {
 
         model.addAttribute("error", "User not found");
         return "login";
+    }
+
+    @GetMapping("/register")
+    public String showRegistrationPage(HttpSession session, Model model) {
+        if (session.getAttribute("authenticatedStudentId") != null) {
+            return "redirect:/dashboard";
+        }
+        model.addAttribute("registrationForm", new RegistrationForm());
+        return "register";
+    }
+
+    @PostMapping("/register")
+    public String processRegistration(@Valid @ModelAttribute("registrationForm") RegistrationForm form,
+                                      BindingResult result,
+                                      HttpSession session) {
+        if (session.getAttribute("authenticatedStudentId") != null) {
+            return "redirect:/dashboard";
+        }
+
+        if (form.getPassword() != null && !form.getPassword().equals(form.getConfirmPassword())) {
+            result.rejectValue("confirmPassword", "password.mismatch", "Passwords do not match.");
+        }
+        if (!result.hasFieldErrors("email")) {
+            String email = form.getEmail().trim();
+            if (studentRepository.existsByEmailIgnoreCase(email)
+                    || studentAccountRepository.existsByEmailIgnoreCase(email)) {
+                result.rejectValue("email", "email.duplicate", "This email is already registered.");
+            }
+        }
+        if (result.hasErrors()) {
+            return "register";
+        }
+
+        studentRegistrationService.register(form);
+        return "redirect:/login?registered";
     }
 
     @GetMapping("/logout")
