@@ -40,6 +40,9 @@ public class Student {
     @Column(name = "current_semester")
     private Integer currentSemester;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id")
     private StudentAccount account;
@@ -76,5 +79,15 @@ public class Student {
         return enrolledCourses.stream()
                 .mapToInt(c -> c.getCredits() != null ? c.getCredits() : 0)
                 .sum();
+    }
+
+    public String getEffectivePasswordHash() {
+        if (passwordHash != null && !passwordHash.isBlank()) {
+            return passwordHash;
+        }
+        if (account != null && account.getPasswordHash() != null && !account.getPasswordHash().isBlank()) {
+            return account.getPasswordHash();
+        }
+        return null;
     }
 }

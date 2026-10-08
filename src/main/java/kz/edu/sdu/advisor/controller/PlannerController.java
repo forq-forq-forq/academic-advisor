@@ -32,7 +32,7 @@ public class PlannerController {
 
     @GetMapping("/planner")
     public String showPlanner(HttpSession session, Model model) {
-        String studentId = (String) session.getAttribute("authenticatedStudentId");
+        String studentId = resolveStudentId(session);
         if (studentId == null) {
             return "redirect:/login";
         }
@@ -67,7 +67,7 @@ public class PlannerController {
             @RequestParam("courseId") Long courseId,
             HttpSession session) {
 
-        String studentId = (String) session.getAttribute("authenticatedStudentId");
+        String studentId = resolveStudentId(session);
         if (studentId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Session expired. Please log in again."));
@@ -90,7 +90,7 @@ public class PlannerController {
             @RequestParam("courseId") Long courseId,
             HttpSession session) {
 
-        String studentId = (String) session.getAttribute("authenticatedStudentId");
+        String studentId = resolveStudentId(session);
         if (studentId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Session expired. Please log in again."));
@@ -108,13 +108,21 @@ public class PlannerController {
     @GetMapping("/planner/cart")
     @ResponseBody
     public ResponseEntity<?> getCartData(HttpSession session) {
-        String studentId = (String) session.getAttribute("authenticatedStudentId");
+        String studentId = resolveStudentId(session);
         if (studentId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Session expired. Please log in again."));
         }
 
         return ResponseEntity.ok(cartService.getCart(studentId));
+    }
+
+    private String resolveStudentId(HttpSession session) {
+        String studentId = (String) session.getAttribute("authenticatedStudentId");
+        if (studentId == null && session.getAttribute("authenticatedStudent") instanceof Student s) {
+            studentId = s.getStudentId();
+        }
+        return studentId;
     }
 }
 

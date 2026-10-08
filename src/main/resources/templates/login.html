@@ -46,25 +46,47 @@
             margin-bottom: 0.4rem;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
             padding: 0.65rem 0.875rem;
             border: 1.5px solid #cbd5e0;
             border-radius: 8px;
             font-size: 1rem;
             color: #2d3748;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
             outline: none;
         }
 
-        input[type="text"]:focus {
+        input[type="text"]:focus,
+        input[type="password"]:focus {
             border-color: #4c6ef5;
             box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.15);
         }
 
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-error {
+            border-color: #e53e3e !important;
+            box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.2) !important;
+        }
+
+        .field-hint {
+            color: #e53e3e;
+            font-size: 0.78rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .field-hint.visible {
+            display: block;
+        }
+
         button[type="submit"] {
             width: 100%;
-            margin-top: 1.25rem;
+            margin-top: 0.5rem;
             padding: 0.75rem;
             background: #4c6ef5;
             color: #fff;
@@ -97,17 +119,71 @@
 <body>
 <div class="login-card">
     <h1>Academic Advisor</h1>
-    <p class="subtitle">Enter your Student ID to continue</p>
+    <p class="subtitle">Enter your Student ID and password to continue</p>
     <p class="success-msg" th:if="${param.registered}">Your account has been created successfully.</p>
-    <form th:action="@{/login}" method="post">
-        <label for="studentId">Student ID</label>
-        <input type="text" id="studentId" name="studentId"
-               placeholder="e.g. 240103000" required autocomplete="off">
+    <form th:action="@{/login}" method="post" id="loginForm" novalidate>
+        <div class="form-group">
+            <label for="studentId">Student ID</label>
+            <input type="text" id="studentId" name="studentId"
+                   th:value="${studentId}"
+                   placeholder="e.g. 240103000" required autocomplete="username">
+            <span class="field-hint" id="studentIdHint">Student ID is required</span>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password"
+                   placeholder="Enter your password" required autocomplete="current-password">
+            <span class="field-hint" id="passwordHint">Password is required</span>
+        </div>
         <button type="submit">Log In</button>
     </form>
     <div class="error-msg" th:if="${error}" th:text="${error}"></div>
     <a class="register-link" th:href="@{/register}">Create an account</a>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('loginForm');
+        const studentIdInput = document.getElementById('studentId');
+        const passwordInput = document.getElementById('password');
+        const studentIdHint = document.getElementById('studentIdHint');
+        const passwordHint = document.getElementById('passwordHint');
+
+        function checkField(input, hint) {
+            const val = input.value ? input.value.trim() : '';
+            if (!val) {
+                input.classList.add('input-error');
+                if (hint) hint.classList.add('visible');
+                return false;
+            } else {
+                input.classList.remove('input-error');
+                if (hint) hint.classList.remove('visible');
+                return true;
+            }
+        }
+
+        studentIdInput.addEventListener('input', function () {
+            checkField(studentIdInput, studentIdHint);
+        });
+
+        passwordInput.addEventListener('input', function () {
+            checkField(passwordInput, passwordHint);
+        });
+
+        form.addEventListener('submit', function (event) {
+            const isIdValid = checkField(studentIdInput, studentIdHint);
+            const isPwValid = checkField(passwordInput, passwordHint);
+
+            if (!isIdValid || !isPwValid) {
+                event.preventDefault();
+                if (!isIdValid) {
+                    studentIdInput.focus();
+                } else {
+                    passwordInput.focus();
+                }
+            }
+        });
+    });
+</script>
 </body>
 </html>
 
