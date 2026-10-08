@@ -17,11 +17,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for {@link AuthController}.
  *
- * <p>Covers all three QA scenarios defined in the Student Authentication (Mock) use case:
+ * <p>Covers authentication and session management scenarios:
  * <ul>
- *   <li>Scenario 1 (Pass)  — valid Student ID → redirect to /dashboard</li>
- *   <li>Scenario 2 (Fail)  — unregistered ID  → "User not found" error on login page</li>
- *   <li>Scenario 3 (Fail)  — direct /dashboard access without session → redirect to /login</li>
+ *   <li>Scenario 1 (Pass) — valid Student ID → redirect to /dashboard</li>
+ *   <li>Scenario 2 (Fail) — unregistered ID → "User not found" error on login page</li>
+ *   <li>Scenario 3 (Fail) — direct /dashboard access without session → redirect to /login</li>
+ *   <li>Scenario 4 (Pass) — logout invalidates session and blocks protected pages</li>
  * </ul>
  */
 @SpringBootTest
@@ -81,10 +82,30 @@ class AuthControllerTest {
     @Test
     @DisplayName("Scenario 3 (Fail): GET /dashboard without session → redirects to /login")
     void accessDashboardWithoutSession_shouldRedirectToLogin() throws Exception {
-        // Use a fresh empty session to guarantee no authenticated student attribute
         MockHttpSession unauthenticatedSession = new MockHttpSession();
 
         mockMvc.perform(get("/dashboard").session(unauthenticatedSession))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Scenario 4 (Pass): Logout invalidates session
+    // Given:  The student is authenticated.
+    // When:   The student logs out.
+    // Then:   The session is invalidated and protected pages are inaccessible.
+    // ──────────────────────────────────────────────────────────────────────────
+    @Test
+    @DisplayName("Scenario 4 (Pass): Logout invalidates session and blocks dashboard access")
+    void logout_shouldInvalidateSessionAndBlockProtectedPage() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(get("/logout").session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+
+        mockMvc.perform(get("/dashboard").session(session))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login"));
     }
