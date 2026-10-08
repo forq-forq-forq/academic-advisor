@@ -17,6 +17,14 @@ erDiagram
     courses ||--o{ student_courses : completed_by
     students ||--o{ student_enrolled_courses : enrolled_in
     courses ||--o{ student_enrolled_courses : taken_by
+    students ||--o{ cart_items : plans
+    courses ||--o{ cart_items : planned_in
+
+    cart_items {
+        BIGINT id PK "Auto-generated"
+        BIGINT student_id FK "References students.id"
+        BIGINT course_id FK "References courses.id"
+    }
 
     faculties {
         BIGINT id PK "Auto-generated"
@@ -176,6 +184,18 @@ Represents directed prerequisite relationships between courses (`course_id` requ
 | `prerequisite_course_id` | BIGINT | FK → `courses.id`, NOT NULL | Prerequisite that must be completed. |
 
 **Unique constraint:** `(course_id, prerequisite_course_id)`
+
+### `cart_items`
+
+Stores semester planning cart items per student (US-11).
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | BIGINT | PK, AUTO | Database primary key. |
+| `student_id` | BIGINT | FK → `students.id`, NOT NULL | Student who owns the cart. |
+| `course_id` | BIGINT | FK → `courses.id`, NOT NULL | Planned course added to cart. |
+
+**Unique constraint:** `(student_id, course_id)`
 
 ### Join Tables
 
