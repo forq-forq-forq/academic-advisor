@@ -85,6 +85,7 @@ Use the pre-seeded demo account:
 | **GPA** | 3.8 |
 
 Pre-loaded courses: `CS101` (Introduction to Computer Science), `MATH101` (Calculus I).
+The demo catalog also includes a non-official CS 2024 curriculum across eight semesters for registration testing.
 
 ---
 
