@@ -204,5 +204,27 @@ class CartServiceTest {
         assertThat(cart.items()).hasSize(1);
         assertThat(cart.items().get(0).code()).isEqualTo("CS101");
     }
+
+    @Test
+    @DisplayName("US-13 QA-1 & QA-5: CartDto formattedCodes provides comma-separated course codes in order")
+    void cartDto_formattedCodes_shouldReturnCommaSeparatedCodes() {
+        // Empty cart
+        CartDto emptyCart = cartService.getCart(STUDENT_ID);
+        assertThat(emptyCart.formattedCodes()).isEmpty();
+
+        // Add 1 course
+        cartService.addCourse(STUDENT_ID, course3cr.getId()); // HIST101
+        CartDto singleCart = cartService.getCart(STUDENT_ID);
+        assertThat(singleCart.formattedCodes()).isEqualTo("HIST101");
+
+        // Add 2nd course
+        cartService.addCourse(STUDENT_ID, course4cr.getId()); // MATH101
+        CartDto twoCart = cartService.getCart(STUDENT_ID);
+        assertThat(twoCart.formattedCodes()).isEqualTo("HIST101, MATH101");
+
+        // Remove 1 course
+        CartDto afterRemove = cartService.removeCourse(STUDENT_ID, course3cr.getId());
+        assertThat(afterRemove.formattedCodes()).isEqualTo("MATH101");
+    }
 }
 
