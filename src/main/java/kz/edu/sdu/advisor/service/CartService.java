@@ -92,15 +92,18 @@ public class CartService {
             return;
         }
 
-        Set<Long> completedCourseIds = student.getCompletedCourses() == null
-                ? Set.of()
-                : student.getCompletedCourses().stream()
-                        .map(Course::getId)
-                        .collect(Collectors.toSet());
+        Set<Long> satisfiedCourseIds = new java.util.HashSet<>();
+        if (student.getCompletedCourses() != null) {
+            satisfiedCourseIds.addAll(student.getCompletedCourses().stream().map(Course::getId).toList());
+        }
+        List<CartItem> inCartItems = cartItemRepository.findByStudent_StudentIdOrderByCourse_CodeAsc(student.getStudentId());
+        if (inCartItems != null) {
+            satisfiedCourseIds.addAll(inCartItems.stream().map(item -> item.getCourse().getId()).toList());
+        }
 
         List<Course> missingPrerequisites = prerequisites.stream()
                 .map(Prerequisite::getPrerequisiteCourse)
-                .filter(req -> req != null && !completedCourseIds.contains(req.getId()))
+                .filter(req -> req != null && !satisfiedCourseIds.contains(req.getId()))
                 .toList();
 
         if (!missingPrerequisites.isEmpty()) {

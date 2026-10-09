@@ -492,6 +492,45 @@
             color: #e53e3e;
             font-weight: 600;
         }
+
+        /* ── Maximum Credit Limit Warning (US-14) ── */
+        .credit-limit-warning {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            background: #fff1f2;
+            border: 1px solid #fecdd3;
+            border-left: 5px solid #e11d48;
+            color: #9f1239;
+            padding: 0.85rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-bottom: 1.25rem;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+
+        .credit-limit-warning .warning-icon {
+            font-size: 1.35rem;
+            line-height: 1;
+        }
+
+        .credit-limit-warning .warning-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .credit-limit-warning .warning-subtext {
+            font-size: 0.775rem;
+            color: #be123c;
+        }
+
+        .credit-counter.limit-exceeded {
+            background: #fee2e2 !important;
+            color: #b91c1c !important;
+            border: 1px solid #f87171 !important;
+            font-weight: 800;
+        }
     </style>
 </head>
 <body>
@@ -540,10 +579,26 @@
                         title="Copy course codes to clipboard">
                     📋 Copy Codes
                 </button>
-                <div class="credit-counter" id="credit-counter">
+                <div class="credit-counter" id="credit-counter" th:classappend="${cart.exceedsLimit ? 'limit-exceeded' : ''}">
                     <span id="current-credits" th:text="${cart.totalCredits}">0</span> /
                     <span id="max-credits" th:text="${cart.maxCredits}">40</span> ECTS
                 </div>
+            </div>
+        </div>
+
+        <!-- Maximum Credit Limit Warning (US-14) -->
+        <div id="credit-limit-warning"
+             class="credit-limit-warning"
+             th:style="${cart.exceedsLimit ? 'display: flex;' : 'display: none;'}"
+             role="alert">
+            <span class="warning-icon">⚠️</span>
+            <div class="warning-text">
+                <strong>Maximum Credit Limit Exceeded!</strong>
+                <span id="credit-limit-warning-msg"
+                      th:text="${cart.limitWarning}">
+                    Credit limit exceeded: You have selected 42 ECTS, which exceeds the maximum limit of 40 ECTS.
+                </span>
+                <span class="warning-subtext">Overload registration requires approval from your academic advisor.</span>
             </div>
         </div>
 
@@ -611,7 +666,8 @@
         <ul class="course-list" id="catalog-list">
             <li class="catalog-item"
                 th:each="course : ${availableCourses}"
-                th:id="'catalog-item-' + ${course.id}">
+                th:id="'catalog-item-' + ${course.id}"
+                th:attr="data-course-id=${course.id},data-course-code=${course.code},data-has-prereqs=${course.hasPrerequisites},data-prereqs=${#strings.listJoin(course.prerequisiteCodes, ',')}">
                 <div class="item-info">
                     <div class="item-code-credits">
                         <span class="course-code" th:text="${course.code}">MATH101</span>
@@ -649,6 +705,7 @@
     /*<![CDATA[*/
     let maxCreditsLimit = /*[[${cart.maxCredits}]]*/ 40;
     let currentFormattedCodes = /*[[${cart.formattedCodes}]]*/ '';
+    const studentCompletedCodes = new Set(/*[[${completedCourseCodes}]]*/ []);
 
     function renderCart(cart) {
         maxCreditsLimit = cart.maxCredits;
@@ -677,7 +734,62 @@
             copyBtn.setAttribute('data-codes', currentFormattedCodes);
         }
 
-        // 3. Update cart items list / placeholder (AC 1 & AC 5)
+        // 4. Update credit limit warning (US-14)
+        const limitWarningBox = document.getElementById('credit-limit-warning');
+        const limitWarningMsg = document.getElementById('credit-limit-warning-msg');
+        const creditCounter = document.getElementById('credit-counter');
+
+        const isExceeded = cart.exceedsLimit || (cart.totalCredits > cart.maxCredits);
+        if (isExceeded) {
+            const excess = cart.excessCredits || (cart.totalCredits - cart.maxCredits);
+            const msg = cart.limitWarning ||
+                `Credit limit exceeded: You have selected ${cart.totalCredits} ECTS, which exceeds the maximum limit of ${cart.maxCredits} ECTS by ${excess} ECTS.`;
+            if (limitWarningMsg) limitWarningMsg.textContent = msg;
+            if (limitWarningBox) limitWarningBox.style.display = 'flex';
+            if (creditCounter) creditCounter.classList.add('limit-exceeded');
+        } else {
+            if (limitWarningBox) limitWarningBox.style.display = 'none';
+            if (creditCounter) creditCounter.classList.remove('limit-exceeded');
+        }
+
+        // 5. Update catalog prerequisite badges dynamically (US-12 fix)
+        const inCartCodes = new Set(cart.items ? cart.items.map(i => i.code) : []);
+        document.querySelectorAll('.catalog-item').forEach(item => {
+            const hasPrereqs = item.getAttribute('data-has-prereqs') === 'true';
+            if (!hasPrereqs) return;
+
+            const prereqCodesStr = item.getAttribute('data-prereqs') || '';
+            const prereqCodes = prereqCodesStr ? prereqCodesStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+            if (prereqCodes.length === 0) return;
+
+            const missing = prereqCodes.filter(c => !studentCompletedCodes.has(c) && !inCartCodes.has(c));
+            const badgeMet = item.querySelector('.badge-prereq-met');
+            const badgeMissing = item.querySelector('.badge-prereq-missing');
+            const missingDetail = item.querySelector('.missing-detail');
+
+            if (missing.length === 0) {
+                if (badgeMissing) {
+                    badgeMissing.className = 'badge-prereq-met';
+                    badgeMissing.textContent = 'Prereqs Met ✓';
+                    badgeMissing.title = 'Prerequisites satisfied: ' + prereqCodes.join(', ');
+                }
+                if (missingDetail) {
+                    missingDetail.style.display = 'none';
+                }
+            } else {
+                if (badgeMet) {
+                    badgeMet.className = 'badge-prereq-missing';
+                    badgeMet.textContent = 'Missing Prereq ⚠️';
+                    badgeMet.title = 'Missing prerequisite: ' + missing.join(', ');
+                }
+                if (missingDetail) {
+                    missingDetail.style.display = 'inline';
+                    missingDetail.textContent = '(Missing: ' + missing.join(', ') + ')';
+                }
+            }
+        });
+
+        // 6. Update cart items list / placeholder (AC 1 & AC 5)
         const placeholder = document.getElementById('cart-placeholder');
         const list = document.getElementById('cart-items-list');
 

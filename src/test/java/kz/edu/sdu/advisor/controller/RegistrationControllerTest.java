@@ -91,7 +91,7 @@ class RegistrationControllerTest {
         mockMvc.perform(get("/register/success").session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("registration-success"))
-                .andExpect(model().attribute("curriculum", hasSize(22)))
+                .andExpect(model().attribute("curriculum", hasSize(32)))
                 .andExpect(content().string(containsString("Your Student ID is")))
                 .andExpect(content().string(containsString("us01-registration")))
                 .andExpect(content().string(containsString("Semester")));

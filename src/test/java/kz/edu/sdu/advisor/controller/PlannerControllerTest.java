@@ -199,5 +199,50 @@ class PlannerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.formattedCodes", is(testCourse.getCode())));
     }
+
+    @Test
+    @DisplayName("US-14 QA-1 & QA-3: GET /planner renders credit limit warning element and cart JSON includes limit attributes")
+    void getPlanner_shouldRenderCreditLimitWarningElement() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"credit-limit-warning\"")))
+                .andExpect(content().string(containsString("Maximum Credit Limit Exceeded!")));
+
+        mockMvc.perform(get("/planner/cart").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.exceedsLimit", is(false)))
+                .andExpect(jsonPath("$.excessCredits", is(0)));
+    }
+
+    @Test
+    @DisplayName("US-12 Fix: Adding prerequisite CS201 to cart enables adding dependent course CS202")
+    void addPrerequisiteToCart_enablesAddingDependentCourseViaEndpoint() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+
+        // 1. Initially CS202 cannot be added (fails with 400)
+        mockMvc.perform(post("/planner/cart/add")
+                        .session(session)
+                        .param("courseId", cs202.getId().toString()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", containsString("Cannot add CS202: missing prerequisite CS201")));
+
+        // 2. Add CS201 to cart
+        mockMvc.perform(post("/planner/cart/add")
+                        .session(session)
+                        .param("courseId", testCourse.getId().toString()))
+                .andExpect(status().isOk());
+
+        // 3. Now CS202 addition succeeds!
+        mockMvc.perform(post("/planner/cart/add")
+                        .session(session)
+                        .param("courseId", cs202.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(2)));
+    }
 }
 
