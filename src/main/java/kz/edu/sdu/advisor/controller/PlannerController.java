@@ -1,10 +1,14 @@
 package kz.edu.sdu.advisor.controller;
 
 import jakarta.servlet.http.HttpSession;
+import kz.edu.sdu.advisor.exception.PrerequisiteNotMetException;
 import kz.edu.sdu.advisor.model.Course;
+import kz.edu.sdu.advisor.model.Prerequisite;
 import kz.edu.sdu.advisor.model.Student;
+import kz.edu.sdu.advisor.model.dto.AvailableCourseDto;
 import kz.edu.sdu.advisor.model.dto.CartDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
+import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
 import kz.edu.sdu.advisor.repository.StudentRepository;
 import kz.edu.sdu.advisor.service.CartService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +32,7 @@ public class PlannerController {
 
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
+    private final PrerequisiteRepository prerequisiteRepository;
     private final CartService cartService;
 
     @GetMapping("/planner")
@@ -54,9 +59,50 @@ public class PlannerController {
                 .filter(c -> !inCartCourseIds.contains(c.getId()))
                 .toList();
 
+        List<Prerequisite> allPrerequisites = prerequisiteRepository.findAllWithCourses();
+        Map<Long, List<Course>> prereqMap = allPrerequisites.stream()
+                .filter(p -> p.getCourse() != null && p.getPrerequisiteCourse() != null)
+                .collect(Collectors.groupingBy(
+                        p -> p.getCourse().getId(),
+                        Collectors.mapping(Prerequisite::getPrerequisiteCourse, Collectors.toList())
+                ));
+
+        Set<Long> completedIds = student.getCompletedCourses() == null
+                ? Set.of()
+                : student.getCompletedCourses().stream()
+                        .map(Course::getId)
+                        .collect(Collectors.toSet());
+
+        List<AvailableCourseDto> availableCourseDtos = availableCourses.stream()
+                .map(c -> {
+                    List<Course> prereqs = prereqMap.getOrDefault(c.getId(), List.of());
+                    List<Course> missing = prereqs.stream()
+                            .filter(p -> !completedIds.contains(p.getId()))
+                            .toList();
+                    List<String> prereqCodes = prereqs.stream().map(Course::getCode).toList();
+                    List<String> missingCodes = missing.stream().map(Course::getCode).toList();
+                    boolean hasPrereqs = !prereqs.isEmpty();
+                    boolean met = missing.isEmpty();
+                    String summary = missing.stream()
+                            .map(m -> m.getCode() + " (" + m.getName() + ")")
+                            .collect(Collectors.joining(", "));
+                    return new AvailableCourseDto(
+                            c.getId(),
+                            c.getCode(),
+                            c.getName(),
+                            c.getCredits(),
+                            prereqCodes,
+                            hasPrereqs,
+                            met,
+                            missingCodes,
+                            summary
+                    );
+                })
+                .toList();
+
         model.addAttribute("student", student);
         model.addAttribute("cart", cart);
-        model.addAttribute("availableCourses", availableCourses);
+        model.addAttribute("availableCourses", availableCourseDtos);
 
         return "planner";
     }
@@ -76,6 +122,11 @@ public class PlannerController {
         try {
             CartDto updatedCart = cartService.addCourse(studentId, courseId);
             return ResponseEntity.ok(updatedCart);
+        } catch (PrerequisiteNotMetException ex) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", ex.getMessage(),
+                    "missingPrerequisites", ex.getMissingPrerequisites().stream().map(Course::getCode).toList()
+            ));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         } catch (Exception ex) {

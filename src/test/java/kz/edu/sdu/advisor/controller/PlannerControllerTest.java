@@ -138,5 +138,33 @@ class PlannerControllerTest {
                 .andExpect(content().string(containsString(testCourse.getCode())))
                 .andExpect(content().string(containsString(testCourse.getCredits() + " ECTS")));
     }
+
+    @Test
+    @DisplayName("US-12 QA-2: Adding course with missing prerequisite should return 400 Bad Request with clear error message")
+    void addCourse_withMissingPrerequisites_shouldReturn400WithErrorDetails() throws Exception {
+        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(post("/planner/cart/add")
+                        .session(session)
+                        .param("courseId", cs202.getId().toString()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", containsString("Cannot add CS202: missing prerequisite CS201")))
+                .andExpect(jsonPath("$.missingPrerequisites", hasItem("CS201")));
+    }
+
+    @Test
+    @DisplayName("US-12 QA-4: GET /planner renders available courses with prerequisite badges/metadata")
+    void getPlanner_shouldIncludePrerequisiteMetadataInAvailableCourses() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("availableCourses"))
+                .andExpect(content().string(containsString("Missing Prereq")))
+                .andExpect(content().string(containsString("CS201")));
+    }
 }
 

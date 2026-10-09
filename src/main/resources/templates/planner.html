@@ -361,6 +361,95 @@
             border-radius: 4px;
             font-weight: 600;
         }
+
+        /* ── Prerequisite Badges & Alert (US-12) ── */
+        .planner-alert {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-left: 5px solid #e53e3e;
+            color: #9b2c2c;
+            padding: 0.85rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 0.5rem;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-content {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .alert-icon {
+            font-size: 1.15rem;
+        }
+
+        .btn-close-alert {
+            background: transparent;
+            border: none;
+            color: #9b2c2c;
+            font-size: 1.35rem;
+            cursor: pointer;
+            padding: 0 0.35rem;
+            line-height: 1;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+
+        .btn-close-alert:hover {
+            background: rgba(155, 44, 44, 0.1);
+        }
+
+        .badge-prereq-met {
+            background: #ebfbee;
+            color: #2b8a3e;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            border: 1px solid #d3f9d8;
+        }
+
+        .badge-prereq-missing {
+            background: #fff5f5;
+            color: #c53030;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            border: 1px solid #feb2b2;
+        }
+
+        .prereq-detail-text {
+            font-size: 0.75rem;
+            color: #718096;
+            margin-top: 0.2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            align-items: center;
+        }
+
+        .prereq-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .missing-detail {
+            color: #e53e3e;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -384,6 +473,15 @@
 </header>
 
 <main>
+    <!-- Prerequisite / Cart Error Notification Banner (US-12) -->
+    <div id="planner-alert" class="planner-alert" style="display: none;" role="alert">
+        <div class="alert-content">
+            <span class="alert-icon">⚠️</span>
+            <span id="planner-alert-msg" class="alert-message"></span>
+        </div>
+        <button type="button" class="btn-close-alert" onclick="hideAlert()" aria-label="Close">×</button>
+    </div>
+
     <!-- Left Column: Semester Cart (US-11) -->
     <section class="panel cart-panel" aria-label="Semester Cart">
         <div class="cart-header">
@@ -465,8 +563,25 @@
                     <div class="item-code-credits">
                         <span class="course-code" th:text="${course.code}">MATH101</span>
                         <span class="credit-tag" th:text="${course.credits + ' ECTS'}">4 ECTS</span>
+                        <span th:if="${course.hasPrerequisites and course.prerequisitesMet}"
+                              class="badge-prereq-met"
+                              th:title="'Prerequisites satisfied: ' + ${#strings.listJoin(course.prerequisiteCodes, ', ')}">
+                            Prereqs Met ✓
+                        </span>
+                        <span th:if="${!course.prerequisitesMet}"
+                              class="badge-prereq-missing"
+                              th:title="'Missing prerequisite: ' + ${course.missingSummary}">
+                            Missing Prereq ⚠️
+                        </span>
                     </div>
                     <span class="course-name" th:text="${course.name}">Calculus I</span>
+                    <div th:if="${course.hasPrerequisites}" class="prereq-detail-text">
+                        <span class="prereq-label">Prereq:</span>
+                        <span th:text="${#strings.listJoin(course.prerequisiteCodes, ', ')}">CS101</span>
+                        <span th:if="${!course.prerequisitesMet}"
+                              class="missing-detail"
+                              th:text="'(' + ${course.missingSummary} + ')'"></span>
+                    </div>
                 </div>
                 <button type="button"
                         class="btn-add"
@@ -537,17 +652,40 @@
         }
     }
 
+    function showAlert(msg) {
+        const alertBox = document.getElementById('planner-alert');
+        const msgSpan = document.getElementById('planner-alert-msg');
+        if (alertBox && msgSpan) {
+            msgSpan.textContent = msg;
+            alertBox.style.display = 'flex';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    function hideAlert() {
+        const alertBox = document.getElementById('planner-alert');
+        if (alertBox) {
+            alertBox.style.display = 'none';
+        }
+    }
+
     function addCourse(courseId) {
+        hideAlert();
         fetch('/planner/cart/add?courseId=' + encodeURIComponent(courseId), {
             method: 'POST'
         })
-        .then(res => {
+        .then(async res => {
             if (res.status === 401) {
                 window.location.href = '/login';
                 return null;
             }
-            if (!res.ok) throw new Error('Failed to add course');
-            return res.json();
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const errorMsg = data.error || 'Failed to add course';
+                showAlert(errorMsg);
+                return null;
+            }
+            return data;
         })
         .then(cart => {
             if (cart) {
@@ -562,20 +700,29 @@
                 }
             }
         })
-        .catch(err => console.error(err));
+        .catch(err => {
+            console.error(err);
+            showAlert('An unexpected error occurred while adding the course.');
+        });
     }
 
     function removeCourse(courseId) {
+        hideAlert();
         fetch('/planner/cart/remove?courseId=' + encodeURIComponent(courseId), {
             method: 'POST'
         })
-        .then(res => {
+        .then(async res => {
             if (res.status === 401) {
                 window.location.href = '/login';
                 return null;
             }
-            if (!res.ok) throw new Error('Failed to remove course');
-            return res.json();
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const errorMsg = data.error || 'Failed to remove course';
+                showAlert(errorMsg);
+                return null;
+            }
+            return data;
         })
         .then(cart => {
             if (cart) {
@@ -590,7 +737,10 @@
                 }
             }
         })
-        .catch(err => console.error(err));
+        .catch(err => {
+            console.error(err);
+            showAlert('An unexpected error occurred while removing the course.');
+        });
     }
 
     function escapeHtml(str) {

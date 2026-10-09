@@ -156,5 +156,53 @@ class CartServiceTest {
         assertThatThrownBy(() -> cartService.addCourse(STUDENT_ID, 999999L))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    @DisplayName("US-12 QA-1: Add course with satisfied prerequisites -> succeeds")
+    void addCourse_withSatisfiedPrerequisites_shouldSucceed() {
+        Course cs204 = courseRepository.findByCode("CS204").orElseThrow();
+        CartDto cart = cartService.addCourse(STUDENT_ID, cs204.getId());
+
+        assertThat(cart.items()).hasSize(1);
+        assertThat(cart.items().get(0).code()).isEqualTo("CS204");
+    }
+
+    @Test
+    @DisplayName("US-12 QA-2: Add course with uncompleted prerequisite -> throws PrerequisiteNotMetException")
+    void addCourse_withMissingPrerequisites_shouldThrowException() {
+        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+
+        assertThatThrownBy(() -> cartService.addCourse(STUDENT_ID, cs202.getId()))
+                .isInstanceOf(kz.edu.sdu.advisor.exception.PrerequisiteNotMetException.class)
+                .hasMessageContaining("Cannot add CS202: missing prerequisite CS201")
+                .satisfies(ex -> {
+                    kz.edu.sdu.advisor.exception.PrerequisiteNotMetException pEx =
+                            (kz.edu.sdu.advisor.exception.PrerequisiteNotMetException) ex;
+                    assertThat(pEx.getCourse().getCode()).isEqualTo("CS202");
+                    assertThat(pEx.getMissingPrerequisites())
+                            .extracting(Course::getCode)
+                            .containsExactly("CS201");
+                });
+    }
+
+    @Test
+    @DisplayName("US-12 QA-3: Currently enrolled courses do NOT satisfy prerequisite requirement")
+    void currentlyEnrolledCourse_doesNotSatisfyPrerequisite() {
+        // CS201 is in student's enrolledCourses, but not completedCourses
+        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+
+        assertThatThrownBy(() -> cartService.addCourse(STUDENT_ID, cs202.getId()))
+                .isInstanceOf(kz.edu.sdu.advisor.exception.PrerequisiteNotMetException.class);
+    }
+
+    @Test
+    @DisplayName("US-12 QA-4: Add course with no prerequisites -> succeeds")
+    void addCourse_withoutPrerequisites_shouldSucceed() {
+        Course cs101 = courseRepository.findByCode("CS101").orElseThrow();
+        CartDto cart = cartService.addCourse(STUDENT_ID, cs101.getId());
+
+        assertThat(cart.items()).hasSize(1);
+        assertThat(cart.items().get(0).code()).isEqualTo("CS101");
+    }
 }
 

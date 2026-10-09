@@ -19,6 +19,7 @@ If any other document conflicts with this file, this file takes precedence.
 | Schema management | Hibernate `ddl-auto` | Flyway not implemented yet |
 | Domain model | Faculty, Major, CurriculumCourse, Course, Prerequisite, Student, StudentAccount, CartItem | Implemented & Seeded |
 | Semester Cart (US-11) | `CartItem`, `CartItemRepository`, `CartService`, `PlannerController` (`/planner`) | Implemented |
+| Prerequisite Validation (US-12) | `PrerequisiteRepository`, `PrerequisiteNotMetException`, `CartService.validatePrerequisites()`, `AvailableCourseDto` with UI alert & catalog status | Implemented |
 | Authentication | Session attributes (`authenticatedStudent`, `authenticatedStudentId`) with BCrypt password verification via `PasswordEncoder` | US-04 implemented |
 | AI integration | Google Gemini API via `RestClient` | Implemented |
 | CI | GitHub Actions (`./mvnw clean test`, Docker build checks) | Implemented |
