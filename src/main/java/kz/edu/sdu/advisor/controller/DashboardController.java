@@ -15,6 +15,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import kz.edu.sdu.advisor.model.dto.RegistrationAlert;
+import kz.edu.sdu.advisor.service.RegistrationAlertService;
+
+
+
 import java.util.Map;
 
 /**
@@ -31,6 +36,7 @@ public class DashboardController {
 
     private final StudentRepository studentRepository;
     private final AiService aiService;
+    private final RegistrationAlertService alertService;
 
     @GetMapping("/dashboard")
     public String showDashboard(HttpSession session, Model model) {
@@ -52,6 +58,7 @@ public class DashboardController {
         AcademicStandingDto academicStanding = AcademicStandingDto.of(student);
         model.addAttribute("student", student);
         model.addAttribute("standing", academicStanding);
+        model.addAttribute("registrationAlert", alertService.getAlert(studentId).orElse(null));
         model.addAttribute("enrolledCourses", academicStanding.enrolledCourses());
         return "dashboard";
     }
