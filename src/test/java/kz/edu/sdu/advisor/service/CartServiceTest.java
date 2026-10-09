@@ -226,5 +226,56 @@ class CartServiceTest {
         CartDto afterRemove = cartService.removeCourse(STUDENT_ID, course3cr.getId());
         assertThat(afterRemove.formattedCodes()).isEqualTo("MATH101");
     }
+
+    @Test
+    @DisplayName("US-12 Fix: Adding a prerequisite course to cart allows subsequently adding dependent course")
+    void addPrerequisiteToCart_allowsAddingDependentCourse() {
+        Course cs201 = courseRepository.findByCode("CS201").orElseThrow();
+        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+
+        // 1. Initially CS202 cannot be added because CS201 is not completed
+        // (CS201 is in enrolledCourses, not completedCourses, and cart is currently empty)
+        // 2. Add CS201 to the cart
+        cartService.addCourse(STUDENT_ID, cs201.getId());
+
+        // 3. Now CS202 can be added because CS201 is in the cart!
+        CartDto updatedCart = cartService.addCourse(STUDENT_ID, cs202.getId());
+        assertThat(updatedCart.items())
+                .extracting(kz.edu.sdu.advisor.model.dto.CartItemDto::code)
+                .contains("CS201", "CS202");
+    }
+
+    @Test
+    @DisplayName("US-14 QA-1, QA-2 & QA-4: Cart evaluates maximum credit limit warning and excess credits")
+    void creditLimitEvaluation_shouldProvideWarningWhenExceeded() {
+        // Normal cart within limit (e.g. 7 ECTS out of 40)
+        cartService.addCourse(STUDENT_ID, course3cr.getId()); // 3
+        cartService.addCourse(STUDENT_ID, course4cr.getId()); // 4
+        CartDto normalCart = cartService.getCart(STUDENT_ID);
+
+        assertThat(normalCart.totalCredits()).isEqualTo(7);
+        assertThat(normalCart.exceedsLimit()).isFalse();
+        assertThat(normalCart.excessCredits()).isEqualTo(0);
+        assertThat(normalCart.limitWarning()).isNull();
+
+        // Create a CartDto representing an overloaded cart (e.g. 42 ECTS with maxCredits = 40)
+        CartDto overloadedDto = new CartDto(
+                normalCart.items(),
+                42,
+                40,
+                "Overload",
+                "red",
+                false,
+                normalCart.formattedCodes()
+        );
+
+        assertThat(overloadedDto.exceedsLimit()).isTrue();
+        assertThat(overloadedDto.excessCredits()).isEqualTo(2);
+        assertThat(overloadedDto.limitWarning())
+                .contains("Credit limit exceeded")
+                .contains("42 ECTS")
+                .contains("40 ECTS")
+                .contains("2 ECTS");
+    }
 }
 

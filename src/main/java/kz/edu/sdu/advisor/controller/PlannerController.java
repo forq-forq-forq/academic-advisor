@@ -73,11 +73,18 @@ public class PlannerController {
                         .map(Course::getId)
                         .collect(Collectors.toSet());
 
+        Set<Long> satisfiedIds = new java.util.HashSet<>(completedIds);
+        satisfiedIds.addAll(inCartCourseIds);
+
+        List<String> completedCodes = student.getCompletedCourses() == null
+                ? List.of()
+                : student.getCompletedCourses().stream().map(Course::getCode).toList();
+
         List<AvailableCourseDto> availableCourseDtos = availableCourses.stream()
                 .map(c -> {
                     List<Course> prereqs = prereqMap.getOrDefault(c.getId(), List.of());
                     List<Course> missing = prereqs.stream()
-                            .filter(p -> !completedIds.contains(p.getId()))
+                            .filter(p -> !satisfiedIds.contains(p.getId()))
                             .toList();
                     List<String> prereqCodes = prereqs.stream().map(Course::getCode).toList();
                     List<String> missingCodes = missing.stream().map(Course::getCode).toList();
@@ -103,6 +110,7 @@ public class PlannerController {
         model.addAttribute("student", student);
         model.addAttribute("cart", cart);
         model.addAttribute("availableCourses", availableCourseDtos);
+        model.addAttribute("completedCourseCodes", completedCodes);
 
         return "planner";
     }
