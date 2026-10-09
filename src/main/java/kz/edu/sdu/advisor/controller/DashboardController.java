@@ -2,6 +2,7 @@ package kz.edu.sdu.advisor.controller;
 
 import jakarta.servlet.http.HttpSession;
 import kz.edu.sdu.advisor.model.Student;
+import kz.edu.sdu.advisor.model.dto.AcademicStandingDto;
 import kz.edu.sdu.advisor.repository.StudentRepository;
 import kz.edu.sdu.advisor.service.AiService;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +49,9 @@ public class DashboardController {
             return "redirect:/login";
         }
 
+        AcademicStandingDto academicStanding = AcademicStandingDto.of(student);
         model.addAttribute("student", student);
+        model.addAttribute("standing", academicStanding);
         return "dashboard";
     }
 
