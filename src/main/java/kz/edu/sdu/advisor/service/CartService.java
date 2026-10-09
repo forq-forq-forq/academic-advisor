@@ -1,12 +1,15 @@
 package kz.edu.sdu.advisor.service;
 
+import kz.edu.sdu.advisor.exception.PrerequisiteNotMetException;
 import kz.edu.sdu.advisor.model.CartItem;
 import kz.edu.sdu.advisor.model.Course;
+import kz.edu.sdu.advisor.model.Prerequisite;
 import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.CartDto;
 import kz.edu.sdu.advisor.model.dto.CartItemDto;
 import kz.edu.sdu.advisor.repository.CartItemRepository;
 import kz.edu.sdu.advisor.repository.CourseRepository;
+import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
 import kz.edu.sdu.advisor.repository.StudentRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,6 +33,7 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
+    private final PrerequisiteRepository prerequisiteRepository;
 
     @Getter
     @Value("${advisor.cart.max-credits:40}")
@@ -66,6 +72,9 @@ public class CartService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
 
+        // US-12: Verify that all required prerequisites have been completed
+        validatePrerequisites(student, course);
+
         if (!cartItemRepository.existsByStudent_StudentIdAndCourse_Id(studentId, courseId)) {
             CartItem item = new CartItem(student, course);
             cartItemRepository.save(item);
@@ -75,6 +84,31 @@ public class CartService {
         }
 
         return getCart(studentId);
+    }
+
+    public void validatePrerequisites(Student student, Course course) {
+        List<Prerequisite> prerequisites = prerequisiteRepository.findByCourse_Id(course.getId());
+        if (prerequisites.isEmpty()) {
+            return;
+        }
+
+        Set<Long> completedCourseIds = student.getCompletedCourses() == null
+                ? Set.of()
+                : student.getCompletedCourses().stream()
+                        .map(Course::getId)
+                        .collect(Collectors.toSet());
+
+        List<Course> missingPrerequisites = prerequisites.stream()
+                .map(Prerequisite::getPrerequisiteCourse)
+                .filter(req -> req != null && !completedCourseIds.contains(req.getId()))
+                .toList();
+
+        if (!missingPrerequisites.isEmpty()) {
+            log.warn("Student {} blocked from adding {}: missing prerequisites {}",
+                    student.getStudentId(), course.getCode(),
+                    missingPrerequisites.stream().map(Course::getCode).toList());
+            throw new PrerequisiteNotMetException(course, missingPrerequisites);
+        }
     }
 
     @Transactional
