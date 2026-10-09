@@ -125,6 +125,48 @@
             gap: 0.5rem;
         }
 
+        .cart-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-copy-codes {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #ffffff;
+            color: #3b5bdb;
+            border: 1px solid #bac8ff;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-copy-codes:hover:not(:disabled) {
+            background: #edf2ff;
+            border-color: #748ffc;
+            color: #2b4acb;
+        }
+
+        .btn-copy-codes:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            color: #a0aec0;
+        }
+
+        .btn-copy-codes.copied {
+            background: #ebfbee;
+            color: #2b8a3e;
+            border-color: #8ce99a;
+        }
+
         .credit-counter {
             font-size: 1rem;
             font-weight: 700;
@@ -488,9 +530,20 @@
             <h2 class="cart-title">
                 🛒 Your Semester Cart
             </h2>
-            <div class="credit-counter" id="credit-counter">
-                <span id="current-credits" th:text="${cart.totalCredits}">0</span> /
-                <span id="max-credits" th:text="${cart.maxCredits}">40</span> ECTS
+            <div class="cart-actions">
+                <button type="button"
+                        id="btn-copy-codes"
+                        class="btn-copy-codes"
+                        onclick="copyCartCodes()"
+                        th:disabled="${cart.empty}"
+                        th:attr="data-codes=${cart.formattedCodes}"
+                        title="Copy course codes to clipboard">
+                    📋 Copy Codes
+                </button>
+                <div class="credit-counter" id="credit-counter">
+                    <span id="current-credits" th:text="${cart.totalCredits}">0</span> /
+                    <span id="max-credits" th:text="${cart.maxCredits}">40</span> ECTS
+                </div>
             </div>
         </div>
 
@@ -595,6 +648,7 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     let maxCreditsLimit = /*[[${cart.maxCredits}]]*/ 40;
+    let currentFormattedCodes = /*[[${cart.formattedCodes}]]*/ '';
 
     function renderCart(cart) {
         maxCreditsLimit = cart.maxCredits;
@@ -612,6 +666,16 @@
         const pct = cart.maxCredits > 0 ? Math.min(100, (cart.totalCredits * 100) / cart.maxCredits) : 0;
         bar.style.width = pct + '%';
         bar.className = 'progress-bar bar-' + cart.workloadColor;
+
+        // 3. Update copy codes button (US-13)
+        currentFormattedCodes = cart.formattedCodes !== undefined && cart.formattedCodes !== null
+            ? cart.formattedCodes
+            : (cart.items ? cart.items.map(i => i.code).join(', ') : '');
+        const copyBtn = document.getElementById('btn-copy-codes');
+        if (copyBtn) {
+            copyBtn.disabled = cart.empty || !currentFormattedCodes;
+            copyBtn.setAttribute('data-codes', currentFormattedCodes);
+        }
 
         // 3. Update cart items list / placeholder (AC 1 & AC 5)
         const placeholder = document.getElementById('cart-placeholder');
@@ -649,6 +713,56 @@
                 `;
                 list.appendChild(li);
             });
+        }
+    }
+
+    function copyCartCodes() {
+        const btn = document.getElementById('btn-copy-codes');
+        const textToCopy = currentFormattedCodes || (btn ? btn.getAttribute('data-codes') : '');
+
+        if (!textToCopy || textToCopy.trim() === '') {
+            showAlert('Your cart is empty. There are no course codes to copy.');
+            return;
+        }
+
+        const onSuccess = () => {
+            if (btn) {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '✓ Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(textToCopy)
+                .then(onSuccess)
+                .catch(() => fallbackCopy(textToCopy, onSuccess));
+        } else {
+            fallbackCopy(textToCopy, onSuccess);
+        }
+    }
+
+    function fallbackCopy(text, callback) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-999999px';
+        textarea.style.top = '-999999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            if (callback) callback();
+        } catch (err) {
+            console.error('Fallback copy failed', err);
+            showAlert('Could not copy automatically. Course codes: ' + text);
+        } finally {
+            document.body.removeChild(textarea);
         }
     }
 

@@ -166,5 +166,38 @@ class PlannerControllerTest {
                 .andExpect(content().string(containsString("Missing Prereq")))
                 .andExpect(content().string(containsString("CS201")));
     }
+
+    @Test
+    @DisplayName("US-13 QA-1 & QA-2: GET /planner renders copy button and handles empty vs populated cart state")
+    void getPlanner_shouldRenderCopyCodesButton() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        // Initially empty -> button is rendered and disabled
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"btn-copy-codes\"")))
+                .andExpect(content().string(containsString("Copy Codes")))
+                .andExpect(content().string(containsString("disabled")));
+    }
+
+    @Test
+    @DisplayName("US-13 QA-3 & QA-5: POST /planner/cart/add and GET /planner/cart include formattedCodes in JSON response")
+    void cartEndpoints_shouldIncludeFormattedCodesInResponse() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        // Add course
+        mockMvc.perform(post("/planner/cart/add")
+                        .session(session)
+                        .param("courseId", testCourse.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.formattedCodes", is(testCourse.getCode())));
+
+        // Verify GET /planner/cart
+        mockMvc.perform(get("/planner/cart").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.formattedCodes", is(testCourse.getCode())));
+    }
 }
 
