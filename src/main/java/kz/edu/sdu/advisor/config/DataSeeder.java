@@ -80,7 +80,18 @@ public class DataSeeder implements CommandLineRunner {
                 Map.entry("CS401", new CourseMeta("Senior Design Project I", 4)),
                 Map.entry("CS402", new CourseMeta("Cloud Computing", 3)),
                 Map.entry("CS403", new CourseMeta("Senior Design Project II", 4)),
-                Map.entry("CS404", new CourseMeta("Professional Practice", 3))
+                Map.entry("CS404", new CourseMeta("Professional Practice", 3)),
+                // Additional Electives & High-ECTS courses to test credit overload (US-14)
+                Map.entry("CS310", new CourseMeta("Web Application Development", 5)),
+                Map.entry("CS320", new CourseMeta("Mobile Application Development", 5)),
+                Map.entry("CS330", new CourseMeta("Cybersecurity Fundamentals", 5)),
+                Map.entry("CS340", new CourseMeta("Machine Learning and Data Mining", 5)),
+                Map.entry("CS410", new CourseMeta("Distributed Systems and DevOps", 5)),
+                Map.entry("CS420", new CourseMeta("Deep Learning and Neural Networks", 6)),
+                Map.entry("CS490", new CourseMeta("Advanced Software Engineering Practicum", 6)),
+                Map.entry("INTERN401", new CourseMeta("Industrial Internship", 6)),
+                Map.entry("ROBO301", new CourseMeta("Robotics and Embedded Systems", 5)),
+                Map.entry("DATA201", new CourseMeta("Big Data Analytics", 5))
         );
 
         for (Map.Entry<String, CourseMeta> entry : catalog.entrySet()) {
@@ -112,6 +123,9 @@ public class DataSeeder implements CommandLineRunner {
         addPrereq(courses.get("MATH201"), courses.get("MATH101"));
         addPrereq(courses.get("CS202"), courses.get("CS201"));
         addPrereq(courses.get("CS204"), courses.get("CS102"));
+        addPrereq(courses.get("CS310"), courses.get("CS102"));
+        addPrereq(courses.get("CS330"), courses.get("CS101"));
+        addPrereq(courses.get("CS340"), courses.get("MATH201"));
     }
 
     private void addPrereq(Course target, Course required) {
@@ -156,6 +170,18 @@ public class DataSeeder implements CommandLineRunner {
         addCurriculum(major, courses.get("CS402"), 7, 2024, "CORE");
         addCurriculum(major, courses.get("CS403"), 8, 2024, "CORE");
         addCurriculum(major, courses.get("CS404"), 8, 2024, "CORE");
+
+        // Electives & Practicums
+        addCurriculum(major, courses.get("CS310"), 5, 2024, "ELECTIVE");
+        addCurriculum(major, courses.get("CS320"), 5, 2024, "ELECTIVE");
+        addCurriculum(major, courses.get("CS330"), 6, 2024, "ELECTIVE");
+        addCurriculum(major, courses.get("CS340"), 6, 2024, "ELECTIVE");
+        addCurriculum(major, courses.get("CS410"), 7, 2024, "ELECTIVE");
+        addCurriculum(major, courses.get("CS420"), 7, 2024, "ELECTIVE");
+        addCurriculum(major, courses.get("CS490"), 8, 2024, "ELECTIVE");
+        addCurriculum(major, courses.get("INTERN401"), 8, 2024, "ELECTIVE");
+        addCurriculum(major, courses.get("ROBO301"), 6, 2024, "ELECTIVE");
+        addCurriculum(major, courses.get("DATA201"), 5, 2024, "ELECTIVE");
     }
 
     private void addCurriculum(Major major, Course course, int semester, int catalogYear, String type) {
