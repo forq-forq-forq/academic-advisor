@@ -1,0 +1,5 @@
+<div th:if="${registrationAlert != null}"
+     style="border-left:4px solid #f59e0b; background:#fffbeb; padding:12px 16px; margin:16px 0; max-width:480px;">
+    <strong th:text="${registrationAlert.periodName()}">Fall Registration</strong>
+    <p style="margin:4px 0 0;" th:text="${registrationAlert.message()}">Registration opens in 3 days</p>
+</div>
