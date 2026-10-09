@@ -82,6 +82,26 @@ class DashboardControllerTest {
     }
 
     @Test
+    @DisplayName("US-08 QA-1: Authenticated GET /dashboard renders currently enrolled courses and credit weights")
+    void getDashboard_authenticated_shouldRenderCurrentlyEnrolledCourses() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(get("/dashboard").session(session))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("enrolledCourses"))
+                .andExpect(content().string(containsString("Currently Enrolled Courses")))
+                .andExpect(content().string(containsString("CS201")))
+                .andExpect(content().string(containsString("Data Structures")))
+                .andExpect(content().string(containsString("4 ECTS")))
+                .andExpect(content().string(containsString("CS205")))
+                .andExpect(content().string(containsString("Discrete Mathematics")))
+                .andExpect(content().string(containsString("3 ECTS")))
+                .andExpect(content().string(containsString("MATH201")))
+                .andExpect(content().string(containsString("PHYS101")));
+    }
+
+    @Test
     @DisplayName("POST /dashboard/chat handles AI assistant messages")
     void postChat_authenticated_shouldReturnAiReply() throws Exception {
         when(aiService.sendPrompt(anyString())).thenReturn("Here is your degree advice.");
@@ -96,4 +116,3 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.reply", is("Here is your degree advice.")));
     }
 }
-

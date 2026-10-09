@@ -338,6 +338,115 @@
             color: #2d3748;
         }
 
+        /* ── Enrolled Courses List (US-08) ── */
+        .enrolled-courses-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .enrolled-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .enrolled-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .enrolled-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.2rem 0.55rem;
+            border-radius: 9999px;
+            background: #ebf8ff;
+            color: #2b6cb0;
+            border: 1px solid #bee3f8;
+        }
+
+        .enrolled-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .enrolled-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid #edf2f7;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .enrolled-item:hover {
+            border-color: #cbd5e0;
+            background: #f1f5f9;
+        }
+
+        .enrolled-course-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .enrolled-course-code {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #2b6cb0;
+        }
+
+        .enrolled-course-name {
+            font-size: 0.8rem;
+            color: #4a5568;
+        }
+
+        .enrolled-course-credits {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #2d3748;
+            background: #edf2f7;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .enrolled-empty {
+            text-align: center;
+            padding: 1rem 0.5rem;
+            color: #718096;
+            font-size: 0.85rem;
+            background: #f8fafc;
+            border-radius: 6px;
+            border: 1px dashed #cbd5e0;
+        }
+
+        .empty-planner-link {
+            display: inline-block;
+            margin-top: 0.35rem;
+            color: #4c6ef5;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .empty-planner-link:hover {
+            text-decoration: underline;
+        }
+
         .btn-planner-cta {
             display: flex;
             align-items: center;
@@ -621,6 +730,31 @@
                 <div class="program-item">
                     <span class="program-label">Current Semester</span>
                     <span class="program-val" th:text="${standing.currentSemester != null ? ('Semester ' + standing.currentSemester) : 'Semester 3'}">Semester 3</span>
+                </div>
+            </div>
+
+            <!-- Currently Enrolled Courses (US-08) -->
+            <div class="enrolled-courses-card" aria-label="Currently Enrolled Courses">
+                <div class="enrolled-header">
+                    <h3 class="enrolled-title">📚 Currently Enrolled Courses</h3>
+                    <span class="enrolled-badge" id="enrolled-total-badge" th:text="${standing.enrolledCredits + ' ECTS'}">14 ECTS</span>
+                </div>
+
+                <!-- If courses enrolled -->
+                <ul class="enrolled-list" id="enrolled-courses-list" th:if="${!#lists.isEmpty(standing.enrolledCourses)}">
+                    <li class="enrolled-item" th:each="course : ${standing.enrolledCourses}">
+                        <div class="enrolled-course-info">
+                            <span class="enrolled-course-code" th:text="${course.code}">CS201</span>
+                            <span class="enrolled-course-name" th:text="${course.name}">Data Structures</span>
+                        </div>
+                        <span class="enrolled-course-credits" th:text="${course.formattedCredits}">4 ECTS</span>
+                    </li>
+                </ul>
+
+                <!-- Empty state -->
+                <div class="enrolled-empty" id="enrolled-empty-state" th:if="${#lists.isEmpty(standing.enrolledCourses)}">
+                    <p>No courses enrolled for this semester.</p>
+                    <a th:href="@{/planner}" class="empty-planner-link">Go to Course Planner →</a>
                 </div>
             </div>
 
