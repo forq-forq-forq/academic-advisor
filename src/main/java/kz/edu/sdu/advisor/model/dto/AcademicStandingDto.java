@@ -1,7 +1,12 @@
 package kz.edu.sdu.advisor.model.dto;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+
 /**
- * Encapsulates the student's academic standing, GPA, and degree progress metrics (US-07).
+ * Encapsulates the student's academic standing, GPA, degree progress metrics (US-07),
+ * and currently enrolled courses with credit weights (US-08).
  */
 public record AcademicStandingDto(
         Double gpa,
@@ -16,14 +21,16 @@ public record AcademicStandingDto(
         String majorName,
         String facultyName,
         Integer catalogYear,
-        Integer currentSemester
+        Integer currentSemester,
+        List<EnrolledCourseDto> enrolledCourses
 ) {
     public static AcademicStandingDto of(kz.edu.sdu.advisor.model.Student student) {
         if (student == null) {
             return new AcademicStandingDto(
                     0.0, "0.00", "Not Available", "standing-none",
                     0, 0, 240, 240, 0.0,
-                    "—", "—", null, null
+                    "—", "—", null, null,
+                    List.of()
             );
         }
 
@@ -64,6 +71,14 @@ public record AcademicStandingDto(
                 ? student.getMajor().getFaculty().getName()
                 : "—";
 
+        List<EnrolledCourseDto> enrolledCoursesList = student.getEnrolledCourses() != null
+                ? student.getEnrolledCourses().stream()
+                        .filter(Objects::nonNull)
+                        .map(EnrolledCourseDto::from)
+                        .sorted(Comparator.comparing(EnrolledCourseDto::code))
+                        .toList()
+                : List.of();
+
         return new AcademicStandingDto(
                 gpa,
                 formattedGpa,
@@ -77,8 +92,8 @@ public record AcademicStandingDto(
                 majorName,
                 facultyName,
                 student.getCatalogYear(),
-                student.getCurrentSemester()
+                student.getCurrentSemester(),
+                enrolledCoursesList
         );
     }
 }
-

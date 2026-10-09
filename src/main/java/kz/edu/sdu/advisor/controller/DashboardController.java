@@ -52,6 +52,7 @@ public class DashboardController {
         AcademicStandingDto academicStanding = AcademicStandingDto.of(student);
         model.addAttribute("student", student);
         model.addAttribute("standing", academicStanding);
+        model.addAttribute("enrolledCourses", academicStanding.enrolledCourses());
         return "dashboard";
     }
 

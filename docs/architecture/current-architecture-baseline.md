@@ -23,6 +23,7 @@ If any other document conflicts with this file, this file takes precedence.
 | Copy Course Codes (US-13) | `CartDto.formattedCodes`, clipboard API with fallback in `planner.html`, dynamic copy button | Implemented |
 | Credit Limit Warning (US-14) | `CartDto.exceedsLimit`, `CartDto.excessCredits`, `CartDto.limitWarning`, `#credit-limit-warning` banner, red counter styling | Implemented |
 | Academic Standing & Progress (US-07) | `AcademicStandingDto`, `DashboardController` (`/dashboard`), SVG circular progress ring (`27 / 240 ECTS`), GPA badge & program summary | Implemented |
+| Enrolled Courses List (US-08) | `EnrolledCourseDto`, `Student.enrolledCourses`, `DashboardController` (`/dashboard`), semester course list with ECTS credit weights | Implemented |
 | Authentication | Session attributes (`authenticatedStudent`, `authenticatedStudentId`) with BCrypt password verification via `PasswordEncoder` | US-04 implemented |
 | AI integration | Google Gemini API via `RestClient` | Implemented |
 | CI | GitHub Actions (`./mvnw clean test`, Docker build checks) | Implemented |
