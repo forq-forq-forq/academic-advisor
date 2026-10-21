@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${pageTitle}">FAQ - Academic Advisor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; }
+    .faq-container { max-width: 900px; margin: 40px auto; }
+    .accordion-button:not(.collapsed) {
+        background-color: #e7f1ff;
+        color: #0c63e4;
+    }
+    .category-title {
+        margin-top: 30px;
+        margin-bottom: 15px;
+        color: #0d6efd;
+        border-bottom: 2px solid #0d6efd;
+        padding-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container faq-container">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Academic FAQ & Regulations</h2>
+    <a href="/dashboard" class="btn btn-outline-secondary">← Back to Dashboard</a>
+  </div>
+
+  <!-- US-35: Real-time search bar -->
+  <div class="mb-4">
+    <input type="text" id="faqSearchInput" class="form-control form-control-lg"
+           placeholder="Search FAQ articles in real time (e.g. GPA, Retake, Scholarships)..."
+           onkeyup="filterFAQ()">
+  </div>
+
+  <!-- US-34: Accordion Grouped by Categories -->
+  <div id="faqAccordionContainer">
+
+    <!-- Category 1: GPA & Grading -->
+    <h4 class="category-title">GPA & Grading</h4>
+    <div class="accordion mb-4" id="accordionGpa">
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="headingOne">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+            How is cumulative GPA calculated?
+          </button>
+        </h2>
+        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionGpa">
+          <div class="accordion-body">
+            Cumulative GPA is calculated by dividing the total quality points earned by the total credit hours attempted across all completed semesters.
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="headingTwo">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+            What is the minimum passing grade?
+          </button>
+        </h2>
+        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionGpa">
+          <div class="accordion-body">
+            The minimum passing grade for core major courses is "C" (2.0), while general requirements require at least a "D" grade (1.0).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 2: Registration -->
+    <h4 class="category-title">Registration</h4>
+    <div class="accordion mb-4" id="accordionRegistration">
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="headingThree">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+            When does course registration open?
+          </button>
+        </h2>
+        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionRegistration">
+          <div class="accordion-body">
+            Registration dates depend on your current academic year and credit count. Check the official academic calendar for exact priority registration windows.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 3: Retakes -->
+    <h4 class="category-title">Retakes</h4>
+    <div class="accordion mb-4" id="accordionRetakes">
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="headingFour">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+            How many times can I retake a course?
+          </button>
+        </h2>
+        <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#accordionRetakes">
+          <div class="accordion-body">
+            You can retake a course up to 2 times. The highest grade achieved will replace the previous grade in your cumulative GPA calculation.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 4: Summer School -->
+    <h4 class="category-title">Summer School</h4>
+    <div class="accordion mb-4" id="accordionSummer">
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="headingFive">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive">
+            How many credits can I take in Summer School?
+          </button>
+        </h2>
+        <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#accordionSummer">
+          <div class="accordion-body">
+            Students can enroll in a maximum of 12 credit hours during the summer term.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 5: Scholarships -->
+    <h4 class="category-title">Scholarships</h4>
+    <div class="accordion mb-4" id="accordionScholarships">
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="headingSix">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix">
+            What GPA requirement is needed to keep a scholarship?
+          </button>
+        </h2>
+        <div id="collapseSix" class="accordion-collapse collapse" data-bs-parent="#accordionScholarships">
+          <div class="accordion-body">
+            State scholarship holders must maintain a GPA of at least 3.0 without any failing grades during the examination period.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // US-35 Real-time search script
+  function filterFAQ() {
+      const query = document.getElementById('faqSearchInput').value.toLowerCase();
+      const faqItems = document.querySelectorAll('.faq-item');
+
+      faqItems.forEach(item => {
+          const text = item.innerText.toLowerCase();
+          if (text.includes(query)) {
+              item.style.display = '';
+          } else {
+              item.style.display = 'none';
+          }
+      });
+  }
+</script>
+</body>
+</html>
