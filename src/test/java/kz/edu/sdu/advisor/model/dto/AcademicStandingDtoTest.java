@@ -16,7 +16,7 @@ class AcademicStandingDtoTest {
     @Test
     @DisplayName("AcademicStandingDto.of(null) should return safe default fallback")
     void of_nullStudent_shouldReturnSafeDefaults() {
-        AcademicStandingDto dto = AcademicStandingDto.of(null);
+        AcademicStandingDto dto = AcademicStandingDto.of(null, null);
 
         assertEquals(0.0, dto.gpa());
         assertEquals("0.00", dto.formattedGpa());
@@ -46,7 +46,7 @@ class AcademicStandingDtoTest {
 
         student.setEnrolledCourses(Set.of(c2, c1));
 
-        AcademicStandingDto dto = AcademicStandingDto.of(student);
+        AcademicStandingDto dto = AcademicStandingDto.of(student, 3.85);
 
         assertEquals("Honor Standing", dto.standingLabel());
         assertEquals("standing-honor", dto.standingClass());
@@ -67,7 +67,7 @@ class AcademicStandingDtoTest {
     @DisplayName("Good Standing for GPA between 2.67 and 3.49")
     void of_goodStanding() {
         Student student = createStudent(3.20, 60);
-        AcademicStandingDto dto = AcademicStandingDto.of(student);
+        AcademicStandingDto dto = AcademicStandingDto.of(student, 3.20);
 
         assertEquals("Good Standing", dto.standingLabel());
         assertEquals("standing-good", dto.standingClass());
@@ -79,7 +79,7 @@ class AcademicStandingDtoTest {
     @DisplayName("Satisfactory Standing for GPA between 2.00 and 2.66")
     void of_satisfactoryStanding() {
         Student student = createStudent(2.15, 30);
-        AcademicStandingDto dto = AcademicStandingDto.of(student);
+        AcademicStandingDto dto = AcademicStandingDto.of(student, 2.15);
 
         assertEquals("Satisfactory", dto.standingLabel());
         assertEquals("standing-satisfactory", dto.standingClass());
@@ -90,7 +90,7 @@ class AcademicStandingDtoTest {
     @DisplayName("Academic Warning for GPA < 2.00")
     void of_academicWarning() {
         Student student = createStudent(1.75, 15);
-        AcademicStandingDto dto = AcademicStandingDto.of(student);
+        AcademicStandingDto dto = AcademicStandingDto.of(student, 1.75);
 
         assertEquals("Academic Warning", dto.standingLabel());
         assertEquals("standing-warning", dto.standingClass());

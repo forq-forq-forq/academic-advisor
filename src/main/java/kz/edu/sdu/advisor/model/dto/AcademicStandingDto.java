@@ -24,7 +24,7 @@ public record AcademicStandingDto(
         Integer currentSemester,
         List<EnrolledCourseDto> enrolledCourses
 ) {
-    public static AcademicStandingDto of(kz.edu.sdu.advisor.model.Student student) {
+    public static AcademicStandingDto of(kz.edu.sdu.advisor.model.Student student, Double calculatedGpa) {
         if (student == null) {
             return new AcademicStandingDto(
                     0.0, "0.00", "Not Available", "standing-none",
@@ -34,7 +34,7 @@ public record AcademicStandingDto(
             );
         }
 
-        Double gpa = student.getGpa();
+        Double gpa = calculatedGpa;
         String formattedGpa = gpa != null ? String.format(java.util.Locale.US, "%.2f", gpa) : "N/A";
         String standingLabel;
         String standingClass;

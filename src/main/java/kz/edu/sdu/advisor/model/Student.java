@@ -31,6 +31,7 @@ public class Student {
     @Column(name = "password_hash")
     private String passwordHash;
 
+    // Legacy stored value. Dashboard GPA is derived by CumulativeGpaService (US-31).
     private Double gpa;
 
     @ManyToOne(fetch = FetchType.EAGER)

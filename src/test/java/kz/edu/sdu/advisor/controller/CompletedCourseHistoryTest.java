@@ -122,7 +122,7 @@ class CompletedCourseHistoryTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("27 / 240 ECTS completed")))
                 .andExpect(content().string(containsString("14 ECTS")))
-                .andExpect(content().string(containsString("3.80")))
+                .andExpect(content().string(containsString("4.00")))
                 .andExpect(content().string(containsString("Honor Standing")));
         Student student = students.findByStudentId("240103000").orElseThrow();
         assertEquals(27, student.getCompletedCredits());
