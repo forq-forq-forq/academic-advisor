@@ -24,6 +24,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.12);
         }
 
@@ -677,6 +679,7 @@
         <nav class="nav-links">
             <a th:href="@{/dashboard}" class="active">Dashboard</a>
             <a th:href="@{/planner}">Planner</a>
+            <a th:href="@{/faq}">FAQ</a>
         </nav>
     </div>
     <div class="user-actions">

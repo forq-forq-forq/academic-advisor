@@ -3,11 +3,13 @@ package kz.edu.sdu.advisor.controller;
 import jakarta.servlet.http.HttpSession;
 import kz.edu.sdu.advisor.exception.PrerequisiteNotMetException;
 import kz.edu.sdu.advisor.model.Course;
+import kz.edu.sdu.advisor.model.CurriculumCourse;
 import kz.edu.sdu.advisor.model.Prerequisite;
 import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.AvailableCourseDto;
 import kz.edu.sdu.advisor.model.dto.CartDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
+import kz.edu.sdu.advisor.repository.CurriculumCourseRepository;
 import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
 import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import kz.edu.sdu.advisor.service.CartService;
@@ -20,6 +22,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +36,7 @@ public class PlannerController {
 
     private final AuthSessionHelper authSessionHelper;
     private final CourseRepository courseRepository;
+    private final CurriculumCourseRepository curriculumCourseRepository;
     private final PrerequisiteRepository prerequisiteRepository;
     private final CartService cartService;
 
@@ -50,9 +55,16 @@ public class PlannerController {
                 .map(item -> item.courseId())
                 .collect(Collectors.toSet());
 
-        List<Course> availableCourses = allCourses.stream()
-                .filter(c -> !inCartCourseIds.contains(c.getId()))
-                .toList();
+        Map<Long, CurriculumCourse> curriculumByCourseId = new HashMap<>();
+        if (student.getMajor() != null && student.getCatalogYear() != null) {
+            List<CurriculumCourse> curriculum = curriculumCourseRepository
+                    .findByMajor_CodeAndCatalogYearOrderBySemesterAsc(student.getMajor().getCode(), student.getCatalogYear());
+            for (CurriculumCourse cc : curriculum) {
+                if (cc.getCourse() != null && cc.getCourse().getId() != null) {
+                    curriculumByCourseId.put(cc.getCourse().getId(), cc);
+                }
+            }
+        }
 
         List<Prerequisite> allPrerequisites = prerequisiteRepository.findAllWithCourses();
         Map<Long, List<Course>> prereqMap = allPrerequisites.stream()
@@ -68,14 +80,20 @@ public class PlannerController {
                         .map(Course::getId)
                         .collect(Collectors.toSet());
 
-        Set<Long> satisfiedIds = new java.util.HashSet<>(completedIds);
+        Set<Long> enrolledIds = student.getEnrolledCourses() == null
+                ? Set.of()
+                : student.getEnrolledCourses().stream()
+                        .map(Course::getId)
+                        .collect(Collectors.toSet());
+
+        Set<Long> satisfiedIds = new HashSet<>(completedIds);
         satisfiedIds.addAll(inCartCourseIds);
 
         List<String> completedCodes = student.getCompletedCourses() == null
                 ? List.of()
                 : student.getCompletedCourses().stream().map(Course::getCode).toList();
 
-        List<AvailableCourseDto> availableCourseDtos = availableCourses.stream()
+        List<AvailableCourseDto> availableCourseDtos = allCourses.stream()
                 .map(c -> {
                     List<Course> prereqs = prereqMap.getOrDefault(c.getId(), List.of());
                     List<Course> missing = prereqs.stream()
@@ -88,11 +106,22 @@ public class PlannerController {
                     String summary = missing.stream()
                             .map(m -> m.getCode() + " (" + m.getName() + ")")
                             .collect(Collectors.joining(", "));
+                    CurriculumCourse cc = curriculumByCourseId.get(c.getId());
+                    String courseType = cc != null && cc.getCourseType() != null ? cc.getCourseType() : "ELECTIVE";
+                    Integer recommendedSemester = cc != null ? cc.getSemester() : null;
+
                     return new AvailableCourseDto(
                             c.getId(),
                             c.getCode(),
                             c.getName(),
                             c.getCredits(),
+                            c.getDifficulty() != null ? c.getDifficulty() : 3,
+                            c.getDescription(),
+                            courseType,
+                            recommendedSemester,
+                            completedIds.contains(c.getId()),
+                            enrolledIds.contains(c.getId()),
+                            inCartCourseIds.contains(c.getId()),
                             prereqCodes,
                             hasPrereqs,
                             met,
@@ -175,4 +204,3 @@ public class PlannerController {
         return authSessionHelper.resolveStudentId(session);
     }
 }
-

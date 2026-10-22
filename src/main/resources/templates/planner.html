@@ -24,6 +24,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.12);
         }
 
@@ -353,6 +355,68 @@
             margin-bottom: 1rem;
         }
 
+        .catalog-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .catalog-search {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1.5px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .catalog-search:focus {
+            border-color: #4c6ef5;
+        }
+
+        .catalog-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .filter-chip {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e0;
+            color: #475569;
+            border-radius: 16px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .filter-chip.active {
+            background: #4c6ef5;
+            border-color: #4c6ef5;
+            color: #ffffff;
+        }
+
+        .badge-type {
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .badge-completed {
+            background: #dcfce7;
+            color: #166534;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+        }
+
         .course-list {
             list-style: none;
             display: flex;
@@ -541,6 +605,7 @@
         <nav class="nav-links">
             <a th:href="@{/dashboard}">Dashboard</a>
             <a th:href="@{/planner}" class="active">Planner</a>
+            <a th:href="@{/faq}">FAQ</a>
         </nav>
     </div>
     <div class="user-actions">
@@ -663,15 +728,30 @@
         <h2>Available Courses</h2>
         <p class="subtext">Browse courses to add to your semester plan.</p>
 
+        <div class="catalog-controls">
+            <input type="text" id="catalog-search" class="catalog-search"
+                   placeholder="Search by course code or title (e.g. CS204, Database)..."
+                   oninput="filterCatalog()">
+            <div class="catalog-filters">
+                <button type="button" class="filter-chip active" data-filter="ALL" onclick="setCatalogFilter('ALL', this)">All</button>
+                <button type="button" class="filter-chip" data-filter="READY" onclick="setCatalogFilter('READY', this)">Prereqs Met</button>
+                <button type="button" class="filter-chip" data-filter="CORE" onclick="setCatalogFilter('CORE', this)">Core</button>
+                <button type="button" class="filter-chip" data-filter="ELECTIVE" onclick="setCatalogFilter('ELECTIVE', this)">Elective</button>
+                <button type="button" class="filter-chip" data-filter="UNCOMPLETED" onclick="setCatalogFilter('UNCOMPLETED', this)">Hide Completed</button>
+            </div>
+        </div>
+
         <ul class="course-list" id="catalog-list">
             <li class="catalog-item"
                 th:each="course : ${availableCourses}"
                 th:id="'catalog-item-' + ${course.id}"
-                th:attr="data-course-id=${course.id},data-course-code=${course.code},data-has-prereqs=${course.hasPrerequisites},data-prereqs=${#strings.listJoin(course.prerequisiteCodes, ',')}">
+                th:attr="data-course-id=${course.id},data-course-code=${course.code},data-course-name=${course.name},data-course-type=${course.courseType},data-completed=${course.completed},data-prereqs-met=${course.prerequisitesMet},data-has-prereqs=${course.hasPrerequisites},data-prereqs=${#strings.listJoin(course.prerequisiteCodes, ',')}">
                 <div class="item-info">
                     <div class="item-code-credits">
                         <span class="course-code" th:text="${course.code}">MATH101</span>
                         <span class="credit-tag" th:text="${course.credits + ' ECTS'}">4 ECTS</span>
+                        <span class="badge-type" th:text="${course.courseType}">CORE</span>
+                        <span th:if="${course.completed}" class="badge-completed">Completed ✓</span>
                         <span th:if="${course.hasPrerequisites and course.prerequisitesMet}"
                               class="badge-prereq-met"
                               th:title="'Prerequisites satisfied: ' + ${#strings.listJoin(course.prerequisiteCodes, ', ')}">
@@ -692,7 +772,9 @@
                               th:text="'(' + ${course.missingSummary} + ')'"></span>
                     </div>
                 </div>
-                <button type="button"
+                <span th:if="${course.inCart}" class="badge-in-cart">In Cart</span>
+                <button th:unless="${course.inCart}"
+                        type="button"
                         class="btn-add"
                         th:attr="data-course-id=${course.id}"
                         onclick="addCourse(this.getAttribute('data-course-id'))">+ Add</button>
@@ -752,9 +834,23 @@
             if (creditCounter) creditCounter.classList.remove('limit-exceeded');
         }
 
-        // 5. Update catalog prerequisite badges dynamically (US-12 fix)
+        // 5. Update catalog prerequisite badges and In Cart state dynamically (US-12 fix)
         const inCartCodes = new Set(cart.items ? cart.items.map(i => i.code) : []);
+        const inCartIds = new Set(cart.items ? cart.items.map(i => String(i.courseId)) : []);
         document.querySelectorAll('.catalog-item').forEach(item => {
+            const itemCourseId = item.getAttribute('data-course-id');
+            const existingBtn = item.querySelector('.btn-add');
+            const existingCartBadge = item.querySelector('.badge-in-cart');
+            if (inCartIds.has(String(itemCourseId))) {
+                if (existingBtn) {
+                    existingBtn.outerHTML = '<span class="badge-in-cart">In Cart</span>';
+                }
+            } else {
+                if (existingCartBadge) {
+                    existingCartBadge.outerHTML = `<button type="button" class="btn-add" data-course-id="${itemCourseId}" onclick="addCourse(${itemCourseId})">+ Add</button>`;
+                }
+            }
+
             const hasPrereqs = item.getAttribute('data-has-prereqs') === 'true';
             if (!hasPrereqs) return;
 
@@ -768,6 +864,7 @@
             const missingDetail = item.querySelector('.missing-detail');
 
             if (missing.length === 0) {
+                item.setAttribute('data-prereqs-met', 'true');
                 if (badgeMissing) {
                     badgeMissing.className = 'badge-prereq-met';
                     badgeMissing.textContent = 'Prereqs Met ✓';
@@ -777,6 +874,7 @@
                     missingDetail.style.display = 'none';
                 }
             } else {
+                item.setAttribute('data-prereqs-met', 'false');
                 if (badgeMet) {
                     badgeMet.className = 'badge-prereq-missing';
                     badgeMet.textContent = 'Missing Prereq ⚠️';
@@ -788,6 +886,7 @@
                 }
             }
         });
+        filterCatalog();
 
         // 6. Update cart items list / placeholder (AC 1 & AC 5)
         const placeholder = document.getElementById('cart-placeholder');
@@ -966,6 +1065,40 @@
         .catch(err => {
             console.error(err);
             showAlert('An unexpected error occurred while removing the course.');
+        });
+    }
+
+    let activeCatalogFilter = 'ALL';
+
+    function setCatalogFilter(filter, btn) {
+        activeCatalogFilter = filter;
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        filterCatalog();
+    }
+
+    function filterCatalog() {
+        const searchInput = document.getElementById('catalog-search');
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        document.querySelectorAll('.catalog-item').forEach(item => {
+            const code = (item.getAttribute('data-course-code') || '').toLowerCase();
+            const name = (item.getAttribute('data-course-name') || '').toLowerCase();
+            const type = (item.getAttribute('data-course-type') || '').toUpperCase();
+            const completed = item.getAttribute('data-completed') === 'true';
+            const prereqsMet = item.getAttribute('data-prereqs-met') === 'true';
+
+            const matchesQuery = !query || code.includes(query) || name.includes(query);
+            let matchesFilter = true;
+            if (activeCatalogFilter === 'READY') {
+                matchesFilter = prereqsMet && !completed;
+            } else if (activeCatalogFilter === 'CORE') {
+                matchesFilter = type === 'CORE';
+            } else if (activeCatalogFilter === 'ELECTIVE') {
+                matchesFilter = type === 'ELECTIVE';
+            } else if (activeCatalogFilter === 'UNCOMPLETED') {
+                matchesFilter = !completed;
+            }
+            item.style.display = (matchesQuery && matchesFilter) ? 'flex' : 'none';
         });
     }
 

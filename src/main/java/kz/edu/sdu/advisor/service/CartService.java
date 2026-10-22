@@ -18,9 +18,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -92,7 +92,7 @@ public class CartService {
             return;
         }
 
-        Set<Long> satisfiedCourseIds = new java.util.HashSet<>();
+        Set<Long> satisfiedCourseIds = new HashSet<>();
         if (student.getCompletedCourses() != null) {
             satisfiedCourseIds.addAll(student.getCompletedCourses().stream().map(Course::getId).toList());
         }
@@ -118,7 +118,38 @@ public class CartService {
     public CartDto removeCourse(String studentId, Long courseId) {
         cartItemRepository.deleteByStudent_StudentIdAndCourse_Id(studentId, courseId);
         log.info("Course ID {} removed from cart for student {}", courseId, studentId);
+
+        // Cascade remove any dependent courses in the cart whose prerequisites are no longer satisfied
+        studentRepository.findByStudentId(studentId).ifPresent(this::pruneUnsatisfiedCartItems);
+
         return getCart(studentId);
+    }
+
+    private void pruneUnsatisfiedCartItems(Student student) {
+        Set<Long> completedIds = student.getCompletedCourses() == null
+                ? Set.of()
+                : new HashSet<>(student.getCompletedCourses().stream().map(Course::getId).toList());
+
+        boolean removedAny;
+        do {
+            removedAny = false;
+            List<CartItem> currentItems = cartItemRepository.findByStudent_StudentIdOrderByCourse_CodeAsc(student.getStudentId());
+            Set<Long> satisfiedIds = new HashSet<>(completedIds);
+            satisfiedIds.addAll(currentItems.stream().map(i -> i.getCourse().getId()).toList());
+
+            for (CartItem item : currentItems) {
+                List<Prerequisite> prereqs = prerequisiteRepository.findByCourse_Id(item.getCourse().getId());
+                boolean missingPrereq = prereqs.stream()
+                        .map(Prerequisite::getPrerequisiteCourse)
+                        .anyMatch(req -> req != null && !satisfiedIds.contains(req.getId()));
+                if (missingPrereq) {
+                    cartItemRepository.delete(item);
+                    log.info("Cascade-removed dependent course {} from cart for student {} due to missing prerequisite",
+                            item.getCourse().getCode(), student.getStudentId());
+                    removedAny = true;
+                }
+            }
+        } while (removedAny);
     }
 
     public String getWorkloadState(int credits) {
@@ -141,4 +172,3 @@ public class CartService {
         }
     }
 }
-
