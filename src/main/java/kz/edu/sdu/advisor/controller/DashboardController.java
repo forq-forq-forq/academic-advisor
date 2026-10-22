@@ -5,8 +5,8 @@ import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.AcademicStandingDto;
 import kz.edu.sdu.advisor.model.dto.CompletedCourseDto;
 import kz.edu.sdu.advisor.repository.CourseCompletionRepository;
-import kz.edu.sdu.advisor.repository.StudentRepository;
 import kz.edu.sdu.advisor.service.AiService;
+import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -31,24 +31,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DashboardController {
 
-    private final StudentRepository studentRepository;
+    private final AuthSessionHelper authSessionHelper;
     private final AiService aiService;
     private final CourseCompletionRepository courseCompletionRepository;
 
     @GetMapping("/dashboard")
     public String showDashboard(HttpSession session, Model model) {
-        String studentId = (String) session.getAttribute("authenticatedStudentId");
-        if (studentId == null && session.getAttribute("authenticatedStudent") instanceof Student s) {
-            studentId = s.getStudentId();
-        }
-
-        if (studentId == null) {
-            return "redirect:/login";
-        }
-
-        Student student = studentRepository.findByStudentId(studentId).orElse(null);
+        Student student = authSessionHelper.resolveAuthenticatedStudent(session).orElse(null);
         if (student == null) {
-            session.invalidate();
             return "redirect:/login";
         }
 
@@ -74,8 +64,7 @@ public class DashboardController {
             @RequestParam("message") String message,
             HttpSession session) {
 
-        if (session.getAttribute("authenticatedStudentId") == null
-                && session.getAttribute("authenticatedStudent") == null) {
+        if (!authSessionHelper.isAuthenticated(session)) {
             return ResponseEntity.status(401)
                     .body(Map.of("error", "Session expired. Please log in again."));
         }

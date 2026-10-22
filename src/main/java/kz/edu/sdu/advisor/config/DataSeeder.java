@@ -32,10 +32,15 @@ public class DataSeeder implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         Faculty fens = seedFaculties();
-        Major csMajor = seedMajors(fens);
+        Major csMajor = seedMajor(fens, "CS", "Computer Science");
+        Major seMajor = seedMajor(fens, "SE", "Software Engineering");
+        Major isMajor = seedMajor(fens, "IS", "Information Systems");
+
         Map<String, Course> courses = seedCourses();
         seedPrerequisites(courses);
         seedCurriculum(csMajor, courses);
+        seedCurriculum(seMajor, courses);
+        seedCurriculum(isMajor, courses);
         seedDemoStudent(csMajor, courses);
     }
 
@@ -47,10 +52,10 @@ public class DataSeeder implements CommandLineRunner {
         });
     }
 
-    private Major seedMajors(Faculty faculty) {
-        return majorRepository.findByCode("CS").orElseGet(() -> {
-            log.info("Seeding major: CS");
-            Major major = new Major("CS", "Computer Science", faculty, 240);
+    private Major seedMajor(Faculty faculty, String code, String name) {
+        return majorRepository.findByCode(code).orElseGet(() -> {
+            log.info("Seeding major: {}", code);
+            Major major = new Major(code, name, faculty, 240);
             return majorRepository.save(major);
         });
     }
@@ -59,39 +64,39 @@ public class DataSeeder implements CommandLineRunner {
         Map<String, Course> map = new HashMap<>();
 
         Map<String, CourseMeta> catalog = Map.ofEntries(
-                Map.entry("CS101", new CourseMeta("Introduction to Computer Science", 3)),
-                Map.entry("MATH101", new CourseMeta("Calculus I", 4)),
-                Map.entry("ENG101", new CourseMeta("Academic English I", 3)),
-                Map.entry("HIST101", new CourseMeta("History of Kazakhstan", 3)),
-                Map.entry("CS102", new CourseMeta("Object-Oriented Programming", 4)),
-                Map.entry("MATH102", new CourseMeta("Calculus II", 4)),
-                Map.entry("ENG102", new CourseMeta("Academic English II", 3)),
-                Map.entry("PHIL101", new CourseMeta("Philosophy", 3)),
-                Map.entry("CS201", new CourseMeta("Data Structures and Algorithms", 4)),
-                Map.entry("CS205", new CourseMeta("Discrete Mathematics", 3)),
-                Map.entry("MATH201", new CourseMeta("Linear Algebra", 3)),
-                Map.entry("PHYS101", new CourseMeta("General Physics", 4)),
-                Map.entry("CS202", new CourseMeta("Algorithms Design and Analysis", 4)),
-                Map.entry("CS204", new CourseMeta("Database Systems", 4)),
-                Map.entry("CS301", new CourseMeta("Operating Systems", 4)),
-                Map.entry("CS302", new CourseMeta("Software Engineering", 3)),
-                Map.entry("CS303", new CourseMeta("Computer Networks", 4)),
-                Map.entry("CS304", new CourseMeta("Artificial Intelligence", 3)),
-                Map.entry("CS401", new CourseMeta("Senior Design Project I", 4)),
-                Map.entry("CS402", new CourseMeta("Cloud Computing", 3)),
-                Map.entry("CS403", new CourseMeta("Senior Design Project II", 4)),
-                Map.entry("CS404", new CourseMeta("Professional Practice", 3)),
+                Map.entry("CS101", new CourseMeta("Introduction to Computer Science", 3, 2, "Foundational programming concepts, computational thinking, and basic algorithms.")),
+                Map.entry("MATH101", new CourseMeta("Calculus I", 4, 3, "Limits, derivatives, integrals, and single-variable calculus applications.")),
+                Map.entry("ENG101", new CourseMeta("Academic English I", 3, 1, "Academic reading, essay writing, and university communication skills.")),
+                Map.entry("HIST101", new CourseMeta("History of Kazakhstan", 3, 1, "Key periods and milestones in the modern and ancient history of Kazakhstan.")),
+                Map.entry("CS102", new CourseMeta("Object-Oriented Programming", 4, 3, "Classes, inheritance, polymorphism, encapsulation, and Java design patterns.")),
+                Map.entry("MATH102", new CourseMeta("Calculus II", 4, 4, "Integration techniques, infinite series, and multivariable introduction.")),
+                Map.entry("ENG102", new CourseMeta("Academic English II", 3, 2, "Research writing, critical argumentation, and technical presentations.")),
+                Map.entry("PHIL101", new CourseMeta("Philosophy", 3, 1, "History of philosophical thought, logic, ethics, and epistemology.")),
+                Map.entry("CS201", new CourseMeta("Data Structures and Algorithms", 4, 4, "Trees, graphs, hashing, sorting, and algorithmic complexity analysis.")),
+                Map.entry("CS205", new CourseMeta("Discrete Mathematics", 3, 3, "Logic, set theory, combinatorics, graph theory, and proofs for CS.")),
+                Map.entry("MATH201", new CourseMeta("Linear Algebra", 3, 3, "Vector spaces, matrices, eigenvalues, and linear transformations.")),
+                Map.entry("PHYS101", new CourseMeta("General Physics", 4, 3, "Classical mechanics, thermodynamics, and electromagnetism fundamentals.")),
+                Map.entry("CS202", new CourseMeta("Algorithms Design and Analysis", 4, 5, "Dynamic programming, greedy algorithms, graph algorithms, and NP-completeness.")),
+                Map.entry("CS204", new CourseMeta("Database Systems", 4, 3, "Relational algebra, SQL, normalization, indexing, and transaction processing.")),
+                Map.entry("CS301", new CourseMeta("Operating Systems", 4, 5, "Processes, threads, concurrency, memory management, and file systems.")),
+                Map.entry("CS302", new CourseMeta("Software Engineering", 3, 3, "Agile lifecycle, requirements engineering, architecture, testing, and CI/CD.")),
+                Map.entry("CS303", new CourseMeta("Computer Networks", 4, 4, "TCP/IP stack, routing protocols, socket programming, and network security.")),
+                Map.entry("CS304", new CourseMeta("Artificial Intelligence", 3, 4, "Search agents, knowledge representation, probabilistic reasoning, and ML basics.")),
+                Map.entry("CS401", new CourseMeta("Senior Design Project I", 4, 4, "First capstone semester: problem definition, architecture, and prototype.")),
+                Map.entry("CS402", new CourseMeta("Cloud Computing", 3, 3, "Virtualization, containers, microservices, and scalable cloud infrastructure.")),
+                Map.entry("CS403", new CourseMeta("Senior Design Project II", 4, 4, "Second capstone semester: implementation, testing, and thesis defense.")),
+                Map.entry("CS404", new CourseMeta("Professional Practice", 3, 2, "Engineering ethics, technical career preparation, and industry standards.")),
                 // Additional Electives & High-ECTS courses to test credit overload (US-14)
-                Map.entry("CS310", new CourseMeta("Web Application Development", 5)),
-                Map.entry("CS320", new CourseMeta("Mobile Application Development", 5)),
-                Map.entry("CS330", new CourseMeta("Cybersecurity Fundamentals", 5)),
-                Map.entry("CS340", new CourseMeta("Machine Learning and Data Mining", 5)),
-                Map.entry("CS410", new CourseMeta("Distributed Systems and DevOps", 5)),
-                Map.entry("CS420", new CourseMeta("Deep Learning and Neural Networks", 6)),
-                Map.entry("CS490", new CourseMeta("Advanced Software Engineering Practicum", 6)),
-                Map.entry("INTERN401", new CourseMeta("Industrial Internship", 6)),
-                Map.entry("ROBO301", new CourseMeta("Robotics and Embedded Systems", 5)),
-                Map.entry("DATA201", new CourseMeta("Big Data Analytics", 5))
+                Map.entry("CS310", new CourseMeta("Web Application Development", 5, 3, "Full-stack web engineering with modern backend frameworks and REST APIs.")),
+                Map.entry("CS320", new CourseMeta("Mobile Application Development", 5, 3, "Native and cross-platform mobile development, UI lifecycle, and state management.")),
+                Map.entry("CS330", new CourseMeta("Cybersecurity Fundamentals", 5, 4, "Cryptography, network defense, vulnerability assessment, and secure coding.")),
+                Map.entry("CS340", new CourseMeta("Machine Learning and Data Mining", 5, 5, "Supervised/unsupervised learning, feature engineering, and model evaluation.")),
+                Map.entry("CS410", new CourseMeta("Distributed Systems and DevOps", 5, 4, "Consensus protocols, Kubernetes, observability, and automated delivery pipelines.")),
+                Map.entry("CS420", new CourseMeta("Deep Learning and Neural Networks", 6, 5, "CNNs, transformers, backprop optimization, and modern generative AI architectures.")),
+                Map.entry("CS490", new CourseMeta("Advanced Software Engineering Practicum", 6, 4, "Team-based production software delivery with real-world architectural constraints.")),
+                Map.entry("INTERN401", new CourseMeta("Industrial Internship", 6, 2, "Supervised industry placement in a software engineering or data role.")),
+                Map.entry("ROBO301", new CourseMeta("Robotics and Embedded Systems", 5, 4, "Microcontrollers, sensors, actuators, and real-time embedded control.")),
+                Map.entry("DATA201", new CourseMeta("Big Data Analytics", 5, 3, "Distributed data processing, MapReduce, Spark, and analytical data warehouses."))
         );
 
         for (Map.Entry<String, CourseMeta> entry : catalog.entrySet()) {
@@ -102,8 +107,22 @@ public class DataSeeder implements CommandLineRunner {
                 c.setCode(code);
                 c.setName(meta.name());
                 c.setCredits(meta.credits());
+                c.setDifficulty(meta.difficulty());
+                c.setDescription(meta.description());
                 return courseRepository.save(c);
             });
+            boolean updated = false;
+            if (course.getDifficulty() == null) {
+                course.setDifficulty(meta.difficulty());
+                updated = true;
+            }
+            if (course.getDescription() == null) {
+                course.setDescription(meta.description());
+                updated = true;
+            }
+            if (updated) {
+                course = courseRepository.save(course);
+            }
             map.put(code, course);
         }
 
@@ -138,7 +157,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedCurriculum(Major major, Map<String, Course> courses) {
-        log.info("Seeding demo 4-year curriculum for major CS (catalog year 2024)...");
+        log.info("Seeding demo 4-year curriculum for major {} (catalog year 2024)...", major.getCode());
         // Semester 1
         addCurriculum(major, courses.get("CS101"), 1, 2024, "CORE");
         addCurriculum(major, courses.get("MATH101"), 1, 2024, "CORE");
@@ -223,6 +242,10 @@ public class DataSeeder implements CommandLineRunner {
                 student.setPasswordHash(account.getPasswordHash());
                 updated = true;
             }
+            if (student.getCareerGoal() == null) {
+                student.setCareerGoal("Backend & Cloud Engineering");
+                updated = true;
+            }
             if (updated) {
                 studentRepository.save(student);
             }
@@ -237,6 +260,7 @@ public class DataSeeder implements CommandLineRunner {
             student.setMajor(major);
             student.setCatalogYear(2024);
             student.setCurrentSemester(3);
+            student.setCareerGoal("Backend & Cloud Engineering");
             student.setAccount(account);
 
             // Completed courses: Semesters 1 and 2 (Total: 27 ECTS)
@@ -265,5 +289,5 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    private record CourseMeta(String name, int credits) {}
+    private record CourseMeta(String name, int credits, int difficulty, String description) {}
 }

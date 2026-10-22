@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.Locale;
 
@@ -24,7 +25,10 @@ public class StudentRegistrationService {
     @Transactional
     public StudentAccount register(RegistrationForm form, Major major) {
         String email = form.getEmail().trim().toLowerCase(Locale.ROOT);
-        String studentId = extractStudentIdFromEmail(email);
+        String studentId = resolveStudentId(form);
+        String name = StringUtils.hasText(form.getFullName())
+                ? form.getFullName().trim()
+                : "Student " + studentId;
 
         StudentAccount account = new StudentAccount();
         account.setEmail(email);
@@ -37,17 +41,30 @@ public class StudentRegistrationService {
         Student student = new Student();
         student.setStudentId(studentId);
         student.setEmail(email);
-        student.setName("Student " + studentId);
+        student.setName(name);
         student.setPasswordHash(account.getPasswordHash());
         student.setMajor(major);
         student.setCatalogYear(form.getCatalogYear());
         student.setCurrentSemester(1);
         student.setGpa(0.0);
+        if (StringUtils.hasText(form.getCareerGoal())) {
+            student.setCareerGoal(form.getCareerGoal().trim());
+        }
         student.setAccount(account);
         studentRepository.save(student);
 
         account.setStudent(student);
         return account;
+    }
+
+    public static String resolveStudentId(RegistrationForm form) {
+        if (form == null) {
+            return null;
+        }
+        if (StringUtils.hasText(form.getStudentId())) {
+            return form.getStudentId().trim().toLowerCase(Locale.ROOT);
+        }
+        return extractStudentIdFromEmail(form.getEmail());
     }
 
     public static String extractStudentIdFromEmail(String email) {

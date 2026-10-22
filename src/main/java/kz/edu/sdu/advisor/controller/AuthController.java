@@ -13,6 +13,7 @@ import kz.edu.sdu.advisor.repository.FacultyRepository;
 import kz.edu.sdu.advisor.repository.MajorRepository;
 import kz.edu.sdu.advisor.repository.StudentAccountRepository;
 import kz.edu.sdu.advisor.repository.StudentRepository;
+import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import kz.edu.sdu.advisor.service.StudentRegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -45,13 +46,13 @@ public class AuthController {
     private final MajorRepository majorRepository;
     private final CurriculumCourseRepository curriculumCourseRepository;
     private final StudentRegistrationService studentRegistrationService;
+    private final AuthSessionHelper authSessionHelper;
     private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/login")
     public String showLoginPage(HttpSession session) {
         // If already logged in, redirect to planner
-        if (session.getAttribute("authenticatedStudentId") != null
-                || session.getAttribute("authenticatedStudent") != null) {
+        if (authSessionHelper.isAuthenticated(session)) {
             return "redirect:/planner";
         }
         return "login";
@@ -93,14 +94,13 @@ public class AuthController {
             return "login";
         }
 
-        session.setAttribute("authenticatedStudent", student);
-        session.setAttribute("authenticatedStudentId", student.getStudentId());
+        authSessionHelper.establishSession(session, student);
         return "redirect:/planner";
     }
 
     @GetMapping("/register")
     public String showRegistrationPage(HttpSession session, Model model) {
-        if (session.getAttribute("authenticatedStudentId") != null) {
+        if (authSessionHelper.isAuthenticated(session)) {
             return "redirect:/dashboard";
         }
         model.addAttribute("registrationForm", new RegistrationForm());
@@ -113,7 +113,7 @@ public class AuthController {
                                       BindingResult result,
                                       HttpSession session,
                                       Model model) {
-        if (session.getAttribute("authenticatedStudentId") != null) {
+        if (authSessionHelper.isAuthenticated(session)) {
             return "redirect:/dashboard";
         }
 
@@ -122,7 +122,7 @@ public class AuthController {
         }
         if (!result.hasFieldErrors("email")) {
             String email = form.getEmail().trim();
-            String studentId = StudentRegistrationService.extractStudentIdFromEmail(email);
+            String studentId = StudentRegistrationService.resolveStudentId(form);
             if (studentRepository.existsByEmailIgnoreCase(email)
                     || studentAccountRepository.existsByEmailIgnoreCase(email)
                     || (studentId != null && (studentRepository.findByStudentId(studentId).isPresent()

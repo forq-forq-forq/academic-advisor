@@ -9,7 +9,7 @@ import kz.edu.sdu.advisor.model.dto.AvailableCourseDto;
 import kz.edu.sdu.advisor.model.dto.CartDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
-import kz.edu.sdu.advisor.repository.StudentRepository;
+import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import kz.edu.sdu.advisor.service.CartService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,23 +30,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PlannerController {
 
-    private final StudentRepository studentRepository;
+    private final AuthSessionHelper authSessionHelper;
     private final CourseRepository courseRepository;
     private final PrerequisiteRepository prerequisiteRepository;
     private final CartService cartService;
 
     @GetMapping("/planner")
     public String showPlanner(HttpSession session, Model model) {
-        String studentId = resolveStudentId(session);
-        if (studentId == null) {
-            return "redirect:/login";
-        }
-
-        Student student = studentRepository.findByStudentId(studentId).orElse(null);
+        Student student = authSessionHelper.resolveAuthenticatedStudent(session).orElse(null);
         if (student == null) {
-            session.invalidate();
             return "redirect:/login";
         }
+        String studentId = student.getStudentId();
 
         CartDto cart = cartService.getCart(studentId);
         List<Course> allCourses = courseRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
@@ -177,11 +172,7 @@ public class PlannerController {
     }
 
     private String resolveStudentId(HttpSession session) {
-        String studentId = (String) session.getAttribute("authenticatedStudentId");
-        if (studentId == null && session.getAttribute("authenticatedStudent") instanceof Student s) {
-            studentId = s.getStudentId();
-        }
-        return studentId;
+        return authSessionHelper.resolveStudentId(session);
     }
 }
 

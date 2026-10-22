@@ -21,19 +21,21 @@
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
             padding: 2rem;
             width: 100%;
-            max-width: 420px;
+            max-width: 460px;
         }
         h1 { font-size: 1.5rem; color: #1a202c; margin-bottom: 0.35rem; }
         .subtitle { color: #718096; font-size: 0.9rem; margin-bottom: 1.5rem; }
-        label { display: block; font-size: 0.85rem; font-weight: 600; color: #4a5568; margin: 0.9rem 0 0.35rem; }
-        input {
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: #4a5568; margin: 0.85rem 0 0.35rem; }
+        input, select {
             width: 100%;
             padding: 0.65rem 0.875rem;
             border: 1.5px solid #cbd5e0;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 0.95rem;
+            background: #fff;
+            color: #2d3748;
         }
-        input:focus { outline: 2px solid #4c6ef5; outline-offset: 1px; }
+        input:focus, select:focus { outline: 2px solid #4c6ef5; outline-offset: 1px; }
         button {
             width: 100%;
             margin-top: 1.25rem;
@@ -54,11 +56,19 @@
 <body>
 <main class="register-card">
     <h1>Create your account</h1>
-    <p class="subtitle">Register with your SDU university email</p>
+    <p class="subtitle">Register with your SDU university email and academic profile</p>
     <form th:action="@{/register}" method="post" th:object="${registrationForm}">
+        <label for="fullName">Full name</label>
+        <input type="text" id="fullName" th:field="*{fullName}" placeholder="e.g. Aruzhan Serikova" autocomplete="name">
+        <p class="field-error" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></p>
+
         <label for="email">University email</label>
-        <input type="email" id="email" th:field="*{email}" autocomplete="email" required>
+        <input type="email" id="email" th:field="*{email}" placeholder="e.g. 240103001@sdu.edu.kz" autocomplete="email" required>
         <p class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+
+        <label for="studentId">Student ID</label>
+        <input type="text" id="studentId" th:field="*{studentId}" placeholder="Auto-filled from email (e.g. 240103001)" autocomplete="username">
+        <p class="field-error" th:if="${#fields.hasErrors('studentId')}" th:errors="*{studentId}"></p>
 
         <label for="facultyCode">Faculty</label>
         <select id="facultyCode" th:field="*{facultyCode}" required>
@@ -82,6 +92,10 @@
         </select>
         <p class="field-error" th:if="${#fields.hasErrors('catalogYear')}" th:errors="*{catalogYear}"></p>
 
+        <label for="careerGoal">Career goal (optional)</label>
+        <input type="text" id="careerGoal" th:field="*{careerGoal}" placeholder="e.g. Backend Developer, Data Scientist">
+        <p class="field-error" th:if="${#fields.hasErrors('careerGoal')}" th:errors="*{careerGoal}"></p>
+
         <label for="password">Password</label>
         <input type="password" id="password" name="password" autocomplete="new-password" required minlength="12" maxlength="64">
         <p class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
@@ -97,6 +111,8 @@
 <script>
     const facultySelect = document.getElementById('facultyCode');
     const majorSelect = document.getElementById('majorCode');
+    const emailInput = document.getElementById('email');
+    const studentIdInput = document.getElementById('studentId');
 
     function filterMajors() {
         for (const option of majorSelect.options) {
@@ -108,6 +124,12 @@
             majorSelect.value = '';
         }
     }
+
+    emailInput.addEventListener('blur', () => {
+        if (!studentIdInput.value.trim() && emailInput.value.includes('@')) {
+            studentIdInput.value = emailInput.value.split('@')[0].trim();
+        }
+    });
 
     facultySelect.addEventListener('change', filterMajors);
     filterMajors();

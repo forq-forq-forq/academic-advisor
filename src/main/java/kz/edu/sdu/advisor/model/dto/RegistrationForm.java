@@ -14,6 +14,12 @@ import lombok.Setter;
 @Setter
 public class RegistrationForm {
 
+    @Size(max = 120, message = "Full name must be 120 characters or fewer.")
+    private String fullName;
+
+    @Size(max = 32, message = "Student ID must be 32 characters or fewer.")
+    private String studentId;
+
     @NotBlank(message = "Email is required.")
     @Email(message = "Enter a valid email address.")
     @Size(max = 254, message = "Email must be 254 characters or fewer.")
@@ -38,4 +44,7 @@ public class RegistrationForm {
     @Min(value = 2000, message = "Select a supported catalog year.")
     @Max(value = 2100, message = "Select a supported catalog year.")
     private Integer catalogYear;
+
+    @Size(max = 255, message = "Career goal must be 255 characters or fewer.")
+    private String careerGoal;
 }
