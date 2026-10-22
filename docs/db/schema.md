@@ -86,6 +86,8 @@ erDiagram
     student_courses {
         BIGINT student_id FK "References students.id"
         BIGINT course_id FK "References courses.id"
+        VARCHAR letter_grade "Nullable recorded letter grade"
+        VARCHAR semester_taken "Nullable actual term, e.g. Fall 2024"
     }
 
     student_enrolled_courses {

@@ -3,6 +3,8 @@ package kz.edu.sdu.advisor.controller;
 import jakarta.servlet.http.HttpSession;
 import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.AcademicStandingDto;
+import kz.edu.sdu.advisor.model.dto.CompletedCourseDto;
+import kz.edu.sdu.advisor.repository.CourseCompletionRepository;
 import kz.edu.sdu.advisor.repository.StudentRepository;
 import kz.edu.sdu.advisor.service.AiService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class DashboardController {
 
     private final StudentRepository studentRepository;
     private final AiService aiService;
+    private final CourseCompletionRepository courseCompletionRepository;
 
     @GetMapping("/dashboard")
     public String showDashboard(HttpSession session, Model model) {
@@ -53,6 +56,8 @@ public class DashboardController {
         model.addAttribute("student", student);
         model.addAttribute("standing", academicStanding);
         model.addAttribute("enrolledCourses", academicStanding.enrolledCourses());
+        model.addAttribute("completedCourses", courseCompletionRepository.findForStudent(student.getId())
+                .stream().map(CompletedCourseDto::of).toList());
         return "dashboard";
     }
 

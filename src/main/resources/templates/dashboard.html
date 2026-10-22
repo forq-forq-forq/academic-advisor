@@ -629,6 +629,13 @@
             margin-top: 0.2rem;
             min-height: 0.9rem;
         }
+        .completed-table-wrapper { overflow-x: auto; }
+        .completed-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .completed-table caption { text-align: left; font-weight: 700; padding: 0.75rem 0; }
+        .completed-table th, .completed-table td {
+            text-align: left; padding: 0.65rem; border-bottom: 1px solid #e2e8f0;
+        }
+        .completed-table th { background: #f0f4f8; }
     </style>
 </head>
 <body>
@@ -755,6 +762,36 @@
                 <div class="enrolled-empty" id="enrolled-empty-state" th:if="${#lists.isEmpty(standing.enrolledCourses)}">
                     <p>No courses enrolled for this semester.</p>
                     <a th:href="@{/planner}" class="empty-planner-link">Go to Course Planner →</a>
+                </div>
+            </div>
+
+            <div class="enrolled-courses-card" aria-label="Completed Courses">
+                <div class="completed-table-wrapper" tabindex="0" role="region" aria-label="Completed course history">
+                    <table class="completed-table" id="completed-courses-table" th:if="${!#lists.isEmpty(completedCourses)}">
+                        <caption>Completed Courses</caption>
+                        <thead>
+                        <tr>
+                            <th scope="col">Code</th>
+                            <th scope="col">Course</th>
+                            <th scope="col">Letter Grade</th>
+                            <th scope="col">Credits (ECTS)</th>
+                            <th scope="col">Semester Taken</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="course : ${completedCourses}">
+                            <td th:text="${course.code}"></td>
+                            <td th:text="${course.name}"></td>
+                            <td th:text="${course.letterGrade}"></td>
+                            <td th:text="${course.credits != null ? course.credits : 'Not recorded'}"></td>
+                            <td th:text="${course.semesterTaken}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="completed-empty-state" th:if="${#lists.isEmpty(completedCourses)}">
+                    <h3 class="enrolled-title">Completed Courses</h3>
+                    <p>No completed courses yet.</p>
                 </div>
             </div>
 
