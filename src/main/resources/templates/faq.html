@@ -132,6 +132,25 @@
             line-height: 1.55;
             color: #4a5568;
             border-top: 1px solid #edf2f7;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+        .btn-ask-ai-faq {
+            align-self: flex-start;
+            background: #edf2ff;
+            color: #3b5bdb;
+            border: 1px solid #bac8ff;
+            border-radius: 6px;
+            padding: 0.3rem 0.7rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-ask-ai-faq:hover {
+            background: #4c6ef5;
+            color: #ffffff;
         }
     </style>
 </head>
@@ -183,7 +202,8 @@
                 </h2>
                 <div id="collapseOne" class="accordion-collapse collapse">
                     <div class="accordion-body">
-                        Cumulative GPA is calculated by dividing the total quality points earned by the total credit hours attempted across all completed semesters.
+                        <span>Cumulative GPA is calculated by dividing the total quality points earned by the total credit hours attempted across all completed semesters.</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
                     </div>
                 </div>
             </div>
@@ -195,7 +215,8 @@
                 </h2>
                 <div id="collapseTwo" class="accordion-collapse collapse">
                     <div class="accordion-body">
-                        The minimum passing grade for core major courses is "C" (2.0), while general requirements require at least a "D" grade (1.0).
+                        <span>The minimum passing grade for core major courses is "C" (2.0), while general requirements require at least a "D" grade (1.0).</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
                     </div>
                 </div>
             </div>
@@ -212,7 +233,8 @@
                 </h2>
                 <div id="collapseThree" class="accordion-collapse collapse">
                     <div class="accordion-body">
-                        Registration dates depend on your current academic year and credit count. Check the official academic calendar for exact priority registration windows.
+                        <span>Registration dates depend on your current academic year and credit count. Check the official academic calendar for exact priority registration windows.</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
                     </div>
                 </div>
             </div>
@@ -229,7 +251,8 @@
                 </h2>
                 <div id="collapseFour" class="accordion-collapse collapse">
                     <div class="accordion-body">
-                        You can retake a course up to 2 times. The highest grade achieved will replace the previous grade in your cumulative GPA calculation.
+                        <span>You can retake a course up to 2 times. The highest grade achieved will replace the previous grade in your cumulative GPA calculation.</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
                     </div>
                 </div>
             </div>
@@ -246,7 +269,8 @@
                 </h2>
                 <div id="collapseFive" class="accordion-collapse collapse">
                     <div class="accordion-body">
-                        Students can enroll in a maximum of 12 credit hours during the summer term.
+                        <span>Students can enroll in a maximum of 12 credit hours during the summer term.</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
                     </div>
                 </div>
             </div>
@@ -263,7 +287,8 @@
                 </h2>
                 <div id="collapseSix" class="accordion-collapse collapse">
                     <div class="accordion-body">
-                        State scholarship holders must maintain a GPA of at least 3.0 without any failing grades during the examination period.
+                        <span>State scholarship holders must maintain a GPA of at least 3.0 without any failing grades during the examination period.</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
                     </div>
                 </div>
             </div>
@@ -282,6 +307,17 @@
         btn.classList.toggle('collapsed', isOpen);
     }
 
+    function askAiFromFaq(btn) {
+        const item = btn.closest('.faq-item');
+        const question = item ? item.querySelector('.accordion-button')?.textContent.trim() : '';
+        const promptText = question
+            ? ('Regarding the FAQ "' + question + '": how does this apply to my current academic standing and transcript?')
+            : 'Can you explain how SDU academic regulations apply to my current standing?';
+        if (typeof window.openCopilotWithPrompt === 'function') {
+            window.openCopilotWithPrompt(promptText, false);
+        }
+    }
+
     // US-35 Real-time search script
     function filterFAQ() {
         const query = document.getElementById('faqSearchInput').value.toLowerCase();
@@ -297,5 +333,8 @@
         });
     }
 </script>
+
+<div th:replace="~{fragments/copilot :: copilotWidget}"></div>
+
 </body>
 </html>

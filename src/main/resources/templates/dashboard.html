@@ -776,6 +776,21 @@
                 </div>
             </div>
 
+            <!-- CTA to Course Planner -->
+            <a th:href="@{/planner}" class="btn-planner-cta">
+                <span>🗓️ Open Course Planner</span>
+                <span>→</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Right Column: Courses & Academic Record -->
+    <section class="panel standing-panel" aria-label="Course Overview">
+        <h2 class="panel-title">
+            📚 Courses &amp; Academic Record
+        </h2>
+
+        <div class="standing-grid">
             <!-- Currently Enrolled Courses (US-08) -->
             <div class="enrolled-courses-card" aria-label="Currently Enrolled Courses">
                 <div class="enrolled-header">
@@ -834,186 +849,11 @@
                     <a th:href="@{/profile}" class="empty-planner-link">Manage Transcript (US-30) →</a>
                 </div>
             </div>
-
-            <!-- CTA to Course Planner -->
-            <a th:href="@{/planner}" class="btn-planner-cta">
-                <span>🗓️ Open Course Planner</span>
-                <span>→</span>
-            </a>
-        </div>
-    </section>
-
-    <!-- Right Column: AI Academic Advisor Assistant -->
-    <section class="panel chat-panel" aria-label="AI Academic Advisor Chat">
-        <h2 class="panel-title">
-            🤖 AI Advisor Assistant
-        </h2>
-
-        <div id="chat-window">
-            <div class="welcome-hint" id="welcome-hint">
-                👋 Hello, <strong th:text="${student.name}">Student</strong>!<br>
-                Ask me anything about your academic standing, degree progress, prerequisites, or course planning.
-            </div>
-        </div>
-
-        <div id="validation-msg"></div>
-
-        <div id="quick-prompts" aria-label="Suggested questions">
-    <button type="button" class="quick-prompt">
-        Build my next semester
-    </button>
-    <button type="button" class="quick-prompt">
-        What electives fit my career?
-    </button>
-    <button type="button" class="quick-prompt">
-        Explain this course
-    </button>
-</div>
-
-        <div id="input-area">
-            <textarea id="message-input"
-                      rows="1"
-                      placeholder="Ask your advisor a question…"
-                      aria-label="Chat message input"></textarea>
-            <button id="send-btn" type="button">Send</button>
         </div>
     </section>
 </main>
 
-<script th:inline="javascript">
-    /*<![CDATA[*/
-    const chatWindow    = document.getElementById('chat-window');
-    const input         = document.getElementById('message-input');
-    const sendBtn       = document.getElementById('send-btn');
-    const validationMsg = document.getElementById('validation-msg');
-    const welcomeHint   = document.getElementById('welcome-hint');
-
-    // ── Auto-grow textarea ──────────────────────────────────────────
-    input.addEventListener('input', () => {
-        input.style.height = 'auto';
-        input.style.height = Math.min(input.scrollHeight, 100) + 'px';
-    });
-
-    // ── Send on Enter (Shift+Enter = newline) ───────────────────────
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
-
-    sendBtn.addEventListener('click', sendMessage);
-
-    // ── Clear validation warning when user starts typing ───────────
-    input.addEventListener('input', () => {
-        if (input.value.trim()) {
-            input.classList.remove('invalid');
-            validationMsg.textContent = '';
-        }
-    });
-
-    // ── Core send logic ─────────────────────────────────────────────
-    function sendMessage() {
-        const text = input.value.trim();
-
-        if (!text) {
-            input.classList.add('invalid');
-            validationMsg.textContent = '⚠ Please enter a message before sending.';
-            input.focus();
-            return;
-        }
-
-        input.classList.remove('invalid');
-        validationMsg.textContent = '';
-
-        if (welcomeHint) welcomeHint.remove();
-
-        appendBubble('user', text);
-        input.value = '';
-        input.style.height = 'auto';
-        sendBtn.disabled = true;
-
-        const typingRow = appendTypingIndicator();
-
-        const formData = new FormData();
-        formData.append('message', text);
-
-        fetch('/dashboard/chat', { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                typingRow.remove();
-                if (data.reply) {
-                    appendBubble('ai', data.reply);
-                } else {
-                    appendBubble('ai', '⚠ ' + (data.error || 'Unexpected error. Please try again.'));
-                }
-            })
-            .catch(() => {
-                typingRow.remove();
-                appendBubble('ai', '⚠ Could not reach the advisor. Check your connection and try again.');
-            })
-            .finally(() => {
-                sendBtn.disabled = false;
-                input.focus();
-            });
-    }
-
-    function appendBubble(role, text) {
-        const row = document.createElement('div');
-        row.className = 'msg-row ' + role;
-
-        const av = document.createElement('div');
-        av.className = 'avatar ' + (role === 'user' ? 'user-av' : 'ai-av');
-        av.textContent = role === 'user' ? 'Me' : 'AI';
-
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble';
-        bubble.textContent = text;
-
-        if (role === 'user') {
-            row.appendChild(bubble);
-            row.appendChild(av);
-        } else {
-            row.appendChild(av);
-            row.appendChild(bubble);
-        }
-
-        chatWindow.appendChild(row);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-        return row;
-    }
-
-    function appendTypingIndicator() {
-        const row = document.createElement('div');
-        row.className = 'msg-row ai';
-
-        const av = document.createElement('div');
-        av.className = 'avatar ai-av';
-        av.textContent = 'AI';
-
-        const typing = document.createElement('div');
-        typing.className = 'typing-bubble';
-        typing.innerHTML = '<span></span><span></span><span></span>';
-
-        row.appendChild(av);
-        row.appendChild(typing);
-        chatWindow.appendChild(row);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-        return row;
-    }
-    // US-42: Quick prompt functionality
-document.querySelectorAll('.quick-prompt').forEach(button => {
-    button.addEventListener('click', () => {
-        const input = document.getElementById('message-input');
-
-        input.value = button.textContent.trim();
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.focus();
-    });
-});
-
-    /*]]>*/
-</script>
+<div th:replace="~{fragments/copilot :: copilotWidget}"></div>
 
 </body>
 </html>

@@ -62,10 +62,11 @@ public class DashboardController {
      * @param session the current HTTP session (must be authenticated)
      * @return JSON object with either {@code reply} (AI text) or {@code error}
      */
-    @PostMapping("/dashboard/chat")
+    @PostMapping({"/dashboard/chat", "/api/chat"})
     @ResponseBody
-    public ResponseEntity<Map<String, String>> chat(
+    public ResponseEntity<Map<String, Object>> chat(
             @RequestParam("message") String message,
+            @RequestParam(value = "page", required = false) String page,
             HttpSession session) {
 
         if (!authSessionHelper.isAuthenticated(session)) {

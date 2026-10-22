@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<div th:fragment="copilotWidget" id="ai-copilot-root"
+     th:attr="data-student-id=${student != null ? student.studentId : 'guest'}">
+    <style>
+        /* ── Floating AI Copilot Widget (US-40 & US-42) ── */
+        .copilot-fab {
+            position: fixed;
+            right: 1.5rem;
+            bottom: 1.5rem;
+            z-index: 1050;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            background: linear-gradient(135deg, #4c6ef5 0%, #3b5bdb 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 9999px;
+            padding: 0.8rem 1.25rem;
+            font-size: 0.925rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(59, 91, 219, 0.38);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .copilot-fab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(59, 91, 219, 0.48);
+        }
+
+        .copilot-drawer {
+            position: fixed;
+            right: 1.5rem;
+            bottom: 5.25rem;
+            width: 400px;
+            max-width: calc(100vw - 2rem);
+            height: 560px;
+            max-height: calc(100vh - 7rem);
+            background: #ffffff;
+            border: 1px solid #dbe4ff;
+            border-radius: 16px;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+            z-index: 1051;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            animation: copilotSlideUp 0.2s ease-out;
+        }
+
+        .copilot-drawer.open {
+            display: flex;
+        }
+
+        @keyframes copilotSlideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .copilot-header {
+            background: linear-gradient(135deg, #4c6ef5 0%, #364fc7 100%);
+            color: #ffffff;
+            padding: 0.9rem 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .copilot-header-title {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+        }
+
+        .copilot-header-title h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .copilot-header-subtitle {
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .copilot-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .copilot-icon-btn {
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .copilot-icon-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        .copilot-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0.85rem;
+            overflow: hidden;
+            background: #f8fafc;
+        }
+
+        #chat-window {
+            flex: 1;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.85rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            margin-bottom: 0.5rem;
+        }
+
+        #chat-window .welcome-hint {
+            margin: auto;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.84rem;
+            line-height: 1.5;
+            max-width: 88%;
+        }
+
+        .msg-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.45rem;
+        }
+
+        .msg-row.user { justify-content: flex-end; }
+        .msg-row.ai   { justify-content: flex-start; }
+
+        .bubble {
+            max-width: 82%;
+            padding: 0.55rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.84rem;
+            line-height: 1.45;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .msg-row.user .bubble {
+            background: #4c6ef5;
+            color: #fff;
+            border-bottom-right-radius: 3px;
+        }
+
+        .msg-row.ai .bubble {
+            background: #f8fafc;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 3px;
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.68rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .avatar.user-av { background: #4c6ef5; color: #fff; }
+        .avatar.ai-av   { background: #e2e8f0; color: #475569; }
+
+        .typing-bubble {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            border-bottom-left-radius: 3px;
+            padding: 0.45rem 0.75rem;
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .typing-bubble span {
+            width: 6px;
+            height: 6px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: copilotBounce 1s infinite;
+        }
+
+        .typing-bubble span:nth-child(2) { animation-delay: 0.15s; }
+        .typing-bubble span:nth-child(3) { animation-delay: 0.30s; }
+
+        @keyframes copilotBounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40%            { transform: translateY(-4px); }
+        }
+
+        #quick-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 4px 0 8px;
+        }
+
+        .quick-prompt {
+            padding: 5px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 16px;
+            background: #ffffff;
+            color: #3b5bdb;
+            font-size: 0.74rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .quick-prompt:hover {
+            background: #edf2ff;
+            border-color: #4c6ef5;
+        }
+
+        #validation-msg {
+            font-size: 0.73rem;
+            color: #c53030;
+            min-height: 0.85rem;
+            margin-bottom: 0.2rem;
+        }
+
+        #input-area {
+            display: flex;
+            gap: 0.45rem;
+            align-items: flex-end;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: 1.5px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 0.84rem;
+            font-family: inherit;
+            color: #2d3748;
+            background: #ffffff;
+            resize: none;
+            min-height: 38px;
+            max-height: 90px;
+            outline: none;
+        }
+
+        #message-input:focus {
+            border-color: #4c6ef5;
+            box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.15);
+        }
+
+        #message-input.invalid {
+            border-color: #fc8181;
+        }
+
+        #send-btn {
+            padding: 0.5rem 0.9rem;
+            background: #4c6ef5;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+            height: 38px;
+            white-space: nowrap;
+        }
+
+        #send-btn:hover:not(:disabled) { background: #3b5bdb; }
+        #send-btn:disabled { background: #a0aec0; cursor: not-allowed; }
+
+        /* Recommendation cards inside Copilot (US-43 support) */
+        .copilot-rec-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            margin-top: 0.45rem;
+        }
+
+        .copilot-rec-card {
+            background: #ffffff;
+            border: 1px solid #dbe4ff;
+            border-left: 3px solid #4c6ef5;
+            border-radius: 8px;
+            padding: 0.55rem 0.7rem;
+            font-size: 0.78rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .copilot-rec-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .copilot-rec-title {
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .copilot-rec-meta {
+            font-size: 0.7rem;
+            color: #4c6ef5;
+            font-weight: 600;
+        }
+
+        .copilot-rec-reason {
+            color: #475569;
+            font-size: 0.74rem;
+            line-height: 1.35;
+        }
+
+        .copilot-rec-add-btn {
+            align-self: flex-end;
+            background: #edf2ff;
+            color: #3b5bdb;
+            border: 1px solid #bac8ff;
+            border-radius: 5px;
+            padding: 0.2rem 0.55rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .copilot-rec-add-btn:hover:not(:disabled) {
+            background: #4c6ef5;
+            color: #ffffff;
+        }
+
+        .copilot-rec-add-btn:disabled {
+            background: #dcfce7;
+            color: #15803d;
+            border-color: #86efac;
+            cursor: default;
+        }
+    </style>
+
+    <!-- Floating Trigger Button -->
+    <button type="button"
+            id="copilot-fab"
+            class="copilot-fab"
+            aria-label="Open AI Academic Copilot"
+            aria-expanded="false"
+            aria-controls="copilot-drawer">
+        <span>🤖</span>
+        <span>AI Copilot</span>
+    </button>
+
+    <!-- Slide-out / Floating Copilot Drawer -->
+    <aside id="copilot-drawer"
+           class="copilot-drawer"
+           role="dialog"
+           aria-label="AI Academic Advisor Copilot">
+        <div class="copilot-header">
+            <div class="copilot-header-title">
+                <h2>🤖 AI Advisor Assistant</h2>
+                <span class="copilot-header-subtitle">Context-aware Academic Copilot</span>
+            </div>
+            <div class="copilot-header-actions">
+                <button type="button"
+                        id="copilot-clear-btn"
+                        class="copilot-icon-btn"
+                        title="Clear conversation">Clear</button>
+                <button type="button"
+                        id="copilot-close-btn"
+                        class="copilot-icon-btn"
+                        aria-label="Close AI Copilot">✕</button>
+            </div>
+        </div>
+
+        <div class="copilot-body">
+            <div id="chat-window">
+                <div class="welcome-hint" id="welcome-hint">
+                    👋 Hello, <strong th:text="${student != null ? student.name : 'Student'}">Student</strong>!<br>
+                    Ask me anything about your academic standing, degree progress, prerequisites, or course planning.
+                </div>
+            </div>
+
+            <div id="validation-msg"></div>
+
+            <div id="quick-prompts" aria-label="Suggested questions">
+                <button type="button" class="quick-prompt">Build my next semester</button>
+                <button type="button" class="quick-prompt">What electives fit my career?</button>
+                <button type="button" class="quick-prompt">Explain this course</button>
+            </div>
+
+            <div id="input-area">
+                <textarea id="message-input"
+                          rows="1"
+                          placeholder="Ask your advisor a question…"
+                          aria-label="Chat message input"></textarea>
+                <button id="send-btn" type="button">Send</button>
+            </div>
+        </div>
+    </aside>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        (function () {
+            const rootEl        = document.getElementById('ai-copilot-root');
+            const studentKey    = (rootEl && rootEl.getAttribute('data-student-id')) || 'guest';
+            const storageKey    = 'sdu_advisor_copilot_history_' + studentKey;
+            const openStateKey  = 'sdu_advisor_copilot_open_' + studentKey;
+
+            const fabBtn        = document.getElementById('copilot-fab');
+            const drawer        = document.getElementById('copilot-drawer');
+            const closeBtn      = document.getElementById('copilot-close-btn');
+            const clearBtn      = document.getElementById('copilot-clear-btn');
+            const chatWindow    = document.getElementById('chat-window');
+            const input         = document.getElementById('message-input');
+            const sendBtn       = document.getElementById('send-btn');
+            const validationMsg = document.getElementById('validation-msg');
+            const welcomeHint   = document.getElementById('welcome-hint');
+
+            function setDrawerOpen(isOpen) {
+                drawer.classList.toggle('open', isOpen);
+                fabBtn.setAttribute('aria-expanded', String(isOpen));
+                try {
+                    sessionStorage.setItem(openStateKey, isOpen ? '1' : '0');
+                } catch (e) {}
+                if (isOpen) {
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                    input.focus();
+                }
+            }
+
+            fabBtn.addEventListener('click', () => {
+                setDrawerOpen(!drawer.classList.contains('open'));
+            });
+
+            closeBtn.addEventListener('click', () => setDrawerOpen(false));
+
+            clearBtn.addEventListener('click', () => {
+                try {
+                    sessionStorage.removeItem(storageKey);
+                } catch (e) {}
+                chatWindow.innerHTML = '';
+                if (welcomeHint) {
+                    chatWindow.appendChild(welcomeHint);
+                }
+            });
+
+            function loadSavedMessages() {
+                try {
+                    const raw = sessionStorage.getItem(storageKey);
+                    if (!raw) return;
+                    const items = JSON.parse(raw);
+                    if (Array.isArray(items) && items.length > 0) {
+                        if (welcomeHint && welcomeHint.parentNode) {
+                            welcomeHint.remove();
+                        }
+                        items.forEach(item => {
+                            appendBubbleDOM(item.role, item.text, item.recommendations);
+                        });
+                    }
+                } catch (e) {}
+            }
+
+            function saveMessageToHistory(role, text, recommendations) {
+                try {
+                    const raw = sessionStorage.getItem(storageKey);
+                    const items = raw ? JSON.parse(raw) : [];
+                    items.push({ role, text, recommendations: recommendations || [] });
+                    sessionStorage.setItem(storageKey, JSON.stringify(items.slice(-30)));
+                } catch (e) {}
+            }
+
+            // Restore drawer state & history across page navigations
+            loadSavedMessages();
+            try {
+                if (sessionStorage.getItem(openStateKey) === '1') {
+                    setDrawerOpen(true);
+                }
+            } catch (e) {}
+
+            input.addEventListener('input', () => {
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 90) + 'px';
+                if (input.value.trim()) {
+                    input.classList.remove('invalid');
+                    validationMsg.textContent = '';
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            sendBtn.addEventListener('click', sendMessage);
+
+            document.querySelectorAll('.quick-prompt').forEach(button => {
+                button.addEventListener('click', () => {
+                    setDrawerOpen(true);
+                    input.value = button.textContent.trim();
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.focus();
+                });
+            });
+
+            window.openCopilotWithPrompt = function (promptText, autoSend) {
+                setDrawerOpen(true);
+                input.value = promptText || '';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                if (autoSend && input.value.trim()) {
+                    sendMessage();
+                } else {
+                    input.focus();
+                }
+            };
+
+            function sendMessage() {
+                const text = input.value.trim();
+
+                if (!text) {
+                    input.classList.add('invalid');
+                    validationMsg.textContent = '⚠ Please enter a message before sending.';
+                    input.focus();
+                    return;
+                }
+
+                input.classList.remove('invalid');
+                validationMsg.textContent = '';
+
+                if (welcomeHint && welcomeHint.parentNode) {
+                    welcomeHint.remove();
+                }
+
+                appendBubble('user', text);
+                input.value = '';
+                input.style.height = 'auto';
+                sendBtn.disabled = true;
+
+                const typingRow = appendTypingIndicator();
+
+                const formData = new FormData();
+                formData.append('message', text);
+                formData.append('page', window.location.pathname);
+
+                fetch('/dashboard/chat', { method: 'POST', body: formData })
+                    .then(res => res.json())
+                    .then(data => {
+                        typingRow.remove();
+                        if (data.reply) {
+                            appendBubble('ai', data.reply, data.recommendations);
+                        } else {
+                            appendBubble('ai', '⚠ ' + (data.error || 'Unexpected error. Please try again.'));
+                        }
+                    })
+                    .catch(() => {
+                        typingRow.remove();
+                        appendBubble('ai', '⚠ Could not reach the advisor. Check your connection and try again.');
+                    })
+                    .finally(() => {
+                        sendBtn.disabled = false;
+                        input.focus();
+                    });
+            }
+
+            function appendBubble(role, text, recommendations) {
+                saveMessageToHistory(role, text, recommendations);
+                return appendBubbleDOM(role, text, recommendations);
+            }
+
+            function appendBubbleDOM(role, text, recommendations) {
+                const row = document.createElement('div');
+                row.className = 'msg-row ' + role;
+
+                const av = document.createElement('div');
+                av.className = 'avatar ' + (role === 'user' ? 'user-av' : 'ai-av');
+                av.textContent = role === 'user' ? 'Me' : 'AI';
+
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                bubble.textContent = text;
+
+                if (role === 'ai' && Array.isArray(recommendations) && recommendations.length > 0) {
+                    const recList = document.createElement('div');
+                    recList.className = 'copilot-rec-list';
+                    recommendations.forEach(rec => {
+                        const card = document.createElement('div');
+                        card.className = 'copilot-rec-card';
+
+                        const header = document.createElement('div');
+                        header.className = 'copilot-rec-header';
+
+                        const title = document.createElement('span');
+                        title.className = 'copilot-rec-title';
+                        title.textContent = rec.code + ' — ' + rec.name;
+
+                        const meta = document.createElement('span');
+                        meta.className = 'copilot-rec-meta';
+                        meta.textContent = rec.credits + ' ECTS · ' + (rec.courseType || 'COURSE');
+
+                        header.appendChild(title);
+                        header.appendChild(meta);
+
+                        const reason = document.createElement('div');
+                        reason.className = 'copilot-rec-reason';
+                        reason.textContent = '💡 Why this course: ' + (rec.reason || 'Recommended for your degree plan.');
+
+                        const addBtn = document.createElement('button');
+                        addBtn.type = 'button';
+                        addBtn.className = 'copilot-rec-add-btn';
+                        if (rec.inCart) {
+                            addBtn.disabled = true;
+                            addBtn.textContent = '✓ In Cart';
+                        } else {
+                            addBtn.textContent = '+ Add to Cart';
+                            addBtn.addEventListener('click', () => addRecommendedCourseToCart(rec.courseId, addBtn));
+                        }
+
+                        card.appendChild(header);
+                        card.appendChild(reason);
+                        card.appendChild(addBtn);
+                        recList.appendChild(card);
+                    });
+                    bubble.appendChild(recList);
+                }
+
+                if (role === 'user') {
+                    row.appendChild(bubble);
+                    row.appendChild(av);
+                } else {
+                    row.appendChild(av);
+                    row.appendChild(bubble);
+                }
+
+                chatWindow.appendChild(row);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+                return row;
+            }
+
+            function addRecommendedCourseToCart(courseId, btnEl) {
+                if (typeof window.addCourse === 'function') {
+                    window.addCourse(String(courseId));
+                    btnEl.disabled = true;
+                    btnEl.textContent = '✓ Added';
+                    return;
+                }
+                btnEl.disabled = true;
+                btnEl.textContent = 'Adding...';
+                fetch('/planner/cart/add?courseId=' + encodeURIComponent(courseId), { method: 'POST' })
+                    .then(res => res.json().then(body => ({ ok: res.ok, body })))
+                    .then(({ ok, body }) => {
+                        if (ok) {
+                            btnEl.textContent = '✓ Added to Cart';
+                        } else {
+                            btnEl.disabled = false;
+                            btnEl.textContent = '+ Add to Cart';
+                            alert(body.error || 'Could not add course to cart.');
+                        }
+                    })
+                    .catch(() => {
+                        btnEl.disabled = false;
+                        btnEl.textContent = '+ Add to Cart';
+                    });
+            }
+
+            function appendTypingIndicator() {
+                const row = document.createElement('div');
+                row.className = 'msg-row ai';
+
+                const av = document.createElement('div');
+                av.className = 'avatar ai-av';
+                av.textContent = 'AI';
+
+                const typing = document.createElement('div');
+                typing.className = 'typing-bubble';
+                typing.innerHTML = '<span></span><span></span><span></span>';
+
+                row.appendChild(av);
+                row.appendChild(typing);
+                chatWindow.appendChild(row);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+                return row;
+            }
+        })();
+        /*]]>*/
+    </script>
+</div>
+</body>
+</html>
+

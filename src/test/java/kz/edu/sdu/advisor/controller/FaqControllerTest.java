@@ -36,7 +36,25 @@ class FaqControllerTest {
                 .andExpect(content().string(containsString("Registration")))
                 .andExpect(content().string(containsString("Retakes")))
                 .andExpect(content().string(containsString("Summer School")))
-                .andExpect(content().string(containsString("Scholarships")));
+                .andExpect(content().string(containsString("Scholarships")))
+                .andExpect(content().string(containsString("btn-ask-ai-faq")))
+                .andExpect(content().string(containsString("id=\"copilot-fab\"")))
+                .andExpect(content().string(containsString("id=\"copilot-drawer\"")));
+    }
+
+    @Test
+    @DisplayName("US-40: Floating AI Copilot widget is rendered on Dashboard, Planner, Profile, and FAQ")
+    void floatingCopilotWidget_shouldRenderAcrossAllPages() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", "240103000");
+
+        for (String path : new String[]{"/dashboard", "/planner", "/profile", "/faq"}) {
+            mockMvc.perform(get(path).session(session))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("id=\"copilot-fab\"")))
+                    .andExpect(content().string(containsString("id=\"copilot-drawer\"")))
+                    .andExpect(content().string(containsString("id=\"quick-prompts\"")));
+        }
     }
 }
 
