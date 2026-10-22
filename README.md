@@ -82,7 +82,7 @@ Use the pre-seeded demo account:
 | **Student ID** | `240103000` |
 | **Name** | John Doe |
 | **Email** | 240103000@sdu.edu.kz |
-| **GPA** | 3.8 |
+| **Dashboard GPA** | Calculated from recorded grades; N/A until grades are supplied |
 
 Pre-loaded courses: `CS101` (Introduction to Computer Science), `MATH101` (Calculus I).
 The demo catalog also includes a non-official CS 2024 curriculum across eight semesters for registration testing.
@@ -96,6 +96,10 @@ The demo catalog also includes a non-official CS 2024 curriculum across eight se
 ```
 
 Tests use an isolated SQLite test database under `target/` and mocked external services — no Docker or API keys required.
+
+The dashboard recalculates cumulative GPA on each visit from eligible completed
+courses using SDU's published grade scale. See [US-31](docs/US-31.md) for the policy
+source, rounding, eligibility and the dependency on US-29.
 
 ---
 

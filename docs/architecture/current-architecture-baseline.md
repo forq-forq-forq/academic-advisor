@@ -25,6 +25,7 @@ If any other document conflicts with this file, this file takes precedence.
 | Academic Standing & Progress (US-07) | `AcademicStandingDto`, `DashboardController` (`/dashboard`), SVG circular progress ring (`27 / 240 ECTS`), GPA badge & program summary | Implemented |
 | Enrolled Courses List (US-08) | `EnrolledCourseDto`, `Student.enrolledCourses`, `DashboardController` (`/dashboard`), semester course list with ECTS credit weights | Implemented |
 | Completed Course History (US-29) | Read-only `CourseCompletion` view of `student_courses`, `CompletedCourseDto`, dashboard table; nullable recorded grades/terms | Implemented; transcript import/editing is outside scope |
+| Automatic Cumulative GPA (US-31) | `CumulativeGpaService` derives credit-weighted GPA from the dashboard's current completion records on each request | SDU Handbook 2026-2027 p. 28; no stored GPA fallback; see `docs/US-31.md` |
 | Authentication | Session attributes (`authenticatedStudent`, `authenticatedStudentId`) with BCrypt password verification via `PasswordEncoder` | US-04 implemented |
 | AI integration | Google Gemini API via `RestClient` | Implemented |
 | CI | GitHub Actions (`./mvnw clean test`, Docker build checks) | Implemented |

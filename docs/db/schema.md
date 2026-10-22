@@ -63,7 +63,7 @@ erDiagram
         VARCHAR student_id UK "Business identifier"
         VARCHAR name "NOT NULL"
         VARCHAR email UK "Nullable"
-        DOUBLE gpa "Current GPA"
+        DOUBLE gpa "Legacy stored GPA; dashboard derives GPA from grades"
         BIGINT major_id FK "References majors.id"
         INTEGER catalog_year "e.g. 2024"
         INTEGER current_semester "e.g. 3"

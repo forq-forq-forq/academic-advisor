@@ -7,6 +7,7 @@ import kz.edu.sdu.advisor.model.dto.CompletedCourseDto;
 import kz.edu.sdu.advisor.repository.CourseCompletionRepository;
 import kz.edu.sdu.advisor.repository.StudentRepository;
 import kz.edu.sdu.advisor.service.AiService;
+import kz.edu.sdu.advisor.service.CumulativeGpaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,7 @@ public class DashboardController {
     private final StudentRepository studentRepository;
     private final AiService aiService;
     private final CourseCompletionRepository courseCompletionRepository;
+    private final CumulativeGpaService cumulativeGpaService;
 
     @GetMapping("/dashboard")
     public String showDashboard(HttpSession session, Model model) {
@@ -52,12 +54,14 @@ public class DashboardController {
             return "redirect:/login";
         }
 
-        AcademicStandingDto academicStanding = AcademicStandingDto.of(student);
+        var completedCourses = courseCompletionRepository.findForStudent(student.getId())
+                .stream().map(CompletedCourseDto::of).toList();
+        AcademicStandingDto academicStanding = AcademicStandingDto.of(student,
+                cumulativeGpaService.calculate(completedCourses));
         model.addAttribute("student", student);
         model.addAttribute("standing", academicStanding);
         model.addAttribute("enrolledCourses", academicStanding.enrolledCourses());
-        model.addAttribute("completedCourses", courseCompletionRepository.findForStudent(student.getId())
-                .stream().map(CompletedCourseDto::of).toList());
+        model.addAttribute("completedCourses", completedCourses);
         return "dashboard";
     }
 
