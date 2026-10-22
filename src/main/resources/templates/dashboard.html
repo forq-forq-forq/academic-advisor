@@ -629,6 +629,7 @@
             margin-top: 0.2rem;
             min-height: 0.9rem;
         }
+        .standing-panel { min-width: 0; }
         .completed-table-wrapper { overflow-x: auto; }
         .completed-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         .completed-table caption { text-align: left; font-weight: 700; padding: 0.75rem 0; }
@@ -766,8 +767,9 @@
             </div>
 
             <div class="enrolled-courses-card" aria-label="Completed Courses">
-                <div class="completed-table-wrapper" tabindex="0" role="region" aria-label="Completed course history">
-                    <table class="completed-table" id="completed-courses-table" th:if="${!#lists.isEmpty(completedCourses)}">
+                <div class="completed-table-wrapper" tabindex="0" role="region" aria-label="Completed course history"
+                     th:if="${!#lists.isEmpty(completedCourses)}">
+                    <table class="completed-table" id="completed-courses-table">
                         <caption>Completed Courses</caption>
                         <thead>
                         <tr>

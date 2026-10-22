@@ -1,7 +1,11 @@
 package kz.edu.sdu.advisor.controller;
 
 import kz.edu.sdu.advisor.model.Student;
+import kz.edu.sdu.advisor.model.dto.CompletedCourseDto;
+import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.StudentRepository;
+import kz.edu.sdu.advisor.service.CartService;
+import kz.edu.sdu.advisor.exception.PrerequisiteNotMetException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -11,6 +15,8 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,6 +31,8 @@ class CompletedCourseHistoryTest {
     @Autowired private MockMvc mvc;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private StudentRepository students;
+    @Autowired private CourseRepository courses;
+    @Autowired private CartService cart;
 
     private MockHttpSession session(String studentId) {
         MockHttpSession session = new MockHttpSession();
@@ -70,7 +78,67 @@ class CompletedCourseHistoryTest {
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("completedCourses", empty()))
                 .andExpect(content().string(containsString("No completed courses yet.")))
+                .andExpect(content().string(not(containsString("aria-label=\"Completed course history\""))))
                 .andExpect(content().string(not(containsString("id=\"completed-courses-table\""))));
+    }
+
+    @Test
+    void sameCourseHasStudentSpecificGradesAndTermsAndIgnoresRequestStudentIds() throws Exception {
+        Long demoId = students.findByStudentId("240103000").orElseThrow().getId();
+        Long courseId = courses.findByCode("CS101").orElseThrow().getId();
+        Student other = new Student();
+        other.setStudentId("us29-other");
+        other.setName("Other Student");
+        students.saveAndFlush(other);
+        jdbc.update("insert into student_courses (student_id, course_id, letter_grade, semester_taken) values (?, ?, ?, ?)",
+                other.getId(), courseId, "B+", "Spring 2025");
+        jdbc.update("update student_courses set letter_grade = ?, semester_taken = ? where student_id = ? and course_id = ?",
+                "A-", "Fall 2024", demoId, courseId);
+
+        mvc.perform(get("/dashboard").session(session("us29-other"))
+                        .param("studentId", "240103000").param("student_id", demoId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("completedCourses", List.of(new CompletedCourseDto(
+                        "CS101", "Introduction to Computer Science", 3, "B+", "Spring 2025"))));
+        mvc.perform(get("/dashboard").session(session("240103000")))
+                .andExpect(model().attribute("completedCourses", hasItem(new CompletedCourseDto(
+                        "CS101", "Introduction to Computer Science", 3, "A-", "Fall 2024"))));
+    }
+
+    @Test
+    void unauthenticatedStudentSelectorCannotAccessHistory() throws Exception {
+        mvc.perform(get("/dashboard").param("studentId", "240103000"))
+                .andExpect(redirectedUrl("/login"))
+                .andExpect(content().string(not(containsString("CS101"))));
+    }
+
+    @Test
+    void recordedMetadataDoesNotChangeStandingCreditsOrPrerequisites() throws Exception {
+        Long id = students.findByStudentId("240103000").orElseThrow().getId();
+        jdbc.update("update student_courses set letter_grade = ?, semester_taken = ? where student_id = ?",
+                "A", "Fall 2024", id);
+
+        mvc.perform(get("/dashboard").session(session("240103000")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("27 / 240 ECTS completed")))
+                .andExpect(content().string(containsString("14 ECTS")))
+                .andExpect(content().string(containsString("3.80")))
+                .andExpect(content().string(containsString("Honor Standing")));
+        Student student = students.findByStudentId("240103000").orElseThrow();
+        assertEquals(27, student.getCompletedCredits());
+        assertDoesNotThrow(() -> cart.validatePrerequisites(student, courses.findByCode("CS204").orElseThrow()));
+        assertThrows(PrerequisiteNotMetException.class,
+                () -> cart.validatePrerequisites(student, courses.findByCode("CS202").orElseThrow()));
+    }
+
+    @Test
+    void blankGradesAndTermsUseMissingDataFallback() throws Exception {
+        Long id = students.findByStudentId("240103000").orElseThrow().getId();
+        jdbc.update("update student_courses set letter_grade = ?, semester_taken = ? where student_id = ?",
+                "   ", "", id);
+        String html = mvc.perform(get("/dashboard").session(session("240103000")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertEquals(16, completedTable(html).split("<td>Not recorded</td>", -1).length - 1);
     }
 
     @Test
