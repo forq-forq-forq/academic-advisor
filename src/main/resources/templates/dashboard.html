@@ -679,6 +679,7 @@
         <nav class="nav-links">
             <a th:href="@{/dashboard}" class="active">Dashboard</a>
             <a th:href="@{/planner}">Planner</a>
+            <a th:href="@{/profile}">Transcript</a>
             <a th:href="@{/faq}">FAQ</a>
         </nav>
     </div>
@@ -827,6 +828,9 @@
                 <div id="completed-empty-state" th:if="${#lists.isEmpty(completedCourses)}">
                     <h3 class="enrolled-title">Completed Courses</h3>
                     <p>No completed courses yet.</p>
+                </div>
+                <div style="margin-top: 0.35rem; text-align: right;">
+                    <a th:href="@{/profile}" class="empty-planner-link">Manage Transcript (US-30) →</a>
                 </div>
             </div>
 
