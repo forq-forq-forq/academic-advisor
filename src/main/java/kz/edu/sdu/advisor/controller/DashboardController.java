@@ -5,6 +5,7 @@ import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.AcademicStandingDto;
 import kz.edu.sdu.advisor.model.dto.CompletedCourseDto;
 import kz.edu.sdu.advisor.repository.CourseCompletionRepository;
+import kz.edu.sdu.advisor.service.AcademicContextService;
 import kz.edu.sdu.advisor.service.AiService;
 import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import kz.edu.sdu.advisor.service.CumulativeGpaService;
@@ -36,6 +37,7 @@ public class DashboardController {
     private final AiService aiService;
     private final CourseCompletionRepository courseCompletionRepository;
     private final CumulativeGpaService cumulativeGpaService;
+    private final AcademicContextService academicContextService;
 
     @GetMapping("/dashboard")
     public String showDashboard(HttpSession session, Model model) {
@@ -69,7 +71,8 @@ public class DashboardController {
             @RequestParam(value = "page", required = false) String page,
             HttpSession session) {
 
-        if (!authSessionHelper.isAuthenticated(session)) {
+        Student student = authSessionHelper.resolveAuthenticatedStudent(session).orElse(null);
+        if (student == null) {
             return ResponseEntity.status(401)
                     .body(Map.of("error", "Session expired. Please log in again."));
         }
@@ -81,7 +84,8 @@ public class DashboardController {
         }
 
         try {
-            String reply = aiService.sendPrompt(trimmed);
+            String contextualPrompt = academicContextService.buildContextualPrompt(student, trimmed, page);
+            String reply = aiService.sendPrompt(contextualPrompt);
             return ResponseEntity.ok(Map.of("reply", reply));
         } catch (Exception ex) {
             log.error("AI service error while handling chat message", ex);
