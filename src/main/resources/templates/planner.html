@@ -442,6 +442,32 @@
             background: #f8fafc;
         }
 
+        .btn-explain {
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #cbd5e0;
+            padding: 0.3rem 0.55rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .btn-explain:hover {
+            background: #edf2ff;
+            color: #3b5bdb;
+            border-color: #bac8ff;
+        }
+
+        .catalog-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-shrink: 0;
+        }
+
         .btn-add {
             background: #4c6ef5;
             color: #ffffff;
@@ -637,6 +663,13 @@
             </h2>
             <div class="cart-actions">
                 <button type="button"
+                        id="btn-ai-build-plan"
+                        class="btn-copy-codes"
+                        onclick="window.openCopilotWithPrompt && window.openCopilotWithPrompt('Build my next semester', true)"
+                        title="Generate a balanced semester plan with AI Copilot">
+                    ✨ AI Build Plan
+                </button>
+                <button type="button"
                         id="btn-copy-codes"
                         class="btn-copy-codes"
                         onclick="copyCartCodes()"
@@ -773,12 +806,19 @@
                               th:text="'(' + ${course.missingSummary} + ')'"></span>
                     </div>
                 </div>
-                <span th:if="${course.inCart}" class="badge-in-cart">In Cart</span>
-                <button th:unless="${course.inCart}"
-                        type="button"
-                        class="btn-add"
-                        th:attr="data-course-id=${course.id}"
-                        onclick="addCourse(this.getAttribute('data-course-id'))">+ Add</button>
+                <div class="catalog-item-actions">
+                    <button type="button"
+                            class="btn-explain"
+                            th:attr="data-course-code=${course.code}"
+                            onclick="window.openCopilotWithPrompt && window.openCopilotWithPrompt('Explain course ' + this.getAttribute('data-course-code'), true)"
+                            title="Ask AI Copilot to explain this course">ℹ️ Explain</button>
+                    <span th:if="${course.inCart}" class="badge-in-cart">In Cart</span>
+                    <button th:unless="${course.inCart}"
+                            type="button"
+                            class="btn-add"
+                            th:attr="data-course-id=${course.id}"
+                            onclick="addCourse(this.getAttribute('data-course-id'))">+ Add</button>
+                </div>
             </li>
         </ul>
     </aside>
