@@ -37,6 +37,7 @@ public class TranscriptService {
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
     private final CartItemRepository cartItemRepository;
+    private final CumulativeGpaService cumulativeGpaService;
 
     @Transactional(readOnly = true)
     public List<CompletedCourseDto> getCompletedCourses(Long studentDbId) {
@@ -70,6 +71,8 @@ public class TranscriptService {
             cartItemRepository.deleteByStudent_StudentIdAndCourse_Id(studentId, courseId);
         }
 
+        recalculateStudentGpa(student);
+
         log.info("Saved transcript record for student {}: course={}, grade={}, semester={}",
                 studentId, course.getCode(), normalizedGrade, normalizedSemester);
 
@@ -85,8 +88,16 @@ public class TranscriptService {
         if (courseCompletionRepository.existsById(completionId)) {
             courseCompletionRepository.deleteById(completionId);
             courseCompletionRepository.flush();
+            recalculateStudentGpa(student);
             log.info("Removed course ID {} from transcript for student {}", courseId, studentId);
         }
+    }
+
+    private void recalculateStudentGpa(Student student) {
+        List<CompletedCourseDto> completed = getCompletedCourses(student.getId());
+        Double newGpa = cumulativeGpaService.calculate(completed);
+        student.setGpa(newGpa != null ? newGpa : 0.0);
+        studentRepository.save(student);
     }
 
     @Transactional

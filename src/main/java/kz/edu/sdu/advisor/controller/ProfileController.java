@@ -7,6 +7,7 @@ import kz.edu.sdu.advisor.model.dto.AcademicStandingDto;
 import kz.edu.sdu.advisor.model.dto.CompletedCourseDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.service.AuthSessionHelper;
+import kz.edu.sdu.advisor.service.CumulativeGpaService;
 import kz.edu.sdu.advisor.service.TranscriptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ public class ProfileController {
     private final AuthSessionHelper authSessionHelper;
     private final TranscriptService transcriptService;
     private final CourseRepository courseRepository;
+    private final CumulativeGpaService cumulativeGpaService;
 
     @GetMapping("/profile")
     public String showProfile(HttpSession session, Model model) {
@@ -51,7 +53,8 @@ public class ProfileController {
         Map<String, Long> courseIdByCode = allCourses.stream()
                 .collect(Collectors.toMap(Course::getCode, Course::getId, (a, b) -> a));
 
-        AcademicStandingDto standing = AcademicStandingDto.of(student);
+        AcademicStandingDto standing = AcademicStandingDto.of(student,
+                cumulativeGpaService.calculate(completedCourses));
 
         model.addAttribute("student", student);
         model.addAttribute("standing", standing);
