@@ -37,14 +37,35 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
+        cleanLegacyData();
+
         Faculty sitam = seedFaculties();
         Major isMajor = seedMajor(sitam, "IS", "Information Systems");
 
         Map<String, Course> courses = seedCourses();
         seedPrerequisites(courses);
-        seedCurriculum(isMajor, 2024, courses);
-        seedCurriculum(isMajor, 2026, courses);
+        for (int year = 2022; year <= 2026; year++) {
+            seedCurriculum(isMajor, year, courses);
+        }
         seedDemoStudent(isMajor, courses);
+    }
+
+    private void cleanLegacyData() {
+        // Clean legacy faculties and majors other than SITAM / IS
+        majorRepository.findAll().stream()
+                .filter(m -> !"IS".equals(m.getCode()))
+                .forEach(m -> {
+                    log.info("Purging legacy major: {}", m.getCode());
+                    curriculumCourseRepository.deleteByMajor_Id(m.getId());
+                    majorRepository.delete(m);
+                });
+
+        facultyRepository.findAll().stream()
+                .filter(f -> !"SITAM".equals(f.getCode()))
+                .forEach(f -> {
+                    log.info("Purging legacy faculty: {}", f.getCode());
+                    facultyRepository.delete(f);
+                });
     }
 
     private Faculty seedFaculties() {

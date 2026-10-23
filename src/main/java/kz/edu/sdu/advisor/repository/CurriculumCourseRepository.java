@@ -16,7 +16,9 @@ public interface CurriculumCourseRepository extends JpaRepository<CurriculumCour
 
     boolean existsByMajor_IdAndCourse_IdAndCatalogYear(Long majorId, Long courseId, Integer catalogYear);
 
-    @Query("select distinct cc.catalogYear from CurriculumCourse cc order by cc.catalogYear")
+    void deleteByMajor_Id(Long majorId);
+
+    @Query("select distinct cc.catalogYear from CurriculumCourse cc order by cc.catalogYear desc")
     List<Integer> findDistinctCatalogYears();
 }
 

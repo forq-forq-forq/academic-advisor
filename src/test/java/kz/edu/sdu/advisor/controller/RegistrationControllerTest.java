@@ -204,7 +204,7 @@ class RegistrationControllerTest {
                         .param("confirmPassword", PASSWORD)
                         .param("facultyCode", FACULTY_CODE)
                         .param("majorCode", MAJOR_CODE)
-                        .param("catalogYear", "2023"))
+                        .param("catalogYear", "2021"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("register"))
                 .andExpect(model().attributeHasFieldErrors("registrationForm", "catalogYear"));

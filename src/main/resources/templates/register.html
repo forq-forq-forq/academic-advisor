@@ -81,7 +81,7 @@
         <select id="majorCode" th:field="*{majorCode}" required>
             <option value="">Select major</option>
             <option th:each="major : ${majors}" th:value="${major.code}" th:text="${major.name}"
-                    th:attr="data-faculty-code=${major.faculty.code}"></option>
+                    th:attr="data-faculty-code=${major.faculty != null ? major.faculty.code : ''}"></option>
         </select>
         <p class="field-error" th:if="${#fields.hasErrors('majorCode')}" th:errors="*{majorCode}"></p>
 
@@ -115,21 +115,33 @@
     const studentIdInput = document.getElementById('studentId');
 
     function filterMajors() {
-        if (facultySelect.options.length === 2 && !facultySelect.value) {
-            facultySelect.selectedIndex = 1;
-        }
+        const selectedFaculty = facultySelect.value;
+        let visibleCount = 0;
+        let lastVisibleValue = '';
+
         for (const option of majorSelect.options) {
-            if (option.value) {
-                option.hidden = option.dataset.facultyCode !== facultySelect.value;
+            if (!option.value) {
+                option.hidden = false;
+                continue;
+            }
+            const belongs = !selectedFaculty || (option.getAttribute('data-faculty-code') === selectedFaculty);
+            option.hidden = !belongs;
+            if (belongs) {
+                visibleCount++;
+                lastVisibleValue = option.value;
             }
         }
+
         if (majorSelect.selectedOptions[0]?.hidden) {
             majorSelect.value = '';
         }
-        const visibleMajors = Array.from(majorSelect.options).filter(o => o.value && !o.hidden);
-        if (visibleMajors.length === 1 && !majorSelect.value) {
-            majorSelect.value = visibleMajors[0].value;
+        if (visibleCount === 1 && !majorSelect.value) {
+            majorSelect.value = lastVisibleValue;
         }
+    }
+
+    if (facultySelect.options.length === 2 && !facultySelect.value) {
+        facultySelect.selectedIndex = 1;
     }
 
     emailInput.addEventListener('blur', () => {
