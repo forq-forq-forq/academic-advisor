@@ -8,6 +8,7 @@ import kz.edu.sdu.advisor.model.Prerequisite;
 import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.AvailableCourseDto;
 import kz.edu.sdu.advisor.model.dto.CartDto;
+import kz.edu.sdu.advisor.model.dto.EnrolledCourseDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.CurriculumCourseRepository;
 import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
@@ -131,8 +132,13 @@ public class PlannerController {
                 })
                 .toList();
 
+        List<EnrolledCourseDto> enrolledCourses = cartService.getEnrolledCourses(studentId);
+        int enrolledCredits = enrolledCourses.stream().mapToInt(EnrolledCourseDto::credits).sum();
+
         model.addAttribute("student", student);
         model.addAttribute("cart", cart);
+        model.addAttribute("enrolledCourses", enrolledCourses);
+        model.addAttribute("enrolledCredits", enrolledCredits);
         model.addAttribute("availableCourses", availableCourseDtos);
         model.addAttribute("completedCourseCodes", completedCodes);
 
@@ -198,6 +204,105 @@ public class PlannerController {
         }
 
         return ResponseEntity.ok(cartService.getCart(studentId));
+    }
+
+    @PostMapping("/planner/cart/enroll")
+    @ResponseBody
+    public ResponseEntity<?> enrollCartCourses(HttpSession session) {
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+
+        try {
+            List<EnrolledCourseDto> enrolledCourses = cartService.enrollCartCourses(studentId);
+            int enrolledCredits = enrolledCourses.stream().mapToInt(EnrolledCourseDto::credits).sum();
+            CartDto updatedCart = cartService.getCart(studentId);
+            return ResponseEntity.ok(Map.of(
+                    "cart", updatedCart,
+                    "enrolledCourses", enrolledCourses,
+                    "enrolledCredits", enrolledCredits,
+                    "message", "Courses accepted! They are now listed as your Currently Enrolled Courses."
+            ));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error enrolling cart courses for student {}", studentId, ex);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to confirm course enrollment."));
+        }
+    }
+
+    @PostMapping("/planner/enrolled/cancel")
+    public Object cancelEnrolledCourse(
+            @RequestParam("courseId") Long courseId,
+            @RequestParam(value = "redirect", required = false) String redirect,
+            HttpSession session) {
+
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:/login";
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+
+        try {
+            List<EnrolledCourseDto> enrolledCourses = cartService.cancelEnrolledCourse(studentId, courseId);
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:" + (redirect.startsWith("/") ? redirect : "/" + redirect);
+            }
+            int enrolledCredits = enrolledCourses.stream().mapToInt(EnrolledCourseDto::credits).sum();
+            CartDto updatedCart = cartService.getCart(studentId);
+            return ResponseEntity.ok(Map.of(
+                    "cart", updatedCart,
+                    "enrolledCourses", enrolledCourses,
+                    "enrolledCredits", enrolledCredits
+            ));
+        } catch (Exception ex) {
+            log.error("Error cancelling enrolled course {} for student {}", courseId, studentId, ex);
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:" + (redirect.startsWith("/") ? redirect : "/" + redirect);
+            }
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to cancel enrolled course."));
+        }
+    }
+
+    @PostMapping("/planner/enrolled/return-to-cart")
+    public Object returnEnrolledToCart(
+            @RequestParam(value = "redirect", required = false) String redirect,
+            HttpSession session) {
+
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:/login";
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+
+        try {
+            CartDto updatedCart = cartService.returnEnrolledToCart(studentId);
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:" + (redirect.startsWith("/") ? redirect : "/" + redirect);
+            }
+            List<EnrolledCourseDto> enrolledCourses = cartService.getEnrolledCourses(studentId);
+            int enrolledCredits = enrolledCourses.stream().mapToInt(EnrolledCourseDto::credits).sum();
+            return ResponseEntity.ok(Map.of(
+                    "cart", updatedCart,
+                    "enrolledCourses", enrolledCourses,
+                    "enrolledCredits", enrolledCredits,
+                    "message", "Enrolled courses returned to your Semester Cart for editing."
+            ));
+        } catch (Exception ex) {
+            log.error("Error returning enrolled courses to cart for student {}", studentId, ex);
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:" + (redirect.startsWith("/") ? redirect : "/" + redirect);
+            }
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to return enrolled courses to cart."));
+        }
     }
 
     private String resolveStudentId(HttpSession session) {

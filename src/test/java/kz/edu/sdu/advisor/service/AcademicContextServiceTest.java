@@ -36,26 +36,25 @@ class AcademicContextServiceTest {
     @Test
     @DisplayName("US-41: buildContextualPrompt includes student profile, completed courses, enrolled courses, cart items, and eligible courses")
     void buildContextualPrompt_includesFullStudentContext() {
-        Course cs101 = courseRepository.findByCode("CS101").orElseThrow();
-        Course cs204 = courseRepository.findByCode("CS204").orElseThrow();
+        Course css105 = courseRepository.findByCode("CSS105").orElseThrow();
+        Course inf202 = courseRepository.findByCode("INF202").orElseThrow();
 
-        transcriptService.saveCompletion("240103000", cs101.getId(), "A", "Fall 2024");
+        transcriptService.saveCompletion("240103000", css105.getId(), "A", "Fall 2024");
         transcriptService.updateAcademicProfile("240103000", 3, "Backend Software Engineer");
-        cartService.addCourse("240103000", cs204.getId());
+        cartService.addCourse("240103000", inf202.getId());
 
         Student student = studentRepository.findByStudentId("240103000").orElseThrow();
         String prompt = academicContextService.buildContextualPrompt(
                 student, "What courses should I take next?", "/planner");
 
         assertTrue(prompt.contains("John Doe (ID: 240103000)"));
-        assertTrue(prompt.contains("Major: Computer Science"));
+        assertTrue(prompt.contains("Major: Information Systems (Faculty: SITAM)"));
         assertTrue(prompt.contains("Career Goal / Track: Backend Software Engineer"));
         assertTrue(prompt.contains("Cumulative GPA: 4.00 (Standing: Honor Standing)"));
         assertTrue(prompt.contains("Student's Active Page in App: /planner"));
-        assertTrue(prompt.contains("CS101 (Introduction to Computer Science, 3 ECTS): Grade=A, Semester=Fall 2024"));
-        assertTrue(prompt.contains("CS201 (Data Structures and Algorithms, 4 ECTS)"));
-        assertTrue(prompt.contains("CS204 (Database Systems, 4 ECTS)"));
+        assertTrue(prompt.contains("CSS105 (Fundamentals of Programming, 5 ECTS): Grade=A, Semester=Fall 2024"));
+        assertTrue(prompt.contains("CSS215 (Introduction to Algorithms, 5 ECTS)"));
+        assertTrue(prompt.contains("INF202 (Database Management Systems 1, 5 ECTS)"));
         assertTrue(prompt.contains("What courses should I take next?"));
     }
 }
-

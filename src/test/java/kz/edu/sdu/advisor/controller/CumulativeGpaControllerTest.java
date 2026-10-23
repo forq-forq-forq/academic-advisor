@@ -35,17 +35,17 @@ class CumulativeGpaControllerTest {
         MockHttpSession session = session("240103000");
         assertNull(standing(session).gpa());
 
-        grade(id, "CS101", "A"); // 3 ECTS
+        grade(id, "CSS105", "A"); // 5 ECTS
         assertEquals(4.0, standing(session).gpa());
-        grade(id, "MATH101", "B"); // 4 ECTS, previously ungraded
-        assertEquals(3.43, standing(session).gpa());
-        grade(id, "CS101", "C");
+        grade(id, "INF108", "B"); // 6 ECTS, previously ungraded -> (5*4.0 + 6*3.0) / 11 = 38 / 11 = 3.45
+        assertEquals(3.45, standing(session).gpa());
+        grade(id, "CSS105", "C"); // (5*2.0 + 6*3.0) / 11 = 28 / 11 = 2.55
         AcademicStandingDto updated = standing(session);
-        assertEquals(2.57, updated.gpa());
+        assertEquals(2.55, updated.gpa());
         assertEquals("Satisfactory", updated.standingLabel());
-        grade(id, "MATH101", null);
+        grade(id, "INF108", null);
         assertEquals(2.0, standing(session).gpa());
-        grade(id, "CS101", null);
+        grade(id, "CSS105", null);
         assertNull(standing(session).gpa());
         // The legacy stored value is neither used as fallback nor overwritten by a GET.
         assertEquals(3.8, jdbc.queryForObject("select gpa from students where id = ?", Double.class, id));
@@ -54,10 +54,10 @@ class CumulativeGpaControllerTest {
     @Test
     void removingACompletionAlsoRemovesItsContribution() throws Exception {
         Long id = demoId();
-        grade(id, "CS101", "A");
+        grade(id, "CSS105", "A");
         assertEquals(4.0, standing(session("240103000")).gpa());
         jdbc.update("delete from student_courses where student_id = ? and course_id = (select id from courses where code = ?)",
-                id, "CS101");
+                id, "CSS105");
         entityManager.clear();
         assertNull(standing(session("240103000")).gpa());
     }
@@ -65,14 +65,14 @@ class CumulativeGpaControllerTest {
     @Test
     void isolatesTwoStudentsEvenWhenTheyCompleteTheSameCourse() throws Exception {
         Long id = demoId();
-        grade(id, "CS101", "A");
+        grade(id, "CSS105", "A");
         Student other = new Student();
         other.setStudentId("us31-other");
         other.setName("Other Student");
         other.setGpa(4.0); // Deliberately stale legacy field.
         students.saveAndFlush(other);
         jdbc.update("insert into student_courses (student_id, course_id, letter_grade) select ?, id, ? from courses where code = ?",
-                other.getId(), "D", "CS101");
+                other.getId(), "D", "CSS105");
         entityManager.clear();
 
         AcademicStandingDto actual = (AcademicStandingDto) mvc.perform(get("/dashboard")
@@ -89,8 +89,8 @@ class CumulativeGpaControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("N/A")))
                 .andExpect(content().string(containsString("Not Available")))
-                .andExpect(content().string(containsString("27 / 240 ECTS completed")))
-                .andExpect(content().string(containsString("14 ECTS")));
+                .andExpect(content().string(containsString("41 / 240 ECTS completed")))
+                .andExpect(content().string(containsString("20 ECTS")));
         Student empty = new Student();
         empty.setStudentId("us31-empty");
         empty.setName("Empty Student");
@@ -101,9 +101,9 @@ class CumulativeGpaControllerTest {
     @Test
     void excludesEnrolledOnlyCoursesAndZeroCreditCourses() throws Exception {
         Long id = demoId();
-        grade(id, "CS101", "A");
-        grade(id, "MATH101", "F");
-        jdbc.update("update courses set credits = 0 where code = ?", "MATH101");
+        grade(id, "CSS105", "A");
+        grade(id, "MAT137", "F");
+        jdbc.update("update courses set credits = 0 where code = ?", "MAT137");
         entityManager.clear();
         assertEquals(4.0, standing(session("240103000")).gpa());
     }
@@ -137,4 +137,3 @@ class CumulativeGpaControllerTest {
                 .andExpect(status().isOk()).andReturn().getModelAndView().getModel().get("standing");
     }
 }
-

@@ -54,39 +54,43 @@ class DataSeederConsistencyTest {
         assertThat(student.getAccount().getEmail()).isEqualTo("240103000@sdu.edu.kz");
         assertThat(passwordEncoder.matches("Student123!@#", student.getAccount().getPasswordHash())).isTrue();
 
-        // US-02 support: major, catalog year, and current semester
+        // US-02 support: major (IS), catalog year, and current semester
         assertThat(student.getMajor()).isNotNull();
-        assertThat(student.getMajor().getCode()).isEqualTo("CS");
+        assertThat(student.getMajor().getCode()).isEqualTo("IS");
+        assertThat(student.getMajor().getName()).isEqualTo("Information Systems");
+        assertThat(student.getMajor().getFaculty().getCode()).isEqualTo("SITAM");
         assertThat(student.getCatalogYear()).isEqualTo(2024);
         assertThat(student.getCurrentSemester()).isEqualTo(3);
 
-        // US-07 support: completed credits calculation
+        // US-07 support: completed credits calculation (8 courses = 41 ECTS)
         assertThat(student.getCompletedCourses()).isNotEmpty();
-        assertThat(student.getCompletedCredits()).isEqualTo(27);
+        assertThat(student.getCompletedCredits()).isEqualTo(41);
 
-        // US-08 support: currently enrolled courses for this semester
+        // US-08 support: currently enrolled courses for this semester (4 courses = 20 ECTS)
         assertThat(student.getEnrolledCourses()).isNotEmpty();
-        assertThat(student.getEnrolledCredits()).isEqualTo(14);
+        assertThat(student.getEnrolledCredits()).isEqualTo(20);
     }
 
     @Test
-    void seededAcademicStructure_shouldProvideCurriculumAndFaculty() {
-        Faculty faculty = facultyRepository.findByCode("FE&NS").orElse(null);
+    void seededAcademicStructure_shouldProvideSitamAndInformationSystemsCurriculum() {
+        Faculty faculty = facultyRepository.findByCode("SITAM").orElse(null);
         assertThat(faculty).isNotNull();
-        assertThat(faculty.getName()).isEqualTo("Faculty of Engineering and Natural Sciences");
+        assertThat(faculty.getName()).isEqualTo("SITAM");
 
-        Major major = majorRepository.findByCode("CS").orElse(null);
+        Major major = majorRepository.findByCode("IS").orElse(null);
         assertThat(major).isNotNull();
-        assertThat(major.getFaculty().getCode()).isEqualTo("FE&NS");
+        assertThat(major.getName()).isEqualTo("Information Systems");
+        assertThat(major.getFaculty().getCode()).isEqualTo("SITAM");
         assertThat(major.getTotalCredits()).isEqualTo(240);
 
         List<CurriculumCourse> curriculum = curriculumCourseRepository
-                .findByMajor_CodeAndCatalogYearOrderBySemesterAsc("CS", 2024);
-        assertThat(curriculum).isNotEmpty();
-        assertThat(curriculum).anyMatch(c -> c.getSemester() == 1 && c.getCourse().getCode().equals("CS101"));
-        assertThat(curriculum).anyMatch(c -> c.getSemester() == 2 && c.getCourse().getCode().equals("CS102"));
-        assertThat(curriculum).anyMatch(c -> c.getSemester() == 3 && c.getCourse().getCode().equals("CS201"));
+                .findByMajor_CodeAndCatalogYearOrderBySemesterAsc("IS", 2024);
+        assertThat(curriculum).hasSize(98);
+        assertThat(curriculum).anyMatch(c -> c.getSemester() == 1 && c.getCourse().getCode().equals("INF106"));
+        assertThat(curriculum).anyMatch(c -> c.getSemester() == 1 && c.getCourse().getCode().equals("CSS105"));
+        assertThat(curriculum).anyMatch(c -> c.getSemester() == 2 && c.getCourse().getCode().equals("INF108"));
+        assertThat(curriculum).anyMatch(c -> c.getSemester() == 3 && c.getCourse().getCode().equals("CSS215"));
         assertThat(curriculum.stream().map(CurriculumCourse::getSemester).distinct().sorted().toList())
-            .containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
+                .containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
     }
 }

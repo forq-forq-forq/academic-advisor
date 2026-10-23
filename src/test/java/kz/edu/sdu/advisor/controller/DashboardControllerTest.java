@@ -63,10 +63,10 @@ class DashboardControllerTest {
         mockMvc.perform(get("/dashboard").session(session))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Academic Standing")))
-                .andExpect(content().string(containsString("27 / 240 ECTS completed")))
-                .andExpect(content().string(containsString("11.2%")))
-                .andExpect(content().string(containsString("213 ECTS")))
-                .andExpect(content().string(containsString("14 ECTS")));
+                .andExpect(content().string(containsString("41 / 240 ECTS completed")))
+                .andExpect(content().string(containsString("17.1%")))
+                .andExpect(content().string(containsString("199 ECTS")))
+                .andExpect(content().string(containsString("20 ECTS")));
     }
 
     @Test
@@ -77,8 +77,8 @@ class DashboardControllerTest {
 
         mockMvc.perform(get("/dashboard").session(session))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Computer Science")))
-                .andExpect(content().string(containsString("Engineering and Natural Sciences")));
+                .andExpect(content().string(containsString("Information Systems")))
+                .andExpect(content().string(containsString("SITAM")));
     }
 
     @Test
@@ -91,14 +91,13 @@ class DashboardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(model().attributeExists("enrolledCourses"))
                 .andExpect(content().string(containsString("Currently Enrolled Courses")))
-                .andExpect(content().string(containsString("CS201")))
-                .andExpect(content().string(containsString("Data Structures")))
-                .andExpect(content().string(containsString("4 ECTS")))
-                .andExpect(content().string(containsString("CS205")))
-                .andExpect(content().string(containsString("Discrete Mathematics")))
-                .andExpect(content().string(containsString("3 ECTS")))
-                .andExpect(content().string(containsString("MATH201")))
-                .andExpect(content().string(containsString("PHYS101")));
+                .andExpect(content().string(containsString("CSS215")))
+                .andExpect(content().string(containsString("Introduction to Algorithms")))
+                .andExpect(content().string(containsString("5 ECTS")))
+                .andExpect(content().string(containsString("CSS331")))
+                .andExpect(content().string(containsString("Operating Systems")))
+                .andExpect(content().string(containsString("INF313")))
+                .andExpect(content().string(containsString("MAT251")));
     }
 
     @Test

@@ -260,7 +260,7 @@ public class SemesterPlanService {
                         + "You can ask me to:%n"
                         + "• \"Build my next semester\" — generate a prerequisite-valid, balanced course plan%n"
                         + "• \"What electives fit my career?\" — match electives to your career goal (%s)%n"
-                        + "• \"Explain CS204\" (or \"Explain this course\") — inspect course difficulty, credits, and prerequisites.",
+                        + "• \"Explain INF202\" (or \"Explain this course\") — inspect course difficulty, credits, and prerequisites.",
                 student.getName(),
                 standing.majorName(),
                 standing.currentSemester() != null ? standing.currentSemester() : 1,
@@ -269,7 +269,7 @@ public class SemesterPlanService {
                 standing.formattedGpa(),
                 standing.standingLabel(),
                 cart.totalCredits(),
-                StringUtils.hasText(student.getCareerGoal()) ? student.getCareerGoal() : "Software Engineering / CS"
+                StringUtils.hasText(student.getCareerGoal()) ? student.getCareerGoal() : "Information Systems / Software Engineering"
         );
     }
 
@@ -278,8 +278,11 @@ public class SemesterPlanService {
             return Optional.empty();
         }
         String upper = message.toUpperCase(Locale.ROOT);
+        String upperCompact = upper.replaceAll("\\s+", "");
         for (Course c : allCourses) {
-            if (upper.contains(c.getCode().toUpperCase(Locale.ROOT))) {
+            String codeUpper = c.getCode().toUpperCase(Locale.ROOT);
+            String codeCompact = codeUpper.replaceAll("\\s+", "");
+            if (upper.contains(codeUpper) || upperCompact.contains(codeCompact)) {
                 return Optional.of(c);
             }
         }
@@ -374,7 +377,7 @@ public class SemesterPlanService {
                 appendCourseBrief(sb, c, rec.code(), rec.name(), rec.credits(), curriculumByCourseId, prereqsByCourseId);
             }
         }
-        sb.append("\n💡 Tip: Ask about any specific course code (e.g., \"Explain CS204\" or \"Explain CS301\") or click \"ℹ️ Explain\" on any course in the Planner.");
+        sb.append("\n💡 Tip: Ask about any specific course code (e.g., \"Explain INF202\" or \"Explain CSS217\") or click \"ℹ️ Explain\" on any course in the Planner.");
         return sb.toString();
     }
 

@@ -3,6 +3,7 @@ package kz.edu.sdu.advisor.controller;
 import kz.edu.sdu.advisor.model.Course;
 import kz.edu.sdu.advisor.repository.CartItemRepository;
 import kz.edu.sdu.advisor.repository.CourseRepository;
+import kz.edu.sdu.advisor.service.CartService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -20,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Transactional
 class PlannerControllerTest {
 
     private static final String VALID_STUDENT_ID = "240103000";
@@ -33,16 +36,19 @@ class PlannerControllerTest {
     @Autowired
     private CourseRepository courseRepository;
 
+    @Autowired
+    private CartService cartService;
+
     private Course testCourse;
 
     @BeforeEach
     void setUp() {
         cartItemRepository.deleteAll();
-        testCourse = courseRepository.findByCode("CS201").orElseGet(() -> {
+        testCourse = courseRepository.findByCode("CSS215").orElseGet(() -> {
             Course c = new Course();
-            c.setCode("CS201");
-            c.setName("Data Structures");
-            c.setCredits(4);
+            c.setCode("CSS215");
+            c.setName("Introduction to Algorithms");
+            c.setCredits(5);
             return courseRepository.save(c);
         });
     }
@@ -65,7 +71,7 @@ class PlannerControllerTest {
     }
 
     @Test
-    @DisplayName("Authenticated GET /planner should render view with empty cart placeholder")
+    @DisplayName("Authenticated GET /planner should render view with empty cart placeholder and enroll button")
     void getPlanner_authenticated_shouldRenderEmptyCart() throws Exception {
         MockHttpSession session = new MockHttpSession();
         session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
@@ -73,8 +79,9 @@ class PlannerControllerTest {
         mockMvc.perform(get("/planner").session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("planner"))
-                .andExpect(model().attributeExists("student", "cart", "availableCourses"))
+                .andExpect(model().attributeExists("student", "cart", "availableCourses", "enrolledCourses", "enrolledCredits"))
                 .andExpect(content().string(containsString("Your Semester Cart")))
+                .andExpect(content().string(containsString("id=\"btn-enroll-cart\"")))
                 .andExpect(content().string(containsString("No courses added yet. Ask the AI advisor or browse the catalog.")));
     }
 
@@ -142,16 +149,16 @@ class PlannerControllerTest {
     @Test
     @DisplayName("US-12 QA-2: Adding course with missing prerequisite should return 400 Bad Request with clear error message")
     void addCourse_withMissingPrerequisites_shouldReturn400WithErrorDetails() throws Exception {
-        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+        Course css217 = courseRepository.findByCode("CSS217").orElseThrow();
         MockHttpSession session = new MockHttpSession();
         session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
 
         mockMvc.perform(post("/planner/cart/add")
                         .session(session)
-                        .param("courseId", cs202.getId().toString()))
+                        .param("courseId", css217.getId().toString()))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", containsString("Cannot add CS202: missing prerequisite CS201")))
-                .andExpect(jsonPath("$.missingPrerequisites", hasItem("CS201")));
+                .andExpect(jsonPath("$.error", containsString("Cannot add CSS217: missing prerequisite CSS215")))
+                .andExpect(jsonPath("$.missingPrerequisites", hasItem("CSS215")));
     }
 
     @Test
@@ -164,7 +171,7 @@ class PlannerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(model().attributeExists("availableCourses"))
                 .andExpect(content().string(containsString("Missing Prereq")))
-                .andExpect(content().string(containsString("CS201")));
+                .andExpect(content().string(containsString("CSS215")));
     }
 
     @Test
@@ -218,31 +225,63 @@ class PlannerControllerTest {
     }
 
     @Test
-    @DisplayName("US-12 Fix: Adding prerequisite CS201 to cart enables adding dependent course CS202")
+    @DisplayName("US-12 Fix: Adding prerequisite CSS215 to cart enables adding dependent course CSS217")
     void addPrerequisiteToCart_enablesAddingDependentCourseViaEndpoint() throws Exception {
         MockHttpSession session = new MockHttpSession();
         session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
-        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+        Course css217 = courseRepository.findByCode("CSS217").orElseThrow();
 
-        // 1. Initially CS202 cannot be added (fails with 400)
+        // 1. Initially CSS217 cannot be added (fails with 400)
         mockMvc.perform(post("/planner/cart/add")
                         .session(session)
-                        .param("courseId", cs202.getId().toString()))
+                        .param("courseId", css217.getId().toString()))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", containsString("Cannot add CS202: missing prerequisite CS201")));
+                .andExpect(jsonPath("$.error", containsString("Cannot add CSS217: missing prerequisite CSS215")));
 
-        // 2. Add CS201 to cart
+        // 2. Add CSS215 to cart
         mockMvc.perform(post("/planner/cart/add")
                         .session(session)
                         .param("courseId", testCourse.getId().toString()))
                 .andExpect(status().isOk());
 
-        // 3. Now CS202 addition succeeds!
+        // 3. Now CSS217 addition succeeds!
         mockMvc.perform(post("/planner/cart/add")
                         .session(session)
-                        .param("courseId", cs202.getId().toString()))
+                        .param("courseId", css217.getId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items", hasSize(2)));
     }
-}
 
+    @Test
+    @DisplayName("Course Enrollment & Cancellation: POST /planner/cart/enroll, /planner/enrolled/cancel, and /planner/enrolled/return-to-cart")
+    void enrollCancelAndReturnToCart_shouldUpdateEnrolledCoursesAndCart() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+        Course inf202 = courseRepository.findByCode("INF202").orElseThrow();
+
+        // Add INF202 to cart
+        mockMvc.perform(post("/planner/cart/add")
+                        .session(session)
+                        .param("courseId", inf202.getId().toString()))
+                .andExpect(status().isOk());
+
+        // Confirm / Enroll cart courses
+        mockMvc.perform(post("/planner/cart/enroll").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cart.empty", is(true)))
+                .andExpect(jsonPath("$.enrolledCourses[*].code", hasItem("INF202")));
+
+        // Cancel INF202 from enrolled courses
+        mockMvc.perform(post("/planner/enrolled/cancel")
+                        .session(session)
+                        .param("courseId", inf202.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enrolledCourses[*].code", not(hasItem("INF202"))));
+
+        // Return all remaining enrolled courses to cart
+        mockMvc.perform(post("/planner/enrolled/return-to-cart").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enrolledCourses", hasSize(0)))
+                .andExpect(jsonPath("$.cart.items", hasSize(4)));
+    }
+}

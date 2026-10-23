@@ -115,6 +115,9 @@
     const studentIdInput = document.getElementById('studentId');
 
     function filterMajors() {
+        if (facultySelect.options.length === 2 && !facultySelect.value) {
+            facultySelect.selectedIndex = 1;
+        }
         for (const option of majorSelect.options) {
             if (option.value) {
                 option.hidden = option.dataset.facultyCode !== facultySelect.value;
@@ -122,6 +125,10 @@
         }
         if (majorSelect.selectedOptions[0]?.hidden) {
             majorSelect.value = '';
+        }
+        const visibleMajors = Array.from(majorSelect.options).filter(o => o.value && !o.hidden);
+        if (visibleMajors.length === 1 && !majorSelect.value) {
+            majorSelect.value = visibleMajors[0].value;
         }
     }
 

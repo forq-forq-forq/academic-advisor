@@ -57,14 +57,14 @@ class SemesterPlanServiceTest {
         assertTrue(totalRecommendedCredits <= SemesterPlanService.TARGET_BALANCED_CREDITS,
                 "Recommended credits should not exceed 30 ECTS balanced threshold");
 
-        // CS204 (Database Systems) has prereq CS102 (completed by 240103000) -> eligible!
-        // CS202 (Algorithms Design) has prereq CS201 (enrolled, not completed) -> must NOT be recommended!
-        assertTrue(plan.stream().anyMatch(r -> "CS204".equals(r.code())));
-        assertFalse(plan.stream().anyMatch(r -> "CS202".equals(r.code())),
+        // INF202 (Database Management Systems 1) and INF995 (Fundamentals of Web Development) have satisfied prereqs!
+        // CSS217 (Software Architecture and Design Patterns) has prereq CSS215 (enrolled, not completed) -> must NOT be recommended!
+        assertTrue(plan.stream().anyMatch(r -> "INF202".equals(r.code()) || "CSS118".equals(r.code())));
+        assertFalse(plan.stream().anyMatch(r -> "CSS217".equals(r.code())),
                 "Courses with unmet prerequisites must never be recommended");
-        assertFalse(plan.stream().anyMatch(r -> "CS101".equals(r.code())),
+        assertFalse(plan.stream().anyMatch(r -> "CSS105".equals(r.code())),
                 "Already completed courses must not be recommended");
-        assertFalse(plan.stream().anyMatch(r -> "CS201".equals(r.code())),
+        assertFalse(plan.stream().anyMatch(r -> "CSS215".equals(r.code())),
                 "Currently enrolled courses must not be recommended");
 
         for (CourseRecommendationDto rec : plan) {
@@ -77,16 +77,16 @@ class SemesterPlanServiceTest {
     @Test
     @DisplayName("US-43: Career-aligned elective query prioritizes electives matching student's careerGoal")
     void buildRecommendedPlan_electivesQueryAlignsWithCareerGoal() {
-        transcriptService.updateAcademicProfile("240103000", 4, "Web & Cloud Backend Engineer");
+        transcriptService.updateAcademicProfile("240103000", 4, "Mobile & Go Backend Engineer");
         Student student = studentRepository.findByStudentId("240103000").orElseThrow();
 
         List<CourseRecommendationDto> plan = semesterPlanService.buildRecommendedPlan(
                 student, "What electives fit my career?");
 
         assertFalse(plan.isEmpty());
-        // CS310 (Web Application Development) has prereq CS102 (completed) and matches Web career goal
-        assertTrue(plan.stream().anyMatch(r -> "CS310".equals(r.code())),
-                "Should recommend CS310 Web Application Development for Web career goal");
+        // CSS216 (Mobile Programming) and INF368 (The Go Programming Language) have prereq INF108 (completed)
+        assertTrue(plan.stream().anyMatch(r -> "CSS216".equals(r.code()) || "INF368".equals(r.code())),
+                "Should recommend career-aligned electives for Mobile & Go Backend Engineer");
     }
 
     @Test
@@ -116,7 +116,7 @@ class SemesterPlanServiceTest {
     }
 
     @Test
-    @DisplayName("US-40/US-42: 'Explain this course' and 'Explain CS204' work reliably even when Gemini API fails")
+    @DisplayName("US-40/US-42: 'Explain this course' and 'Explain INF202' work reliably even when Gemini API fails")
     void explainCoursePrompts_returnDetailedCourseExplanationsWhenExternalAiFails() throws Exception {
         when(aiService.sendPrompt(anyString())).thenThrow(new RuntimeException("Simulated Gemini API key error"));
 
@@ -128,17 +128,16 @@ class SemesterPlanServiceTest {
                         .param("message", "Explain this course")
                         .param("page", "/planner"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.reply", containsString("CS201")))
+                .andExpect(jsonPath("$.reply", containsString("CSS215")))
                 .andExpect(jsonPath("$.reply", not(containsString("temporarily unavailable"))));
 
         mockMvc.perform(post("/dashboard/chat")
                         .session(session)
-                        .param("message", "Explain CS204")
+                        .param("message", "Explain INF 202")
                         .param("page", "/planner"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.reply", containsString("CS204 — Database Systems")))
+                .andExpect(jsonPath("$.reply", containsString("INF202 — Database Management Systems 1")))
                 .andExpect(jsonPath("$.reply", containsString("Difficulty:")))
-                .andExpect(jsonPath("$.reply", containsString("Prerequisites: CS102")));
+                .andExpect(jsonPath("$.reply", containsString("Prerequisites: CSS105")));
     }
 }
-

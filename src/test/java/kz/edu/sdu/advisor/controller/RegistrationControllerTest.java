@@ -33,8 +33,8 @@ class RegistrationControllerTest {
 
     private static final String EMAIL = "us01-registration@sdu.edu.kz";
     private static final String PASSWORD = "SecurePass123!";
-    private static final String FACULTY_CODE = "FE&NS";
-    private static final String MAJOR_CODE = "CS";
+    private static final String FACULTY_CODE = "SITAM";
+    private static final String MAJOR_CODE = "IS";
     private static final String CATALOG_YEAR = "2024";
 
     @Autowired
@@ -91,7 +91,7 @@ class RegistrationControllerTest {
         mockMvc.perform(get("/register/success").session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("registration-success"))
-                .andExpect(model().attribute("curriculum", hasSize(32)))
+                .andExpect(model().attribute("curriculum", hasSize(98)))
                 .andExpect(content().string(containsString("Your Student ID is")))
                 .andExpect(content().string(containsString("us01-registration")))
                 .andExpect(content().string(containsString("Semester")));
@@ -175,20 +175,25 @@ class RegistrationControllerTest {
     @Test
     void registerWithMajorFromAnotherFaculty_shouldShowSelectionError() throws Exception {
         Faculty otherFaculty = facultyRepository.save(new Faculty("OTHER", "Other Faculty"));
-        majorRepository.save(new Major("OTHER-CS", "Other Computer Science", otherFaculty, 240));
+        Major otherMajor = majorRepository.save(new Major("OTHER-IS", "Other Information Systems", otherFaculty, 240));
 
-        mockMvc.perform(post("/register")
-                        .param("email", EMAIL)
-                        .param("password", PASSWORD)
-                        .param("confirmPassword", PASSWORD)
-                        .param("facultyCode", FACULTY_CODE)
-                        .param("majorCode", "OTHER-CS")
-                        .param("catalogYear", CATALOG_YEAR))
-                .andExpect(status().isOk())
-                .andExpect(view().name("register"))
-                .andExpect(model().attributeHasFieldErrors("registrationForm", "majorCode"));
+        try {
+            mockMvc.perform(post("/register")
+                            .param("email", EMAIL)
+                            .param("password", PASSWORD)
+                            .param("confirmPassword", PASSWORD)
+                            .param("facultyCode", FACULTY_CODE)
+                            .param("majorCode", "OTHER-IS")
+                            .param("catalogYear", CATALOG_YEAR))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("register"))
+                    .andExpect(model().attributeHasFieldErrors("registrationForm", "majorCode"));
 
-        assertThat(studentAccountRepository.findByEmailIgnoreCase(EMAIL)).isEmpty();
+            assertThat(studentAccountRepository.findByEmailIgnoreCase(EMAIL)).isEmpty();
+        } finally {
+            majorRepository.delete(otherMajor);
+            facultyRepository.delete(otherFaculty);
+        }
     }
 
     @Test
@@ -235,7 +240,7 @@ class RegistrationControllerTest {
                         .param("password", PASSWORD)
                         .param("confirmPassword", PASSWORD)
                         .param("facultyCode", FACULTY_CODE)
-                        .param("majorCode", "SE")
+                        .param("majorCode", MAJOR_CODE)
                         .param("catalogYear", CATALOG_YEAR)
                         .param("careerGoal", "Backend Engineer"))
                 .andExpect(status().is3xxRedirection())
@@ -243,7 +248,7 @@ class RegistrationControllerTest {
 
         Student savedStudent = studentRepository.findByStudentId("240103999").orElseThrow();
         assertThat(savedStudent.getName()).isEqualTo("Aruzhan Serikova");
-        assertThat(savedStudent.getMajor().getCode()).isEqualTo("SE");
+        assertThat(savedStudent.getMajor().getCode()).isEqualTo("IS");
         assertThat(savedStudent.getCareerGoal()).isEqualTo("Backend Engineer");
         studentRepository.delete(savedStudent);
         studentAccountRepository.findByEmailIgnoreCase(EMAIL).ifPresent(studentAccountRepository::delete);
