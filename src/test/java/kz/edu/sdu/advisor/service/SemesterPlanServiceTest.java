@@ -138,6 +138,6 @@ class SemesterPlanServiceTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reply", containsString("INF202 — Database Management Systems 1")))
                 .andExpect(jsonPath("$.reply", containsString("Difficulty:")))
-                .andExpect(jsonPath("$.reply", containsString("Prerequisites: CSS105")));
+                .andExpect(jsonPath("$.reply", containsString("Prerequisites: None")));
     }
 }

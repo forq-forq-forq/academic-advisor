@@ -25,8 +25,8 @@ public class GeminiProperties {
     /** Base URL of the Gemini REST API (no trailing slash). */
     private String baseUrl = "https://generativelanguage.googleapis.com/v1beta";
 
-    /** Gemini model to call, e.g. "gemini-2.5-flash". */
-    private String model = "gemini-2.5-flash";
+    /** Gemini model to call, e.g. "gemini-2.5-flash-lite". */
+    private String model = "gemini-2.5-flash-lite";
 
     /** Max time to establish a connection before failing. */
     private Duration connectTimeout = Duration.ofSeconds(5);

@@ -350,106 +350,53 @@ public class DataSeeder implements CommandLineRunner {
 
     private List<CourseSeed> seededCatalogList = List.of();
 
+    /**
+     * Seeds ONLY the explicit course prerequisites documented in the official
+     * SDU Information Systems BSc. (2026) Module Handbook ("Required and recommended
+     * prerequisites for joining the module" field). Courses marked with "-" or empty
+     * in the Handbook have no prerequisite restrictions.
+     */
     private void seedPrerequisites(Map<String, Course> courses) {
-        if (prerequisiteRepository.count() > 0) {
-            return;
-        }
+        prerequisiteRepository.deleteAll();
 
-        // Semester 2 prerequisites
-        addPrereq(courses.get("INF108"), courses.get("CSS105"));
-        addPrereq(courses.get("MAT138"), courses.get("MAT137"));
-        addPrereq(courses.get("MAT151"), courses.get("MAT137"));
-        addPrereq(courses.get("MDE170"), courses.get("MDE160"));
+        // p. 48: MDE 191 Foreign Languages 2 -> MDE 190 Foreign Languages 1
         addPrereq(courses.get("MDE191"), courses.get("MDE190"));
-        addPrereq(courses.get("MDE292"), courses.get("MDE291"));
 
-        // Semester 3 prerequisites
-        addPrereq(courses.get("MAT251"), courses.get("MAT138"));
+        // p. 74: INF 108 Object-Oriented Programming and Educational Practice -> CSS 105 Fundamentals of Programming
+        addPrereq(courses.get("INF108"), courses.get("CSS105"));
+
+        // p. 77: CSS 215 Introduction to Algorithms -> CSS 105, INF 108
         addPrereq(courses.get("CSS215"), courses.get("CSS105"));
         addPrereq(courses.get("CSS215"), courses.get("INF108"));
-        addPrereq(courses.get("CSS331"), courses.get("INF106"));
-        addPrereq(courses.get("INF313"), courses.get("INF106"));
-        addPrereq(courses.get("CSS118"), courses.get("CSS105"));
-        addPrereq(courses.get("MDE293"), courses.get("MDE292"));
 
-        // Semester 4 prerequisites
-        addPrereq(courses.get("CSS217"), courses.get("CSS215"));
-        addPrereq(courses.get("INF202"), courses.get("CSS105"));
-        addPrereq(courses.get("INF995"), courses.get("INF108"));
-        addPrereq(courses.get("INF203"), courses.get("INF313"));
-        addPrereq(courses.get("INF211"), courses.get("INF108"));
-        addPrereq(courses.get("MDE112"), courses.get("MDE111"));
-        addPrereq(courses.get("MDE294"), courses.get("MDE293"));
-
-        // Semester 5 prerequisites
-        addPrereq(courses.get("INF381"), courses.get("INF114"));
-        addPrereq(courses.get("CSS280"), courses.get("INF211"));
-        addPrereq(courses.get("INF317"), courses.get("MAT251"));
-        addPrereq(courses.get("INF317"), courses.get("INF202"));
-        addPrereq(courses.get("INF777"), courses.get("INF114"));
-        addPrereq(courses.get("INF330"), courses.get("CSS331"));
-        addPrereq(courses.get("INF345"), courses.get("CSS331"));
-        addPrereq(courses.get("INF345"), courses.get("INF313"));
-        addPrereq(courses.get("INF318"), courses.get("INF108"));
-        addPrereq(courses.get("INF321"), courses.get("MAT251"));
-        addPrereq(courses.get("INF321"), courses.get("CSS118"));
-        addPrereq(courses.get("INF429"), courses.get("INF381"));
-        addPrereq(courses.get("INF429"), courses.get("INF114"));
-        addPrereq(courses.get("INF316"), courses.get("INF995"));
-        addPrereq(courses.get("CSS216"), courses.get("INF108"));
-        addPrereq(courses.get("INF314"), courses.get("INF313"));
-        addPrereq(courses.get("INF888"), courses.get("INF202"));
-        addPrereq(courses.get("INF357"), courses.get("INF108"));
+        // p. 80: CSS 319 / INF 319 Advanced Algorithms -> CSS 105, INF 108, CSS 215
         addPrereq(courses.get("INF319"), courses.get("CSS105"));
         addPrereq(courses.get("INF319"), courses.get("INF108"));
         addPrereq(courses.get("INF319"), courses.get("CSS215"));
-        addPrereq(courses.get("INF347"), courses.get("INF203"));
-        addPrereq(courses.get("INF999"), courses.get("MAT138"));
 
-        // Semester 6 prerequisites
-        addPrereq(courses.get("CSS410"), courses.get("INF114"));
-        addPrereq(courses.get("INF395"), courses.get("CSS217"));
-        addPrereq(courses.get("INF395"), courses.get("INF202"));
-        addPrereq(courses.get("INF324"), courses.get("CSS118"));
-        addPrereq(courses.get("INF305"), courses.get("INF202"));
+        // p. 83: CSS 217 Software Architecture and Design Patterns -> CSS 215 Introduction to Algorithms
+        addPrereq(courses.get("CSS217"), courses.get("CSS215"));
+
+        // p. 89: INF 316 Web Front-End Development -> INF 995 Fundamentals of Web Development
+        addPrereq(courses.get("INF316"), courses.get("INF995"));
+
+        // p. 92: INF 373 Web Back-End Development -> INF 995 Fundamentals of Web Development
         addPrereq(courses.get("INF373"), courses.get("INF995"));
-        addPrereq(courses.get("INF389"), courses.get("INF114"));
-        addPrereq(courses.get("INF234"), courses.get("CSS216"));
-        addPrereq(courses.get("INF390"), courses.get("INF345"));
-        addPrereq(courses.get("INF337"), courses.get("INF321"));
-        addPrereq(courses.get("INF374"), courses.get("INF114"));
-        addPrereq(courses.get("INF392"), courses.get("INF203"));
-        addPrereq(courses.get("INF368"), courses.get("INF108"));
-        addPrereq(courses.get("INF998"), courses.get("INF321"));
-        addPrereq(courses.get("INF332"), courses.get("INF114"));
-        addPrereq(courses.get("INF376"), courses.get("CSS118"));
-        addPrereq(courses.get("INF300"), courses.get("INF114"));
-        addPrereq(courses.get("INF378"), courses.get("CSS331"));
-        addPrereq(courses.get("INF378"), courses.get("INF313"));
-        addPrereq(courses.get("INF356"), courses.get("INF357"));
-        addPrereq(courses.get("INF997"), courses.get("INF202"));
-        addPrereq(courses.get("INF377"), courses.get("INF318"));
 
-        // Semester 7 prerequisites
-        addPrereq(courses.get("CSS483"), courses.get("CSS280"));
-        addPrereq(courses.get("INF387"), courses.get("INF381"));
-        addPrereq(courses.get("INF406"), courses.get("INF202"));
-        addPrereq(courses.get("INF407"), courses.get("INF114"));
-        addPrereq(courses.get("INF415"), courses.get("INF381"));
-        addPrereq(courses.get("CSS314"), courses.get("CSS331"));
+        // p. 98: INF 234 Mobile Application Development 2 -> CSS 216 Mobile Programming
+        addPrereq(courses.get("INF234"), courses.get("CSS216"));
+
+        // p. 213: INF 429 IT Audit and Controls -> INF 381 Project Management in IT Business, INF 114 Fundamentals of IS
+        addPrereq(courses.get("INF429"), courses.get("INF381"));
+        addPrereq(courses.get("INF429"), courses.get("INF114"));
+
+        // p. 215: INF 412 IT Asset Management -> INF 381, INF 114
         addPrereq(courses.get("INF412"), courses.get("INF381"));
         addPrereq(courses.get("INF412"), courses.get("INF114"));
+
+        // p. 217: INF 414 IT Governance, Risk and Compliance -> INF 381, INF 114
         addPrereq(courses.get("INF414"), courses.get("INF381"));
         addPrereq(courses.get("INF414"), courses.get("INF114"));
-        addPrereq(courses.get("INF996"), courses.get("INF202"));
-
-        // Semester 8 prerequisites
-        addPrereq(courses.get("INF420"), courses.get("INF395"));
-        addPrereq(courses.get("INF420"), courses.get("CSS410"));
-        addPrereq(courses.get("INF459"), courses.get("INF381"));
-        addPrereq(courses.get("CSS486"), courses.get("CSS483"));
-        addPrereq(courses.get("CSS495"), courses.get("CSS410"));
-        addPrereq(courses.get("CSS479"), courses.get("INF420"));
     }
 
     private void addPrereq(Course target, Course required) {

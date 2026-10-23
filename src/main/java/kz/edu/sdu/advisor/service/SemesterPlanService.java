@@ -39,9 +39,28 @@ public class SemesterPlanService {
 
     public static final int TARGET_BALANCED_CREDITS = 30;
 
-    private static final List<String> PLAN_KEYWORDS = List.of(
-            "semester", "build", "elective", "recommend", "what courses",
-            "plan", "next", "suggest", "take", "career", "семестр", "курс", "электив", "план"
+    private static final List<String> PLAN_PHRASES = List.of(
+            "build my next semester",
+            "build semester",
+            "build plan",
+            "semester plan",
+            "what electives fit my career",
+            "what courses should i take",
+            "what should i take",
+            "recommend courses",
+            "recommend electives",
+            "suggest courses",
+            "suggest electives",
+            "собери семестр",
+            "составь план",
+            "план на семестр",
+            "порекомендуй курсы",
+            "посоветуй курсы",
+            "порекомендуй предметы",
+            "посоветуй предметы",
+            "какие курсы взять",
+            "какие предметы взять",
+            "какие элективы"
     );
 
     private final CourseCompletionRepository courseCompletionRepository;
@@ -56,10 +75,10 @@ public class SemesterPlanService {
             return false;
         }
         String lower = userMessage.toLowerCase(Locale.ROOT);
-        if (lower.contains("explain") || lower.contains("объясни")) {
+        if (lower.contains("explain") || lower.contains("объясни") || lower.contains("расскажи про")) {
             return false;
         }
-        return PLAN_KEYWORDS.stream().anyMatch(lower::contains);
+        return PLAN_PHRASES.stream().anyMatch(lower::contains);
     }
 
     @Transactional(readOnly = true)
@@ -435,15 +454,20 @@ public class SemesterPlanService {
         String type = cc != null ? cc.getCourseType() : "ELECTIVE";
         int semester = cc != null && cc.getSemester() != null ? cc.getSemester() : 6;
         boolean matchesCareer = matchesCareerGoal(course, careerGoal);
+        boolean isGeneralMde = course.getCode() != null && course.getCode().startsWith("MDE");
+        int credits = course.getCredits() != null ? course.getCredits() : 3;
 
         if (electivesFocus) {
             if ("ELECTIVE".equalsIgnoreCase(type) && matchesCareer) return 10 + semester;
-            if ("ELECTIVE".equalsIgnoreCase(type)) return 20 + semester;
+            if ("ELECTIVE".equalsIgnoreCase(type) && !isGeneralMde) return 20 + semester;
+            if ("ELECTIVE".equalsIgnoreCase(type)) return 30 + semester;
             return 40 + semester;
         } else {
-            if ("CORE".equalsIgnoreCase(type)) return 10 + semester;
-            if (matchesCareer) return 25 + semester;
-            return 35 + semester;
+            if ("CORE".equalsIgnoreCase(type) && !isGeneralMde && credits >= 5) return 10 + semester;
+            if (matchesCareer) return 20 + semester;
+            if ("CORE".equalsIgnoreCase(type) && credits >= 5) return 25 + semester;
+            if ("CORE".equalsIgnoreCase(type)) return 35 + semester;
+            return 45 + semester;
         }
     }
 

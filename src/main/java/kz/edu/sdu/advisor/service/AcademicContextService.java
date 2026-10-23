@@ -96,7 +96,12 @@ public class AcademicContextService {
                 .toList();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("You are the SDU AI Academic Advisor Copilot. Answer concisely, accurately, and personalize your advice using the student's real academic record below.\n\n");
+        sb.append("You are a friendly, helpful AI Academic Advisor Copilot for SDU University (SITAM — Information Systems BSc.).\n");
+        sb.append("Guidelines:\n");
+        sb.append("1. Always reply in the SAME language the student used in their question (e.g. Russian if they wrote in Russian, English if in English).\n");
+        sb.append("2. Answer the student's specific question directly and conversationally.\n");
+        sb.append("3. Do NOT output a full semester plan or list of courses unless the student explicitly asks you to build a semester plan or recommend courses.\n");
+        sb.append("4. Use the student's academic profile below as background reference when relevant.\n\n");
         sb.append("=== STUDENT ACADEMIC PROFILE ===\n");
         sb.append("- Name: ").append(student.getName()).append(" (ID: ").append(student.getStudentId()).append(")\n");
         sb.append("- Major: ").append(standing.majorName()).append(" (Faculty: ").append(standing.facultyName()).append(")\n");
