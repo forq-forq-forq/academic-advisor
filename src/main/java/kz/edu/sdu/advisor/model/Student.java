@@ -43,6 +43,9 @@ public class Student {
     @Column(name = "current_semester")
     private Integer currentSemester;
 
+    @Column(name = "career_goal", length = 255)
+    private String careerGoal;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id")
     private StudentAccount account;

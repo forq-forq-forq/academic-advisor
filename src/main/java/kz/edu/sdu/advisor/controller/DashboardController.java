@@ -5,8 +5,9 @@ import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.AcademicStandingDto;
 import kz.edu.sdu.advisor.model.dto.CompletedCourseDto;
 import kz.edu.sdu.advisor.repository.CourseCompletionRepository;
-import kz.edu.sdu.advisor.repository.StudentRepository;
 import kz.edu.sdu.advisor.service.AiService;
+import kz.edu.sdu.advisor.service.AuthSessionHelper;
+import kz.edu.sdu.advisor.service.CumulativeGpaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -31,33 +32,26 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DashboardController {
 
-    private final StudentRepository studentRepository;
+    private final AuthSessionHelper authSessionHelper;
     private final AiService aiService;
     private final CourseCompletionRepository courseCompletionRepository;
+    private final CumulativeGpaService cumulativeGpaService;
 
     @GetMapping("/dashboard")
     public String showDashboard(HttpSession session, Model model) {
-        String studentId = (String) session.getAttribute("authenticatedStudentId");
-        if (studentId == null && session.getAttribute("authenticatedStudent") instanceof Student s) {
-            studentId = s.getStudentId();
-        }
-
-        if (studentId == null) {
-            return "redirect:/login";
-        }
-
-        Student student = studentRepository.findByStudentId(studentId).orElse(null);
+        Student student = authSessionHelper.resolveAuthenticatedStudent(session).orElse(null);
         if (student == null) {
-            session.invalidate();
             return "redirect:/login";
         }
 
-        AcademicStandingDto academicStanding = AcademicStandingDto.of(student);
+        var completedCourses = courseCompletionRepository.findForStudent(student.getId())
+                .stream().map(CompletedCourseDto::of).toList();
+        AcademicStandingDto academicStanding = AcademicStandingDto.of(student,
+                cumulativeGpaService.calculate(completedCourses));
         model.addAttribute("student", student);
         model.addAttribute("standing", academicStanding);
         model.addAttribute("enrolledCourses", academicStanding.enrolledCourses());
-        model.addAttribute("completedCourses", courseCompletionRepository.findForStudent(student.getId())
-                .stream().map(CompletedCourseDto::of).toList());
+        model.addAttribute("completedCourses", completedCourses);
         return "dashboard";
     }
 
@@ -68,14 +62,14 @@ public class DashboardController {
      * @param session the current HTTP session (must be authenticated)
      * @return JSON object with either {@code reply} (AI text) or {@code error}
      */
-    @PostMapping("/dashboard/chat")
+    @PostMapping({"/dashboard/chat", "/api/chat"})
     @ResponseBody
-    public ResponseEntity<Map<String, String>> chat(
+    public ResponseEntity<Map<String, Object>> chat(
             @RequestParam("message") String message,
+            @RequestParam(value = "page", required = false) String page,
             HttpSession session) {
 
-        if (session.getAttribute("authenticatedStudentId") == null
-                && session.getAttribute("authenticatedStudent") == null) {
+        if (!authSessionHelper.isAuthenticated(session)) {
             return ResponseEntity.status(401)
                     .body(Map.of("error", "Session expired. Please log in again."));
         }

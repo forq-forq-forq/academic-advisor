@@ -24,4 +24,10 @@ public class Course {
 
     @Column(nullable = false)
     private Integer credits;
+
+    @Column(name = "difficulty")
+    private Integer difficulty = 3;
+
+    @Column(name = "description", length = 500)
+    private String description;
 }

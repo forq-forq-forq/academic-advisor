@@ -277,5 +277,20 @@ class CartServiceTest {
                 .contains("40 ECTS")
                 .contains("2 ECTS");
     }
+
+    @Test
+    @DisplayName("US-12 Fix: Removing a prerequisite course from cart cascades removal of dependent course")
+    void removePrerequisiteFromCart_shouldCascadeRemoveDependentCourse() {
+        Course cs201 = courseRepository.findByCode("CS201").orElseThrow();
+        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+
+        cartService.addCourse(STUDENT_ID, cs201.getId());
+        cartService.addCourse(STUDENT_ID, cs202.getId());
+        assertThat(cartService.getCart(STUDENT_ID).items()).hasSize(2);
+
+        CartDto afterRemove = cartService.removeCourse(STUDENT_ID, cs201.getId());
+        assertThat(afterRemove.items()).isEmpty();
+        assertThat(afterRemove.totalCredits()).isEqualTo(0);
+    }
 }
 

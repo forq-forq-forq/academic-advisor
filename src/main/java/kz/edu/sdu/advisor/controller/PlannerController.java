@@ -3,13 +3,15 @@ package kz.edu.sdu.advisor.controller;
 import jakarta.servlet.http.HttpSession;
 import kz.edu.sdu.advisor.exception.PrerequisiteNotMetException;
 import kz.edu.sdu.advisor.model.Course;
+import kz.edu.sdu.advisor.model.CurriculumCourse;
 import kz.edu.sdu.advisor.model.Prerequisite;
 import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.AvailableCourseDto;
 import kz.edu.sdu.advisor.model.dto.CartDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
+import kz.edu.sdu.advisor.repository.CurriculumCourseRepository;
 import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
-import kz.edu.sdu.advisor.repository.StudentRepository;
+import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import kz.edu.sdu.advisor.service.CartService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,23 +34,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PlannerController {
 
-    private final StudentRepository studentRepository;
+    private final AuthSessionHelper authSessionHelper;
     private final CourseRepository courseRepository;
+    private final CurriculumCourseRepository curriculumCourseRepository;
     private final PrerequisiteRepository prerequisiteRepository;
     private final CartService cartService;
 
     @GetMapping("/planner")
     public String showPlanner(HttpSession session, Model model) {
-        String studentId = resolveStudentId(session);
-        if (studentId == null) {
-            return "redirect:/login";
-        }
-
-        Student student = studentRepository.findByStudentId(studentId).orElse(null);
+        Student student = authSessionHelper.resolveAuthenticatedStudent(session).orElse(null);
         if (student == null) {
-            session.invalidate();
             return "redirect:/login";
         }
+        String studentId = student.getStudentId();
 
         CartDto cart = cartService.getCart(studentId);
         List<Course> allCourses = courseRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
@@ -55,9 +55,16 @@ public class PlannerController {
                 .map(item -> item.courseId())
                 .collect(Collectors.toSet());
 
-        List<Course> availableCourses = allCourses.stream()
-                .filter(c -> !inCartCourseIds.contains(c.getId()))
-                .toList();
+        Map<Long, CurriculumCourse> curriculumByCourseId = new HashMap<>();
+        if (student.getMajor() != null && student.getCatalogYear() != null) {
+            List<CurriculumCourse> curriculum = curriculumCourseRepository
+                    .findByMajor_CodeAndCatalogYearOrderBySemesterAsc(student.getMajor().getCode(), student.getCatalogYear());
+            for (CurriculumCourse cc : curriculum) {
+                if (cc.getCourse() != null && cc.getCourse().getId() != null) {
+                    curriculumByCourseId.put(cc.getCourse().getId(), cc);
+                }
+            }
+        }
 
         List<Prerequisite> allPrerequisites = prerequisiteRepository.findAllWithCourses();
         Map<Long, List<Course>> prereqMap = allPrerequisites.stream()
@@ -73,14 +80,20 @@ public class PlannerController {
                         .map(Course::getId)
                         .collect(Collectors.toSet());
 
-        Set<Long> satisfiedIds = new java.util.HashSet<>(completedIds);
+        Set<Long> enrolledIds = student.getEnrolledCourses() == null
+                ? Set.of()
+                : student.getEnrolledCourses().stream()
+                        .map(Course::getId)
+                        .collect(Collectors.toSet());
+
+        Set<Long> satisfiedIds = new HashSet<>(completedIds);
         satisfiedIds.addAll(inCartCourseIds);
 
         List<String> completedCodes = student.getCompletedCourses() == null
                 ? List.of()
                 : student.getCompletedCourses().stream().map(Course::getCode).toList();
 
-        List<AvailableCourseDto> availableCourseDtos = availableCourses.stream()
+        List<AvailableCourseDto> availableCourseDtos = allCourses.stream()
                 .map(c -> {
                     List<Course> prereqs = prereqMap.getOrDefault(c.getId(), List.of());
                     List<Course> missing = prereqs.stream()
@@ -93,11 +106,22 @@ public class PlannerController {
                     String summary = missing.stream()
                             .map(m -> m.getCode() + " (" + m.getName() + ")")
                             .collect(Collectors.joining(", "));
+                    CurriculumCourse cc = curriculumByCourseId.get(c.getId());
+                    String courseType = cc != null && cc.getCourseType() != null ? cc.getCourseType() : "ELECTIVE";
+                    Integer recommendedSemester = cc != null ? cc.getSemester() : null;
+
                     return new AvailableCourseDto(
                             c.getId(),
                             c.getCode(),
                             c.getName(),
                             c.getCredits(),
+                            c.getDifficulty() != null ? c.getDifficulty() : 3,
+                            c.getDescription(),
+                            courseType,
+                            recommendedSemester,
+                            completedIds.contains(c.getId()),
+                            enrolledIds.contains(c.getId()),
+                            inCartCourseIds.contains(c.getId()),
                             prereqCodes,
                             hasPrereqs,
                             met,
@@ -177,11 +201,6 @@ public class PlannerController {
     }
 
     private String resolveStudentId(HttpSession session) {
-        String studentId = (String) session.getAttribute("authenticatedStudentId");
-        if (studentId == null && session.getAttribute("authenticatedStudent") instanceof Student s) {
-            studentId = s.getStudentId();
-        }
-        return studentId;
+        return authSessionHelper.resolveStudentId(session);
     }
 }
-

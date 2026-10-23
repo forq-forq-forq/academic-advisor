@@ -1,159 +1,340 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title th:text="${pageTitle}">FAQ - Academic Advisor</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background-color: #f8f9fa; }
-    .faq-container { max-width: 900px; margin: 40px auto; }
-    .accordion-button:not(.collapsed) {
-        background-color: #e7f1ff;
-        color: #0c63e4;
-    }
-    .category-title {
-        margin-top: 30px;
-        margin-bottom: 15px;
-        color: #0d6efd;
-        border-bottom: 2px solid #0d6efd;
-        padding-bottom: 5px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">FAQ — Academic Advisor</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f0f4f8;
+            color: #2d3748;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: #4c6ef5;
+            color: #fff;
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        header .brand {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+        header h1 { font-size: 1.15rem; font-weight: 700; }
+        header .nav-links { display: flex; gap: 0.5rem; }
+        header .nav-links a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
+            transition: background 0.15s, color 0.15s;
+        }
+        header .nav-links a:hover, header .nav-links a.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+        header .user-actions { display: flex; align-items: center; gap: 1rem; }
+        header .student-info { font-size: 0.875rem; opacity: 0.95; }
+        header a.logout {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.825rem;
+            padding: 0.3rem 0.75rem;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 6px;
+        }
+        .faq-container {
+            max-width: 920px;
+            width: 100%;
+            margin: 1.75rem auto;
+            padding: 0 1rem 2.5rem;
+        }
+        .faq-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        .faq-header h2 { font-size: 1.4rem; color: #1a202c; }
+        .search-wrapper { margin-bottom: 1.5rem; }
+        #faqSearchInput {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1.5px solid #cbd5e0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            background: #fff;
+            color: #2d3748;
+            outline: none;
+        }
+        #faqSearchInput:focus {
+            border-color: #4c6ef5;
+            box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.15);
+        }
+        .category-title {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #3b5bdb;
+            font-size: 1.05rem;
+            border-bottom: 2px solid #bac8ff;
+            padding-bottom: 0.35rem;
+        }
+        .accordion {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+        .accordion-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .accordion-button {
+            width: 100%;
+            text-align: left;
+            background: #fff;
+            border: none;
+            padding: 0.85rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1a202c;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .accordion-button:hover { background: #f8fafc; }
+        .accordion-button:not(.collapsed) {
+            background-color: #edf2ff;
+            color: #3b5bdb;
+        }
+        .accordion-collapse { display: none; }
+        .accordion-collapse.show { display: block; }
+        .accordion-body {
+            padding: 0.85rem 1rem 1rem;
+            font-size: 0.9rem;
+            line-height: 1.55;
+            color: #4a5568;
+            border-top: 1px solid #edf2f7;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+        .btn-ask-ai-faq {
+            align-self: flex-start;
+            background: #edf2ff;
+            color: #3b5bdb;
+            border: 1px solid #bac8ff;
+            border-radius: 6px;
+            padding: 0.3rem 0.7rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-ask-ai-faq:hover {
+            background: #4c6ef5;
+            color: #ffffff;
+        }
+    </style>
 </head>
 <body>
 
+<header>
+    <div class="brand">
+        <h1>🎓 Academic Advisor</h1>
+        <nav class="nav-links">
+            <a th:href="@{/dashboard}">Dashboard</a>
+            <a th:href="@{/planner}">Planner</a>
+            <a th:href="@{/profile}">Transcript</a>
+            <a th:href="@{/faq}" class="active">FAQ</a>
+        </nav>
+    </div>
+    <div class="user-actions" th:if="${student != null}">
+        <span class="student-info">
+            <span th:text="${student.name}">Student</span>
+            &nbsp;·&nbsp;
+            <span th:text="${student.studentId}">ID</span>
+        </span>
+        <a class="logout" th:href="@{/logout}">Log out</a>
+    </div>
+</header>
+
 <div class="container faq-container">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Academic FAQ & Regulations</h2>
-    <a href="/dashboard" class="btn btn-outline-secondary">← Back to Dashboard</a>
-  </div>
-
-  <!-- US-35: Real-time search bar -->
-  <div class="mb-4">
-    <input type="text" id="faqSearchInput" class="form-control form-control-lg"
-           placeholder="Search FAQ articles in real time (e.g. GPA, Retake, Scholarships)..."
-           onkeyup="filterFAQ()">
-  </div>
-
-  <!-- US-34: Accordion Grouped by Categories -->
-  <div id="faqAccordionContainer">
-
-    <!-- Category 1: GPA & Grading -->
-    <h4 class="category-title">GPA & Grading</h4>
-    <div class="accordion mb-4" id="accordionGpa">
-      <div class="accordion-item faq-item">
-        <h2 class="accordion-header" id="headingOne">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
-            How is cumulative GPA calculated?
-          </button>
-        </h2>
-        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionGpa">
-          <div class="accordion-body">
-            Cumulative GPA is calculated by dividing the total quality points earned by the total credit hours attempted across all completed semesters.
-          </div>
-        </div>
-      </div>
-      <div class="accordion-item faq-item">
-        <h2 class="accordion-header" id="headingTwo">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
-            What is the minimum passing grade?
-          </button>
-        </h2>
-        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionGpa">
-          <div class="accordion-body">
-            The minimum passing grade for core major courses is "C" (2.0), while general requirements require at least a "D" grade (1.0).
-          </div>
-        </div>
-      </div>
+    <div class="faq-header">
+        <h2>Academic FAQ &amp; Regulations</h2>
     </div>
 
-    <!-- Category 2: Registration -->
-    <h4 class="category-title">Registration</h4>
-    <div class="accordion mb-4" id="accordionRegistration">
-      <div class="accordion-item faq-item">
-        <h2 class="accordion-header" id="headingThree">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
-            When does course registration open?
-          </button>
-        </h2>
-        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordionRegistration">
-          <div class="accordion-body">
-            Registration dates depend on your current academic year and credit count. Check the official academic calendar for exact priority registration windows.
-          </div>
-        </div>
-      </div>
+    <!-- US-35: Real-time search bar -->
+    <div class="search-wrapper">
+        <input type="text" id="faqSearchInput" class="form-control form-control-lg"
+               placeholder="Search FAQ articles in real time (e.g. GPA, Retake, Scholarships)..."
+               onkeyup="filterFAQ()" oninput="filterFAQ()">
     </div>
 
-    <!-- Category 3: Retakes -->
-    <h4 class="category-title">Retakes</h4>
-    <div class="accordion mb-4" id="accordionRetakes">
-      <div class="accordion-item faq-item">
-        <h2 class="accordion-header" id="headingFour">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
-            How many times can I retake a course?
-          </button>
-        </h2>
-        <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#accordionRetakes">
-          <div class="accordion-body">
-            You can retake a course up to 2 times. The highest grade achieved will replace the previous grade in your cumulative GPA calculation.
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- US-34: Accordion Grouped by Categories -->
+    <div id="faqAccordionContainer">
 
-    <!-- Category 4: Summer School -->
-    <h4 class="category-title">Summer School</h4>
-    <div class="accordion mb-4" id="accordionSummer">
-      <div class="accordion-item faq-item">
-        <h2 class="accordion-header" id="headingFive">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive">
-            How many credits can I take in Summer School?
-          </button>
-        </h2>
-        <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#accordionSummer">
-          <div class="accordion-body">
-            Students can enroll in a maximum of 12 credit hours during the summer term.
-          </div>
+        <!-- Category 1: GPA & Grading -->
+        <h4 class="category-title">GPA &amp; Grading</h4>
+        <div class="accordion" id="accordionGpa">
+            <div class="accordion-item faq-item">
+                <h2 class="accordion-header" id="headingOne">
+                    <button class="accordion-button collapsed" type="button" onclick="toggleFaqItem(this)" data-bs-target="#collapseOne">
+                        How is cumulative GPA calculated?
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                        <span>Cumulative GPA is calculated by dividing the total quality points earned by the total credit hours attempted across all completed semesters.</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item faq-item">
+                <h2 class="accordion-header" id="headingTwo">
+                    <button class="accordion-button collapsed" type="button" onclick="toggleFaqItem(this)" data-bs-target="#collapseTwo">
+                        What is the minimum passing grade?
+                    </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                        <span>The minimum passing grade for core major courses is "C" (2.0), while general requirements require at least a "D" grade (1.0).</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Category 5: Scholarships -->
-    <h4 class="category-title">Scholarships</h4>
-    <div class="accordion mb-4" id="accordionScholarships">
-      <div class="accordion-item faq-item">
-        <h2 class="accordion-header" id="headingSix">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix">
-            What GPA requirement is needed to keep a scholarship?
-          </button>
-        </h2>
-        <div id="collapseSix" class="accordion-collapse collapse" data-bs-parent="#accordionScholarships">
-          <div class="accordion-body">
-            State scholarship holders must maintain a GPA of at least 3.0 without any failing grades during the examination period.
-          </div>
+        <!-- Category 2: Registration -->
+        <h4 class="category-title">Registration</h4>
+        <div class="accordion" id="accordionRegistration">
+            <div class="accordion-item faq-item">
+                <h2 class="accordion-header" id="headingThree">
+                    <button class="accordion-button collapsed" type="button" onclick="toggleFaqItem(this)" data-bs-target="#collapseThree">
+                        When does course registration open?
+                    </button>
+                </h2>
+                <div id="collapseThree" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                        <span>Registration dates depend on your current academic year and credit count. Check the official academic calendar for exact priority registration windows.</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-  </div>
+        <!-- Category 3: Retakes -->
+        <h4 class="category-title">Retakes</h4>
+        <div class="accordion" id="accordionRetakes">
+            <div class="accordion-item faq-item">
+                <h2 class="accordion-header" id="headingFour">
+                    <button class="accordion-button collapsed" type="button" onclick="toggleFaqItem(this)" data-bs-target="#collapseFour">
+                        How many times can I retake a course?
+                    </button>
+                </h2>
+                <div id="collapseFour" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                        <span>You can retake a course up to 2 times. The highest grade achieved will replace the previous grade in your cumulative GPA calculation.</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category 4: Summer School -->
+        <h4 class="category-title">Summer School</h4>
+        <div class="accordion" id="accordionSummer">
+            <div class="accordion-item faq-item">
+                <h2 class="accordion-header" id="headingFive">
+                    <button class="accordion-button collapsed" type="button" onclick="toggleFaqItem(this)" data-bs-target="#collapseFive">
+                        How many credits can I take in Summer School?
+                    </button>
+                </h2>
+                <div id="collapseFive" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                        <span>Students can enroll in a maximum of 12 credit hours during the summer term.</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category 5: Scholarships -->
+        <h4 class="category-title">Scholarships</h4>
+        <div class="accordion" id="accordionScholarships">
+            <div class="accordion-item faq-item">
+                <h2 class="accordion-header" id="headingSix">
+                    <button class="accordion-button collapsed" type="button" onclick="toggleFaqItem(this)" data-bs-target="#collapseSix">
+                        What GPA requirement is needed to keep a scholarship?
+                    </button>
+                </h2>
+                <div id="collapseSix" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                        <span>State scholarship holders must maintain a GPA of at least 3.0 without any failing grades during the examination period.</span>
+                        <button type="button" class="btn-ask-ai-faq" onclick="askAiFromFaq(this)">🤖 Ask AI about my situation</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // US-35 Real-time search script
-  function filterFAQ() {
-      const query = document.getElementById('faqSearchInput').value.toLowerCase();
-      const faqItems = document.querySelectorAll('.faq-item');
+    function toggleFaqItem(btn) {
+        const targetSelector = btn.getAttribute('data-bs-target');
+        const collapseEl = targetSelector ? document.querySelector(targetSelector) : btn.closest('.accordion-item')?.querySelector('.accordion-collapse');
+        if (!collapseEl) return;
+        const isOpen = collapseEl.classList.contains('show');
+        collapseEl.classList.toggle('show', !isOpen);
+        btn.classList.toggle('collapsed', isOpen);
+    }
 
-      faqItems.forEach(item => {
-          const text = item.innerText.toLowerCase();
-          if (text.includes(query)) {
-              item.style.display = '';
-          } else {
-              item.style.display = 'none';
-          }
-      });
-  }
+    function askAiFromFaq(btn) {
+        const item = btn.closest('.faq-item');
+        const question = item ? item.querySelector('.accordion-button')?.textContent.trim() : '';
+        const promptText = question
+            ? ('Regarding the FAQ "' + question + '": how does this apply to my current academic standing and transcript?')
+            : 'Can you explain how SDU academic regulations apply to my current standing?';
+        if (typeof window.openCopilotWithPrompt === 'function') {
+            window.openCopilotWithPrompt(promptText, false);
+        }
+    }
+
+    // US-35 Real-time search script
+    function filterFAQ() {
+        const query = document.getElementById('faqSearchInput').value.toLowerCase();
+        const faqItems = document.querySelectorAll('.faq-item');
+
+        faqItems.forEach(item => {
+            const text = item.innerText.toLowerCase();
+            if (text.includes(query)) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
 </script>
+
+<div th:replace="~{fragments/copilot :: copilotWidget}"></div>
+
 </body>
 </html>

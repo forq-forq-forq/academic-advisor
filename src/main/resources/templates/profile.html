@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcript &amp; Academic Profile — Academic Advisor</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f0f4f8;
+            color: #2d3748;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: #4c6ef5;
+            color: #fff;
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+
+        header .brand {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        header h1 {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        header .nav-links {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        header .nav-links a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        header .nav-links a:hover, header .nav-links a.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        header .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        header .student-info {
+            font-size: 0.875rem;
+            opacity: 0.95;
+        }
+
+        header a.logout {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.825rem;
+            padding: 0.3rem 0.75rem;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 6px;
+        }
+
+        main {
+            flex: 1;
+            max-width: 1080px;
+            width: 100%;
+            margin: 1.5rem auto;
+            padding: 0 1rem 2.5rem;
+            display: grid;
+            grid-template-columns: 0.95fr 1.25fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        @media (max-width: 860px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+        }
+
+        .panel-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 1.1rem;
+            border-bottom: 1px solid #edf2f7;
+            padding-bottom: 0.75rem;
+        }
+
+        .flash-banner {
+            grid-column: 1 / -1;
+            padding: 0.85rem 1.1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .flash-success {
+            background: #ebfbee;
+            color: #2b8a3e;
+            border: 1px solid #8ce99a;
+        }
+
+        .flash-error {
+            background: #fff5f5;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .stat-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.85rem;
+        }
+
+        .stat-box .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #718096;
+            font-weight: 600;
+        }
+
+        .stat-box .value {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #1a202c;
+            margin-top: 0.2rem;
+        }
+
+        .form-section {
+            margin-top: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid #edf2f7;
+        }
+
+        .form-section h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.75rem;
+        }
+
+        .form-group {
+            margin-bottom: 0.85rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.825rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 0.3rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border: 1.5px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: #2d3748;
+            background: #fff;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: #4c6ef5;
+            box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.15);
+        }
+
+        .btn-primary {
+            background: #4c6ef5;
+            color: #fff;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.15s;
+        }
+
+        .btn-primary:hover {
+            background: #3b5bdb;
+        }
+
+        .completed-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .completed-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .completed-table th, .completed-table td {
+            text-align: left;
+            padding: 0.65rem 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+
+        .completed-table th {
+            background: #f8fafc;
+            color: #4a5568;
+            font-weight: 700;
+        }
+
+        .grade-pill {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.78rem;
+            background: #edf2ff;
+            color: #3b5bdb;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 0.35rem;
+            align-items: center;
+        }
+
+        .btn-edit {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-edit:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-delete {
+            background: #fff5f5;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+            padding: 0.25rem 0.5rem;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-delete:hover {
+            background: #fed7d7;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: #718096;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <h1>🎓 Academic Advisor</h1>
+        <nav class="nav-links">
+            <a th:href="@{/dashboard}">Dashboard</a>
+            <a th:href="@{/planner}">Planner</a>
+            <a th:href="@{/profile}" class="active">Transcript</a>
+            <a th:href="@{/faq}">FAQ</a>
+        </nav>
+    </div>
+    <div class="user-actions">
+        <span class="student-info">
+            <span th:text="${student.name}">Student</span>
+            &nbsp;·&nbsp;
+            <span th:text="${student.studentId}">ID</span>
+        </span>
+        <a class="logout" th:href="@{/logout}">Log out</a>
+    </div>
+</header>
+
+<main>
+    <div th:if="${transcriptSuccess}" class="flash-banner flash-success" role="status" th:text="${transcriptSuccess}"></div>
+    <div th:if="${profileSuccess}" class="flash-banner flash-success" role="status" th:text="${profileSuccess}"></div>
+    <div th:if="${transcriptError}" class="flash-banner flash-error" role="alert" th:text="${transcriptError}"></div>
+
+    <!-- Left Column: Add/Update Transcript Course & Academic Profile -->
+    <section class="panel" aria-label="Manage Transcript and Profile">
+        <h2 class="panel-title">
+            <span>📝 Manage Transcript (US-30)</span>
+        </h2>
+
+        <div class="summary-stats">
+            <div class="stat-box">
+                <div class="label">Cumulative GPA</div>
+                <div class="value" id="profile-gpa-display" th:text="${standing.formattedGpa}">3.80</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Completed Credits</div>
+                <div class="value" th:text="${standing.completedCredits + ' ECTS'}">27 ECTS</div>
+            </div>
+        </div>
+
+        <form th:action="@{/profile/transcript/save}" method="post" id="transcript-form">
+            <h3>Add or Update Completed Course</h3>
+            <div class="form-group">
+                <label for="courseId">Course</label>
+                <select id="courseId" name="courseId" class="form-control" required>
+                    <option value="">-- Select Course --</option>
+                    <option th:each="c : ${allCourses}"
+                            th:value="${c.id}"
+                            th:text="${c.code + ' — ' + c.name + ' (' + c.credits + ' ECTS)'}">
+                        CS101 — Intro to Programming (5 ECTS)
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="letterGrade">Letter Grade</label>
+                <select id="letterGrade" name="letterGrade" class="form-control" required>
+                    <option value="">-- Select Grade --</option>
+                    <option th:each="g : ${supportedGrades}" th:value="${g}" th:text="${g}">A</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="semesterTaken">Semester Taken</label>
+                <input type="text"
+                       id="semesterTaken"
+                       name="semesterTaken"
+                       list="semesterOptionsList"
+                       class="form-control"
+                       placeholder="e.g. Fall 2024">
+                <datalist id="semesterOptionsList">
+                    <option th:each="sem : ${semesterOptions}" th:value="${sem}"></option>
+                </datalist>
+            </div>
+
+            <button type="submit" class="btn-primary" id="save-transcript-btn">Save to Transcript</button>
+        </form>
+
+        <form th:action="@{/profile/update}" method="post" class="form-section" id="profile-update-form">
+            <h3>Academic Preferences &amp; Career Goal</h3>
+            <div class="form-group">
+                <label for="currentSemester">Current Study Semester</label>
+                <select id="currentSemester" name="currentSemester" class="form-control">
+                    <option th:each="s : ${#numbers.sequence(1, 8)}"
+                            th:value="${s}"
+                            th:selected="${student.currentSemester == s}"
+                            th:text="${'Semester ' + s}">Semester 1</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="careerGoal">Target Career Track / Goal</label>
+                <input type="text"
+                       id="careerGoal"
+                       name="careerGoal"
+                       class="form-control"
+                       th:value="${student.careerGoal}"
+                       placeholder="e.g. Backend Software Engineer, AI/Data Scientist">
+            </div>
+            <button type="submit" class="btn-primary">Update Profile</button>
+        </form>
+    </section>
+
+    <!-- Right Column: Completed Courses History Table -->
+    <section class="panel" aria-label="Completed Course History">
+        <h2 class="panel-title">
+            <span>📜 Completed Course History</span>
+            <span style="font-size: 0.825rem; color: #718096; font-weight: 600;"
+                  th:text="${#lists.size(completedCourses) + ' courses'}">8 courses</span>
+        </h2>
+
+        <div class="completed-table-wrapper" th:if="${!#lists.isEmpty(completedCourses)}">
+            <table class="completed-table" id="profile-completed-table">
+                <thead>
+                <tr>
+                    <th scope="col">Code</th>
+                    <th scope="col">Course</th>
+                    <th scope="col">Grade</th>
+                    <th scope="col">ECTS</th>
+                    <th scope="col">Semester</th>
+                    <th scope="col">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="course : ${completedCourses}"
+                    th:with="cid=${courseIdByCode[course.code]}">
+                    <td><strong th:text="${course.code}">CS101</strong></td>
+                    <td th:text="${course.name}">Introduction to Programming</td>
+                    <td><span class="grade-pill" th:text="${course.letterGrade}">A</span></td>
+                    <td th:text="${course.credits != null ? course.credits : 'Not recorded'}">5</td>
+                    <td th:text="${course.semesterTaken}">Fall 2024</td>
+                    <td>
+                        <div class="action-row" th:if="${cid != null}">
+                            <button type="button"
+                                    class="btn-edit"
+                                    th:attr="data-course-id=${cid},data-grade=${course.letterGrade},data-semester=${course.semesterTaken}"
+                                    onclick="prefillTranscriptForm(this)">
+                                Edit
+                            </button>
+                            <form th:action="@{/profile/transcript/remove}" method="post" style="display:inline;">
+                                <input type="hidden" name="courseId" th:value="${cid}">
+                                <button type="submit" class="btn-delete" aria-label="Remove course">Remove</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(completedCourses)}">
+            <p>No completed courses in your transcript yet. Use the form on the left to add your completed courses and grades.</p>
+        </div>
+    </section>
+</main>
+
+<script>
+    function prefillTranscriptForm(btn) {
+        const courseId = btn.getAttribute('data-course-id');
+        const grade = btn.getAttribute('data-grade');
+        const semester = btn.getAttribute('data-semester');
+
+        const courseSelect = document.getElementById('courseId');
+        const gradeSelect = document.getElementById('letterGrade');
+        const semesterInput = document.getElementById('semesterTaken');
+
+        if (courseId) courseSelect.value = courseId;
+        if (grade && grade !== 'Not recorded') gradeSelect.value = grade;
+        if (semester && semester !== 'Not recorded') semesterInput.value = semester;
+        courseSelect.focus();
+    }
+</script>
+
+<div th:replace="~{fragments/copilot :: copilotWidget}"></div>
+
+</body>
+</html>
+

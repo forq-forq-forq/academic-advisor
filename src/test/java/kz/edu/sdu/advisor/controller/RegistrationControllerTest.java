@@ -225,4 +225,27 @@ class RegistrationControllerTest {
 
         assertThat(studentAccountRepository.findByEmailIgnoreCase(EMAIL)).isEmpty();
     }
+
+    @Test
+    void registerWithExplicitFullNameStudentIdAndCareerGoal_shouldPersistAllFields() throws Exception {
+        mockMvc.perform(post("/register")
+                        .param("fullName", "Aruzhan Serikova")
+                        .param("studentId", "240103999")
+                        .param("email", EMAIL)
+                        .param("password", PASSWORD)
+                        .param("confirmPassword", PASSWORD)
+                        .param("facultyCode", FACULTY_CODE)
+                        .param("majorCode", "SE")
+                        .param("catalogYear", CATALOG_YEAR)
+                        .param("careerGoal", "Backend Engineer"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/register/success"));
+
+        Student savedStudent = studentRepository.findByStudentId("240103999").orElseThrow();
+        assertThat(savedStudent.getName()).isEqualTo("Aruzhan Serikova");
+        assertThat(savedStudent.getMajor().getCode()).isEqualTo("SE");
+        assertThat(savedStudent.getCareerGoal()).isEqualTo("Backend Engineer");
+        studentRepository.delete(savedStudent);
+        studentAccountRepository.findByEmailIgnoreCase(EMAIL).ifPresent(studentAccountRepository::delete);
+    }
 }
