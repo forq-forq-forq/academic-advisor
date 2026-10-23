@@ -51,7 +51,24 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void cleanLegacyData() {
-        // Clean legacy faculties and majors other than SITAM / IS
+        Faculty sitam = seedFaculties();
+        Major isMajor = seedMajor(sitam, "IS", "Information Systems");
+
+        // 1. Reassign any existing students and student accounts pointing to legacy majors to IS
+        studentRepository.findAll().forEach(s -> {
+            if (s.getMajor() == null || !"IS".equals(s.getMajor().getCode())) {
+                s.setMajor(isMajor);
+                studentRepository.save(s);
+            }
+        });
+        studentAccountRepository.findAll().forEach(acc -> {
+            if (acc.getMajor() == null || !"IS".equals(acc.getMajor().getCode())) {
+                acc.setMajor(isMajor);
+                studentAccountRepository.save(acc);
+            }
+        });
+
+        // 2. Safely remove legacy majors and their curriculum courses
         majorRepository.findAll().stream()
                 .filter(m -> !"IS".equals(m.getCode()))
                 .forEach(m -> {
@@ -60,6 +77,7 @@ public class DataSeeder implements CommandLineRunner {
                     majorRepository.delete(m);
                 });
 
+        // 3. Safely remove legacy faculties
         facultyRepository.findAll().stream()
                 .filter(f -> !"SITAM".equals(f.getCode()))
                 .forEach(f -> {
