@@ -10,10 +10,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Seeds the SDU academic structure based on the official
+ * Module Handbook of the educational programme Information Systems BSc.
+ * (6B06101-Information Systems, SITAM, Kaskelen, 2026).
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -31,30 +37,66 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        Faculty fens = seedFaculties();
-        Major csMajor = seedMajor(fens, "CS", "Computer Science");
-        Major seMajor = seedMajor(fens, "SE", "Software Engineering");
-        Major isMajor = seedMajor(fens, "IS", "Information Systems");
+        cleanLegacyData();
+
+        Faculty sitam = seedFaculties();
+        Major isMajor = seedMajor(sitam, "IS", "Information Systems");
 
         Map<String, Course> courses = seedCourses();
         seedPrerequisites(courses);
-        seedCurriculum(csMajor, courses);
-        seedCurriculum(seMajor, courses);
-        seedCurriculum(isMajor, courses);
-        seedDemoStudent(csMajor, courses);
+        for (int year = 2022; year <= 2026; year++) {
+            seedCurriculum(isMajor, year, courses);
+        }
+        seedDemoStudent(isMajor, courses);
+    }
+
+    private void cleanLegacyData() {
+        Faculty sitam = seedFaculties();
+        Major isMajor = seedMajor(sitam, "IS", "Information Systems");
+
+        // 1. Reassign any existing students and student accounts pointing to legacy majors to IS
+        studentRepository.findAll().forEach(s -> {
+            if (s.getMajor() == null || !"IS".equals(s.getMajor().getCode())) {
+                s.setMajor(isMajor);
+                studentRepository.save(s);
+            }
+        });
+        studentAccountRepository.findAll().forEach(acc -> {
+            if (acc.getMajor() == null || !"IS".equals(acc.getMajor().getCode())) {
+                acc.setMajor(isMajor);
+                studentAccountRepository.save(acc);
+            }
+        });
+
+        // 2. Safely remove legacy majors and their curriculum courses
+        majorRepository.findAll().stream()
+                .filter(m -> !"IS".equals(m.getCode()))
+                .forEach(m -> {
+                    log.info("Purging legacy major: {}", m.getCode());
+                    curriculumCourseRepository.deleteByMajor_Id(m.getId());
+                    majorRepository.delete(m);
+                });
+
+        // 3. Safely remove legacy faculties
+        facultyRepository.findAll().stream()
+                .filter(f -> !"SITAM".equals(f.getCode()))
+                .forEach(f -> {
+                    log.info("Purging legacy faculty: {}", f.getCode());
+                    facultyRepository.delete(f);
+                });
     }
 
     private Faculty seedFaculties() {
-        return facultyRepository.findByCode("FE&NS").orElseGet(() -> {
-            log.info("Seeding faculty: FE&NS");
-            Faculty faculty = new Faculty("FE&NS", "Faculty of Engineering and Natural Sciences");
+        return facultyRepository.findByCode("SITAM").orElseGet(() -> {
+            log.info("Seeding faculty: SITAM");
+            Faculty faculty = new Faculty("SITAM", "SITAM");
             return facultyRepository.save(faculty);
         });
     }
 
     private Major seedMajor(Faculty faculty, String code, String name) {
         return majorRepository.findByCode(code).orElseGet(() -> {
-            log.info("Seeding major: {}", code);
+            log.info("Seeding major: {} ({})", code, name);
             Major major = new Major(code, name, faculty, 240);
             return majorRepository.save(major);
         });
@@ -63,88 +105,298 @@ public class DataSeeder implements CommandLineRunner {
     private Map<String, Course> seedCourses() {
         Map<String, Course> map = new HashMap<>();
 
-        Map<String, CourseMeta> catalog = Map.ofEntries(
-                Map.entry("CS101", new CourseMeta("Introduction to Computer Science", 3, 2, "Foundational programming concepts, computational thinking, and basic algorithms.")),
-                Map.entry("MATH101", new CourseMeta("Calculus I", 4, 3, "Limits, derivatives, integrals, and single-variable calculus applications.")),
-                Map.entry("ENG101", new CourseMeta("Academic English I", 3, 1, "Academic reading, essay writing, and university communication skills.")),
-                Map.entry("HIST101", new CourseMeta("History of Kazakhstan", 3, 1, "Key periods and milestones in the modern and ancient history of Kazakhstan.")),
-                Map.entry("CS102", new CourseMeta("Object-Oriented Programming", 4, 3, "Classes, inheritance, polymorphism, encapsulation, and Java design patterns.")),
-                Map.entry("MATH102", new CourseMeta("Calculus II", 4, 4, "Integration techniques, infinite series, and multivariable introduction.")),
-                Map.entry("ENG102", new CourseMeta("Academic English II", 3, 2, "Research writing, critical argumentation, and technical presentations.")),
-                Map.entry("PHIL101", new CourseMeta("Philosophy", 3, 1, "History of philosophical thought, logic, ethics, and epistemology.")),
-                Map.entry("CS201", new CourseMeta("Data Structures and Algorithms", 4, 4, "Trees, graphs, hashing, sorting, and algorithmic complexity analysis.")),
-                Map.entry("CS205", new CourseMeta("Discrete Mathematics", 3, 3, "Logic, set theory, combinatorics, graph theory, and proofs for CS.")),
-                Map.entry("MATH201", new CourseMeta("Linear Algebra", 3, 3, "Vector spaces, matrices, eigenvalues, and linear transformations.")),
-                Map.entry("PHYS101", new CourseMeta("General Physics", 4, 3, "Classical mechanics, thermodynamics, and electromagnetism fundamentals.")),
-                Map.entry("CS202", new CourseMeta("Algorithms Design and Analysis", 4, 5, "Dynamic programming, greedy algorithms, graph algorithms, and NP-completeness.")),
-                Map.entry("CS204", new CourseMeta("Database Systems", 4, 3, "Relational algebra, SQL, normalization, indexing, and transaction processing.")),
-                Map.entry("CS301", new CourseMeta("Operating Systems", 4, 5, "Processes, threads, concurrency, memory management, and file systems.")),
-                Map.entry("CS302", new CourseMeta("Software Engineering", 3, 3, "Agile lifecycle, requirements engineering, architecture, testing, and CI/CD.")),
-                Map.entry("CS303", new CourseMeta("Computer Networks", 4, 4, "TCP/IP stack, routing protocols, socket programming, and network security.")),
-                Map.entry("CS304", new CourseMeta("Artificial Intelligence", 3, 4, "Search agents, knowledge representation, probabilistic reasoning, and ML basics.")),
-                Map.entry("CS401", new CourseMeta("Senior Design Project I", 4, 4, "First capstone semester: problem definition, architecture, and prototype.")),
-                Map.entry("CS402", new CourseMeta("Cloud Computing", 3, 3, "Virtualization, containers, microservices, and scalable cloud infrastructure.")),
-                Map.entry("CS403", new CourseMeta("Senior Design Project II", 4, 4, "Second capstone semester: implementation, testing, and thesis defense.")),
-                Map.entry("CS404", new CourseMeta("Professional Practice", 3, 2, "Engineering ethics, technical career preparation, and industry standards.")),
-                // Additional Electives & High-ECTS courses to test credit overload (US-14)
-                Map.entry("CS310", new CourseMeta("Web Application Development", 5, 3, "Full-stack web engineering with modern backend frameworks and REST APIs.")),
-                Map.entry("CS320", new CourseMeta("Mobile Application Development", 5, 3, "Native and cross-platform mobile development, UI lifecycle, and state management.")),
-                Map.entry("CS330", new CourseMeta("Cybersecurity Fundamentals", 5, 4, "Cryptography, network defense, vulnerability assessment, and secure coding.")),
-                Map.entry("CS340", new CourseMeta("Machine Learning and Data Mining", 5, 5, "Supervised/unsupervised learning, feature engineering, and model evaluation.")),
-                Map.entry("CS410", new CourseMeta("Distributed Systems and DevOps", 5, 4, "Consensus protocols, Kubernetes, observability, and automated delivery pipelines.")),
-                Map.entry("CS420", new CourseMeta("Deep Learning and Neural Networks", 6, 5, "CNNs, transformers, backprop optimization, and modern generative AI architectures.")),
-                Map.entry("CS490", new CourseMeta("Advanced Software Engineering Practicum", 6, 4, "Team-based production software delivery with real-world architectural constraints.")),
-                Map.entry("INTERN401", new CourseMeta("Industrial Internship", 6, 2, "Supervised industry placement in a software engineering or data role.")),
-                Map.entry("ROBO301", new CourseMeta("Robotics and Embedded Systems", 5, 4, "Microcontrollers, sensors, actuators, and real-time embedded control.")),
-                Map.entry("DATA201", new CourseMeta("Big Data Analytics", 5, 3, "Distributed data processing, MapReduce, Spark, and analytical data warehouses."))
+        List<CourseSeed> catalog = List.of(
+                // ── Semester 1 ──
+                new CourseSeed("INF106", "Information and Communication Technologies", 5, 2, 1, "CORE",
+                        "Foundational concepts in computer science and IT: number systems, hardware/software, logic circuits, compression, cryptography, SQL databases, networking, and AI/ML basics."),
+                new CourseSeed("MDE160", "Community Engagement and Value Based Society 1", 0, 1, 1, "CORE",
+                        "Academic integrity, personal well-being, ethical behavior, inclusivity, digital literacy, time management, and social responsibility."),
+                new CourseSeed("MDE171", "History of Kazakhstan", 5, 2, 1, "CORE",
+                        "Major political, social, and cultural transformations in Kazakhstan's history from ancient nomadic civilization and the Golden Horde to modern independence."),
+                new CourseSeed("CSS105", "Fundamentals of Programming", 5, 2, 1, "CORE",
+                        "Fundamental programming concepts, variables, control structures, functions, arrays and collections, algorithmic problem solving, and complexity basics."),
+                new CourseSeed("MAT137", "Mathematics for Information Systems 1", 5, 3, 1, "CORE",
+                        "Mathematical foundations for IS: functions and graphs, limits and continuity, differential calculus, applications of derivatives, and optimization problems."),
+                new CourseSeed("MAT156", "Discrete Mathematics", 5, 3, 1, "CORE",
+                        "Logic and proof techniques, sets and relations, functions, combinatorics, graph theory, trees, and discrete structures for computing."),
+                new CourseSeed("MDE190", "Foreign Language 1", 5, 1, 1, "ELECTIVE",
+                        "Academic English reading, writing, listening, speaking, critical thinking, academic vocabulary, and structured oral presentations."),
+                new CourseSeed("MDE291", "Physical Education 1", 2, 1, 1, "CORE",
+                        "Physical culture, health, hygiene, and team sports (basketball, volleyball, football, fitness, chess)."),
+
+                // ── Semester 2 ──
+                new CourseSeed("INF114", "Fundamentals of Information Systems", 5, 2, 2, "CORE",
+                        "Role of Information Systems in organizations and society, business processes, IS components, IS development lifecycle, ethics, security, cloud and AI trends."),
+                new CourseSeed("INF108", "Object-Oriented Programming and Educational Practice", 6, 3, 2, "CORE",
+                        "Object-oriented design principles in Java: classes and objects, encapsulation, inheritance, polymorphism, exception handling, and software development project."),
+                new CourseSeed("MAT138", "Mathematics for Information Systems 2", 5, 4, 2, "CORE",
+                        "Integral calculus, techniques and applications of integration, differential equations, and mathematical modelling for information systems."),
+                new CourseSeed("MAT151", "Linear Algebra", 5, 3, 2, "CORE",
+                        "Matrices and determinants, systems of linear equations, vector spaces, linear transformations, eigenvalues and eigenvectors."),
+                new CourseSeed("MDE170", "Community Engagement and Value-Based Society 2", 0, 1, 2, "CORE",
+                        "Abay's Tolyq Adam concept, virtue ethics, emotional intelligence, growth mindset, and community project implementation."),
+                new CourseSeed("MDE191", "Foreign Language 2", 5, 2, 2, "ELECTIVE",
+                        "Advanced academic English communication, critical reading, analytical essays, research presentations, and debate skills."),
+                new CourseSeed("MDE292", "Physical Education 2", 2, 1, 2, "CORE",
+                        "Intermediate physical education, sports tactics, endurance, and team sports practice."),
+
+                // ── Semester 3 ──
+                new CourseSeed("MAT251", "Probability and Mathematical Statistics", 5, 4, 3, "CORE",
+                        "Probability theory, random variables, probability distributions, estimation and hypothesis testing, correlation, regression, and statistical inference."),
+                new CourseSeed("CSS215", "Introduction to Algorithms", 5, 4, 3, "CORE",
+                        "Algorithm design techniques, recursion, sorting and searching, asymptotic complexity analysis, and fundamental data structures."),
+                new CourseSeed("CSS331", "Operating Systems", 5, 4, 3, "CORE",
+                        "Operating system architecture, process management, memory management, file systems, and Linux system administration."),
+                new CourseSeed("INF313", "Computer Networks 1", 5, 3, 3, "CORE",
+                        "CCENT-aligned networking foundations: OSI and TCP/IP models, switching, VLAN/interVLAN, Cisco IOS configuration, IPv4/IPv6 subnetting, routing, DHCP, FHRP, and WLAN."),
+                new CourseSeed("CSS118", "AI and Prompt Engineering", 5, 3, 3, "CORE",
+                        "AI fundamentals, generative AI models, prompt design techniques, LLM pipelines, and practical AI applications for digital transformation."),
+                new CourseSeed("MDE111", "Kazakh Language 1 / Russian Language 1", 5, 1, 3, "ELECTIVE",
+                        "Academic and professional communication, grammar, and reading analysis in Kazakh / Russian language (Level 1)."),
+                new CourseSeed("MDE293", "Physical Education 3", 2, 1, 3, "CORE",
+                        "Applied physical training, athletic conditioning, and competitive team sports."),
+
+                // ── Semester 4 ──
+                new CourseSeed("CSS217", "Software Architecture and Design Patterns", 5, 4, 4, "CORE",
+                        "Software engineering principles, SDLC models, GoF design patterns, UML modelling, architectural styles, and software quality attributes."),
+                new CourseSeed("INF202", "Database Management Systems 1", 5, 3, 4, "CORE",
+                        "Relational database concepts, ER modeling, normalization, SQL fundamentals and querying in PostgreSQL, transactions, constraints, and NoSQL overview."),
+                new CourseSeed("INF995", "Fundamentals of Web Development", 5, 3, 4, "CORE",
+                        "Full-stack web development fundamentals: HTML, CSS, JavaScript, front-end frameworks, REST APIs, server-side development, and database integration."),
+                new CourseSeed("INF203", "Information Security", 5, 3, 4, "CORE",
+                        "Security principles, cryptography, access control, Linux shell security, digital forensics, incident response frameworks, and threat detection."),
+                new CourseSeed("INF211", "Educational Practice 2", 1, 2, 4, "CORE",
+                        "Introduction to professional IT environments, observation of organizational processes, and practical project reporting."),
+                new CourseSeed("MDE112", "Kazakh Language 2 / Russian Language 2", 5, 2, 4, "ELECTIVE",
+                        "Professional and scientific communication, technical terminology, and academic writing in Kazakh / Russian language (Level 2)."),
+                new CourseSeed("MDE294", "Physical Education 4", 2, 1, 4, "CORE",
+                        "Final semester of compulsory physical education and sports mastery."),
+
+                // ── Semester 5 ──
+                new CourseSeed("MDE153", "Module of Social and Political Knowledge (Cultural Studies)", 2, 1, 5, "CORE",
+                        "Theories of cultural studies, digital media culture, ethnicity and nation, and cultural heritage of Kazakhstan."),
+                new CourseSeed("MDE154", "Module of Social and Political Knowledge (Psychology)", 2, 1, 5, "CORE",
+                        "Cognitive processes, perception, memory, learning, emotional intelligence, motivation, personality, and mental health."),
+                new CourseSeed("INF381", "Project Management in IT Business", 5, 3, 5, "CORE",
+                        "IT project planning, risk management, Agile and traditional methodologies, resource management, and stakeholder communication."),
+                new CourseSeed("CSS280", "Industrial Practice 1", 2, 2, 5, "CORE",
+                        "Practical work in IT organizations, participation in software projects, and application of academic knowledge in professional settings."),
+                new CourseSeed("MDE161", "Economy", 5, 2, 5, "ELECTIVE",
+                        "Micro and macroeconomic models, supply and demand, elasticity, market efficiency, taxation, and firm behavior."),
+                new CourseSeed("MDE162", "Law", 5, 2, 5, "ELECTIVE",
+                        "Constitutional law, civil and criminal law, legal systems, human rights, and labor legislation of the Republic of Kazakhstan."),
+                new CourseSeed("MDE163", "Fundamentals of Anti-Corruption Culture", 5, 1, 5, "ELECTIVE",
+                        "Anti-corruption legislation, transparency, accountability, ethical decision-making, and civic responsibility."),
+                new CourseSeed("MDE164", "Ecology", 5, 1, 5, "ELECTIVE",
+                        "Ecosystems, biodiversity, environmental protection, climate change, and sustainable development principles."),
+                new CourseSeed("MDE166", "Entrepreneurship", 5, 2, 5, "ELECTIVE",
+                        "Value propositions, Business Model Canvas, startup funding, lean validation, and investor pitching."),
+                new CourseSeed("MDE289", "Financial Literacy", 5, 2, 5, "ELECTIVE",
+                        "Financial statements, time value of money, bonds and stocks valuation, risk and return, capital budgeting, and SME finance."),
+                new CourseSeed("INF317", "Data Analysis and Storytelling", 5, 3, 5, "ELECTIVE",
+                        "Data preparation, exploratory and statistical analysis in Python (NumPy, Pandas, Seaborn), BI dashboards, and data-driven storytelling."),
+                new CourseSeed("INF777", "Digital Marketing Technologies", 5, 2, 5, "ELECTIVE",
+                        "Digital business models, marketing analytics, campaign management, and customer behavior analysis."),
+                new CourseSeed("INF330", "Information Storage Management and Virtualization", 5, 3, 5, "ELECTIVE",
+                        "Modern storage architectures, data center virtualization, virtual machines, data protection, and disaster recovery."),
+                new CourseSeed("INF345", "Fundamentals of DevOps", 5, 4, 5, "ELECTIVE",
+                        "Continuous integration and deployment (CI/CD), Docker containerization, infrastructure as code, and monitoring."),
+                new CourseSeed("INF318", "Introduction to Testing", 5, 3, 5, "ELECTIVE",
+                        "Software quality assurance, testing methodologies, test planning, defect classification, and test case design."),
+                new CourseSeed("INF328", "3D Modeling and Animation", 5, 3, 5, "ELECTIVE",
+                        "Polygonal 3D modeling, materials and texturing, lighting, rendering, rigging, and animation principles."),
+                new CourseSeed("INF321", "Machine Learning", 5, 4, 5, "ELECTIVE",
+                        "Supervised and unsupervised learning, feature engineering, model evaluation, and applied ML pipelines."),
+                new CourseSeed("INF429", "IT Audit and Controls", 5, 3, 5, "ELECTIVE",
+                        "IT auditing principles, COBIT/ISACA internal controls, risk assessment, compliance, and IT assurance."),
+                new CourseSeed("INF316", "Web Front-End Development", 5, 3, 5, "ELECTIVE",
+                        "Modern front-end web engineering, component architectures, state management, REST integration, and web performance."),
+                new CourseSeed("CSS216", "Mobile Programming", 5, 3, 5, "ELECTIVE",
+                        "Mobile application architecture, Android/iOS development with Jetpack Compose, UI lifecycle, and mobile APIs."),
+                new CourseSeed("INF314", "Computer Networks 2", 5, 4, 5, "ELECTIVE",
+                        "Enterprise networking, advanced routing and switching, network security, and network automation."),
+                new CourseSeed("INF322", "Graphic Design", 5, 2, 5, "ELECTIVE",
+                        "Principles of visual communication, typography, color theory, composition, branding, and UI asset design."),
+                new CourseSeed("INF888", "Data Engineering", 5, 4, 5, "ELECTIVE",
+                        "Data pipelines, ETL processes, data integration, data storage architectures, and big data fundamentals."),
+                new CourseSeed("INF228", "UX/UI Design", 5, 2, 5, "ELECTIVE",
+                        "User-centered design, UX research, user journeys, wireframing, design systems, and high-usability prototyping."),
+                new CourseSeed("INF357", "Introduction to Unity Programming", 5, 3, 5, "ELECTIVE",
+                        "Interactive application and game development in Unity: game mechanics, physics, animation, and 3D environments."),
+                new CourseSeed("INF319", "Advanced Algorithms", 5, 5, 5, "ELECTIVE",
+                        "Dynamic programming, greedy algorithms, advanced graph algorithms, divide-and-conquer, and optimization techniques."),
+                new CourseSeed("INF347", "Cyber Security", 5, 4, 5, "ELECTIVE",
+                        "Network and application defense, CompTIA Security+ concepts, vulnerability assessment, and threat mitigation."),
+                new CourseSeed("INF999", "Signal Processing", 5, 4, 5, "ELECTIVE",
+                        "Continuous and discrete-time signals, Fourier transform, digital filter design, feature extraction, and time-frequency analysis."),
+
+                // ── Semester 6 ──
+                new CourseSeed("CSS410", "Research Tools and Methods", 5, 3, 6, "CORE",
+                        "Research design, scientific methodology, literature review techniques, data collection, and academic writing."),
+                new CourseSeed("MDE151", "Module of Social and Political Knowledge (Political Science)", 2, 1, 6, "CORE",
+                        "Political systems, state and civil society, governance models, democratization, and policy analysis."),
+                new CourseSeed("MDE152", "Module of Social and Political Knowledge (Sociology)", 2, 1, 6, "CORE",
+                        "Sociological theory, research methods, social stratification, socialization, and contemporary social processes."),
+                new CourseSeed("INF395", "Advanced Projects for Information Systems", 5, 4, 6, "CORE",
+                        "Designing, architecting, and implementing deployable enterprise Information Systems in multidisciplinary teams."),
+                new CourseSeed("INF324", "Computer Vision", 5, 4, 6, "ELECTIVE",
+                        "Image processing, object detection, image classification, OpenCV, and deep vision systems."),
+                new CourseSeed("INF305", "Database Management Systems 2", 5, 4, 6, "ELECTIVE",
+                        "Advanced SQL, database administration, transactions and concurrency control, recovery, and query optimization."),
+                new CourseSeed("INF373", "Web Back-End Development", 5, 4, 6, "ELECTIVE",
+                        "Server-side architecture, RESTful microservices, authentication, database integration, and scalable backend engineering."),
+                new CourseSeed("INF389", "Information Technology Infrastructure Library (ITIL)", 5, 3, 6, "ELECTIVE",
+                        "IT service management practices, ITIL service lifecycle, incident and change management, and continuous service improvement."),
+                new CourseSeed("INF234", "Mobile Application Development 2", 5, 4, 6, "ELECTIVE",
+                        "Advanced mobile engineering, reactive state management, offline persistence, background services, and production deployment."),
+                new CourseSeed("INF390", "Advanced DevOps", 5, 5, 6, "ELECTIVE",
+                        "Kubernetes orchestration, distributed platform engineering, automated security pipelines, and high-availability infrastructure."),
+                new CourseSeed("INF337", "Deep Learning", 5, 5, 6, "ELECTIVE",
+                        "Deep neural networks, CNNs, RNNs, Transformers, representation learning, and modern generative AI architectures."),
+                new CourseSeed("INF374", "Business Process Modelling", 5, 3, 6, "ELECTIVE",
+                        "Business process analysis, BPMN 2.0 modelling, workflow automation, and process optimization."),
+                new CourseSeed("INF392", "Blockchain Technology", 5, 4, 6, "ELECTIVE",
+                        "Distributed ledger technologies, consensus mechanisms, cryptographic trust, smart contracts, and decentralized applications."),
+                new CourseSeed("INF368", "The Go Programming Language", 5, 4, 6, "ELECTIVE",
+                        "Go programming, goroutines and channels, concurrent systems, and high-performance backend services."),
+                new CourseSeed("INF998", "MLOps", 5, 4, 6, "ELECTIVE",
+                        "Machine learning operationalization, model deployment, CI/CD for AI, model monitoring, and lifecycle management."),
+                new CourseSeed("INF332", "Enterprise Architecture", 5, 3, 6, "ELECTIVE",
+                        "Enterprise architecture frameworks, business-IT alignment, application and technology architecture, and digital transformation."),
+                new CourseSeed("INF376", "Natural Language Processing", 5, 4, 6, "ELECTIVE",
+                        "Text preprocessing, language modeling, sentiment analysis, information extraction, and transformer-based NLP."),
+                new CourseSeed("INF300", "Product Management", 5, 3, 6, "ELECTIVE",
+                        "Product lifecycle management, market and user research, product strategy, roadmapping, and agile product delivery."),
+                new CourseSeed("INF378", "Cloud Computing", 5, 4, 6, "ELECTIVE",
+                        "Cloud service models (IaaS/PaaS/SaaS), virtualization, containerization, and scalable cloud deployment."),
+                new CourseSeed("INF356", "Game Development", 5, 4, 6, "ELECTIVE",
+                        "Advanced game engineering, interactive simulations, AI in games, rendering pipelines, and multi-platform publishing."),
+                new CourseSeed("INF997", "Fundamentals of 1C Development", 5, 3, 6, "ELECTIVE",
+                        "Enterprise resource planning (ERP) systems and business application development on the 1C:Enterprise platform."),
+                new CourseSeed("INF377", "Automation in Testing", 5, 4, 6, "ELECTIVE",
+                        "Automated software testing frameworks, continuous test integration, UI/API test automation, and quality metrics."),
+
+                // ── Semester 7 ──
+                new CourseSeed("MDE172", "Philosophy", 5, 2, 7, "CORE",
+                        "Ontology, epistemology, ethics, history of world and Kazakh philosophy, and philosophy of science and AI."),
+                new CourseSeed("CSS483", "Industrial Practice 2", 5, 3, 7, "CORE",
+                        "Extended industry internship in software engineering, data analytics, or information systems management."),
+                new CourseSeed("INF387", "Communication Management", 5, 2, 7, "ELECTIVE",
+                        "Stakeholder communication planning, professional reporting, negotiation, conflict resolution, and escalation management."),
+                new CourseSeed("INF406", "Data Ethics and Applied Analytics", 5, 3, 7, "ELECTIVE",
+                        "Data privacy, confidentiality, algorithmic bias, fairness, transparency, legal compliance, and responsible analytics."),
+                new CourseSeed("INF407", "Business Analysis and System Development", 5, 3, 7, "ELECTIVE",
+                        "Requirements engineering, stakeholder elicitation, UML/BPMN modeling, SRS documentation, and solution design."),
+                new CourseSeed("INF415", "Leadership in IT", 5, 2, 7, "ELECTIVE",
+                        "Leadership theories, engineering team management, organizational behavior, and leading digital change."),
+                new CourseSeed("CSS314", "Parallel Computing", 5, 5, 7, "ELECTIVE",
+                        "Parallel computing architectures, task and data parallelism, concurrency, synchronization, and distributed performance analysis."),
+                new CourseSeed("INF412", "IT Asset Management", 5, 3, 7, "ELECTIVE",
+                        "IT asset lifecycle, configuration management, licensing, cost optimization, and service governance."),
+                new CourseSeed("INF360", "IT Law", 5, 2, 7, "ELECTIVE",
+                        "Information technology legislation, personal data protection, intellectual property rights, and cyber law."),
+                new CourseSeed("INF365", "Fundamentals of Finance", 5, 3, 7, "ELECTIVE",
+                        "Financial management fundamentals, corporate finance, investment evaluation, and financial analytics."),
+                new CourseSeed("INF414", "IT Governance, Risk and Compliance", 5, 3, 7, "ELECTIVE",
+                        "IT governance frameworks, enterprise risk management, regulatory compliance, and internal control systems."),
+                new CourseSeed("INF996", "Advanced Business Intelligence Systems", 5, 4, 7, "ELECTIVE",
+                        "BI architecture, enterprise data warehouses, OLAP systems, KPI executive dashboards, and decision support systems."),
+                new CourseSeed("INF433", "ICT in Agriculture", 5, 3, 7, "ELECTIVE",
+                        "Precision agriculture technologies, GIS/QGIS spatial modeling, IoT telemetry, and smart farming information systems."),
+                new CourseSeed("INF410", "Introduction to Building Information Modelling", 5, 3, 7, "ELECTIVE",
+                        "BIM fundamentals, parametric 3D modeling in Revit, collaborative virtual environments, and building performance analysis."),
+
+                // ── Semester 8 ──
+                new CourseSeed("INF420", "Senior Project", 10, 5, 8, "CORE",
+                        "Capstone engineering project: problem identification, requirements analysis, system design, implementation, testing, and defence."),
+                new CourseSeed("INF459", "Start Ups", 6, 3, 8, "CORE",
+                        "Creating and managing IT startup ventures: ideation, business model development, market validation, and investor pitch."),
+                new CourseSeed("CSS486", "Industrial Practice 3", 6, 3, 8, "CORE",
+                        "Senior-year professional practice in an industry IT environment."),
+                new CourseSeed("CSS495", "Pregraduation Practice", 6, 3, 8, "CORE",
+                        "Pregraduation research and system implementation practice preparing for final thesis defence."),
+                new CourseSeed("CSS479", "Final Assessment (Diploma Thesis / Project or Comprehensive Examination)", 8, 5, 8, "CORE",
+                        "Writing and defending a Diploma Thesis / Diploma Project or passing the state Comprehensive Examination.")
         );
 
-        for (Map.Entry<String, CourseMeta> entry : catalog.entrySet()) {
-            String code = entry.getKey();
-            CourseMeta meta = entry.getValue();
-            Course course = courseRepository.findByCode(code).orElseGet(() -> {
+        for (CourseSeed seed : catalog) {
+            Course course = courseRepository.findByCode(seed.code()).orElseGet(() -> {
                 Course c = new Course();
-                c.setCode(code);
-                c.setName(meta.name());
-                c.setCredits(meta.credits());
-                c.setDifficulty(meta.difficulty());
-                c.setDescription(meta.description());
+                c.setCode(seed.code());
+                c.setName(seed.name());
+                c.setCredits(seed.credits());
+                c.setDifficulty(seed.difficulty());
+                c.setDescription(seed.description());
                 return courseRepository.save(c);
             });
             boolean updated = false;
             if (course.getDifficulty() == null) {
-                course.setDifficulty(meta.difficulty());
+                course.setDifficulty(seed.difficulty());
                 updated = true;
             }
             if (course.getDescription() == null) {
-                course.setDescription(meta.description());
+                course.setDescription(seed.description());
                 updated = true;
             }
             if (updated) {
                 course = courseRepository.save(course);
             }
-            map.put(code, course);
+            map.put(seed.code(), course);
         }
 
+        this.seededCatalogList = catalog;
         return map;
     }
 
-    private void seedPrerequisites(Map<String, Course> courses) {
-        if (prerequisiteRepository.count() > 0) {
-            return;
-        }
+    private List<CourseSeed> seededCatalogList = List.of();
 
-        addPrereq(courses.get("CS102"), courses.get("CS101"));
-        addPrereq(courses.get("MATH102"), courses.get("MATH101"));
-        addPrereq(courses.get("ENG102"), courses.get("ENG101"));
-        addPrereq(courses.get("CS201"), courses.get("CS102"));
-        addPrereq(courses.get("CS205"), courses.get("MATH101"));
-        addPrereq(courses.get("MATH201"), courses.get("MATH101"));
-        addPrereq(courses.get("CS202"), courses.get("CS201"));
-        addPrereq(courses.get("CS204"), courses.get("CS102"));
-        addPrereq(courses.get("CS310"), courses.get("CS102"));
-        addPrereq(courses.get("CS330"), courses.get("CS101"));
-        addPrereq(courses.get("CS340"), courses.get("MATH201"));
+    /**
+     * Seeds ONLY the explicit course prerequisites documented in the official
+     * SDU Information Systems BSc. (2026) Module Handbook ("Required and recommended
+     * prerequisites for joining the module" field). Courses marked with "-" or empty
+     * in the Handbook have no prerequisite restrictions.
+     */
+    private void seedPrerequisites(Map<String, Course> courses) {
+        prerequisiteRepository.deleteAll();
+
+        // p. 48: MDE 191 Foreign Languages 2 -> MDE 190 Foreign Languages 1
+        addPrereq(courses.get("MDE191"), courses.get("MDE190"));
+
+        // p. 74: INF 108 Object-Oriented Programming and Educational Practice -> CSS 105 Fundamentals of Programming
+        addPrereq(courses.get("INF108"), courses.get("CSS105"));
+
+        // p. 77: CSS 215 Introduction to Algorithms -> CSS 105, INF 108
+        addPrereq(courses.get("CSS215"), courses.get("CSS105"));
+        addPrereq(courses.get("CSS215"), courses.get("INF108"));
+
+        // p. 80: CSS 319 / INF 319 Advanced Algorithms -> CSS 105, INF 108, CSS 215
+        addPrereq(courses.get("INF319"), courses.get("CSS105"));
+        addPrereq(courses.get("INF319"), courses.get("INF108"));
+        addPrereq(courses.get("INF319"), courses.get("CSS215"));
+
+        // p. 83: CSS 217 Software Architecture and Design Patterns -> CSS 215 Introduction to Algorithms
+        addPrereq(courses.get("CSS217"), courses.get("CSS215"));
+
+        // p. 89: INF 316 Web Front-End Development -> INF 995 Fundamentals of Web Development
+        addPrereq(courses.get("INF316"), courses.get("INF995"));
+
+        // p. 92: INF 373 Web Back-End Development -> INF 995 Fundamentals of Web Development
+        addPrereq(courses.get("INF373"), courses.get("INF995"));
+
+        // p. 98: INF 234 Mobile Application Development 2 -> CSS 216 Mobile Programming
+        addPrereq(courses.get("INF234"), courses.get("CSS216"));
+
+        // p. 213: INF 429 IT Audit and Controls -> INF 381 Project Management in IT Business, INF 114 Fundamentals of IS
+        addPrereq(courses.get("INF429"), courses.get("INF381"));
+        addPrereq(courses.get("INF429"), courses.get("INF114"));
+
+        // p. 215: INF 412 IT Asset Management -> INF 381, INF 114
+        addPrereq(courses.get("INF412"), courses.get("INF381"));
+        addPrereq(courses.get("INF412"), courses.get("INF114"));
+
+        // p. 217: INF 414 IT Governance, Risk and Compliance -> INF 381, INF 114
+        addPrereq(courses.get("INF414"), courses.get("INF381"));
+        addPrereq(courses.get("INF414"), courses.get("INF114"));
     }
 
     private void addPrereq(Course target, Course required) {
@@ -156,51 +408,11 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    private void seedCurriculum(Major major, Map<String, Course> courses) {
-        log.info("Seeding demo 4-year curriculum for major {} (catalog year 2024)...", major.getCode());
-        // Semester 1
-        addCurriculum(major, courses.get("CS101"), 1, 2024, "CORE");
-        addCurriculum(major, courses.get("MATH101"), 1, 2024, "CORE");
-        addCurriculum(major, courses.get("ENG101"), 1, 2024, "CORE");
-        addCurriculum(major, courses.get("HIST101"), 1, 2024, "GENERAL");
-
-        // Semester 2
-        addCurriculum(major, courses.get("CS102"), 2, 2024, "CORE");
-        addCurriculum(major, courses.get("MATH102"), 2, 2024, "CORE");
-        addCurriculum(major, courses.get("ENG102"), 2, 2024, "CORE");
-        addCurriculum(major, courses.get("PHIL101"), 2, 2024, "GENERAL");
-
-        // Semester 3
-        addCurriculum(major, courses.get("CS201"), 3, 2024, "CORE");
-        addCurriculum(major, courses.get("CS205"), 3, 2024, "CORE");
-        addCurriculum(major, courses.get("MATH201"), 3, 2024, "CORE");
-        addCurriculum(major, courses.get("PHYS101"), 3, 2024, "GENERAL");
-
-        // Semester 4
-        addCurriculum(major, courses.get("CS202"), 4, 2024, "CORE");
-        addCurriculum(major, courses.get("CS204"), 4, 2024, "CORE");
-
-        // Semesters 5-8 are demo data until official curricula are imported.
-        addCurriculum(major, courses.get("CS301"), 5, 2024, "CORE");
-        addCurriculum(major, courses.get("CS302"), 5, 2024, "CORE");
-        addCurriculum(major, courses.get("CS303"), 6, 2024, "CORE");
-        addCurriculum(major, courses.get("CS304"), 6, 2024, "CORE");
-        addCurriculum(major, courses.get("CS401"), 7, 2024, "CORE");
-        addCurriculum(major, courses.get("CS402"), 7, 2024, "CORE");
-        addCurriculum(major, courses.get("CS403"), 8, 2024, "CORE");
-        addCurriculum(major, courses.get("CS404"), 8, 2024, "CORE");
-
-        // Electives & Practicums
-        addCurriculum(major, courses.get("CS310"), 5, 2024, "ELECTIVE");
-        addCurriculum(major, courses.get("CS320"), 5, 2024, "ELECTIVE");
-        addCurriculum(major, courses.get("CS330"), 6, 2024, "ELECTIVE");
-        addCurriculum(major, courses.get("CS340"), 6, 2024, "ELECTIVE");
-        addCurriculum(major, courses.get("CS410"), 7, 2024, "ELECTIVE");
-        addCurriculum(major, courses.get("CS420"), 7, 2024, "ELECTIVE");
-        addCurriculum(major, courses.get("CS490"), 8, 2024, "ELECTIVE");
-        addCurriculum(major, courses.get("INTERN401"), 8, 2024, "ELECTIVE");
-        addCurriculum(major, courses.get("ROBO301"), 6, 2024, "ELECTIVE");
-        addCurriculum(major, courses.get("DATA201"), 5, 2024, "ELECTIVE");
+    private void seedCurriculum(Major major, int catalogYear, Map<String, Course> courses) {
+        log.info("Seeding SDU Information Systems BSc. curriculum for major {} (catalog year {})...", major.getCode(), catalogYear);
+        for (CourseSeed seed : seededCatalogList) {
+            addCurriculum(major, courses.get(seed.code()), seed.semester(), catalogYear, seed.courseType());
+        }
     }
 
     private void addCurriculum(Major major, Course course, int semester, int catalogYear, String type) {
@@ -222,9 +434,7 @@ public class DataSeeder implements CommandLineRunner {
             acc.setPasswordHash(passwordEncoder.encode("Student123!@#"));
             return studentAccountRepository.save(acc);
         });
-        if (account.getMajor() == null) {
-            account.setMajor(major);
-        }
+        account.setMajor(major);
         if (account.getCatalogYear() == null) {
             account.setCatalogYear(2024);
         }
@@ -233,22 +443,17 @@ public class DataSeeder implements CommandLineRunner {
         Optional<Student> existingStudent = studentRepository.findByStudentId(studentId);
         if (existingStudent.isPresent()) {
             Student student = existingStudent.get();
-            boolean updated = false;
+            student.setMajor(major);
             if (student.getAccount() == null) {
                 student.setAccount(account);
-                updated = true;
             }
             if (student.getPasswordHash() == null) {
                 student.setPasswordHash(account.getPasswordHash());
-                updated = true;
             }
             if (student.getCareerGoal() == null) {
                 student.setCareerGoal("Backend & Cloud Engineering");
-                updated = true;
             }
-            if (updated) {
-                studentRepository.save(student);
-            }
+            studentRepository.save(student);
         } else {
             log.info("Seeding demo student: {}", studentId);
             Student student = new Student();
@@ -263,31 +468,39 @@ public class DataSeeder implements CommandLineRunner {
             student.setCareerGoal("Backend & Cloud Engineering");
             student.setAccount(account);
 
-            // Completed courses: Semesters 1 and 2 (Total: 27 ECTS)
+            // Completed courses: Semesters 1 and 2 (8 courses = 41 ECTS)
             student.setCompletedCourses(Set.of(
-                    courses.get("CS101"),
-                    courses.get("MATH101"),
-                    courses.get("ENG101"),
-                    courses.get("HIST101"),
-                    courses.get("CS102"),
-                    courses.get("MATH102"),
-                    courses.get("ENG102"),
-                    courses.get("PHIL101")
+                    courses.get("INF106"),
+                    courses.get("CSS105"),
+                    courses.get("MAT137"),
+                    courses.get("MAT156"),
+                    courses.get("MDE171"),
+                    courses.get("INF114"),
+                    courses.get("INF108"),
+                    courses.get("MAT138")
             ));
 
-            // Currently enrolled courses: Semester 3 (Total: 14 ECTS)
+            // Currently enrolled courses: Semester 3 (4 courses = 20 ECTS)
             student.setEnrolledCourses(Set.of(
-                    courses.get("CS201"),
-                    courses.get("CS205"),
-                    courses.get("MATH201"),
-                    courses.get("PHYS101")
+                    courses.get("MAT251"),
+                    courses.get("CSS215"),
+                    courses.get("CSS331"),
+                    courses.get("INF313")
             ));
 
             studentRepository.save(student);
             account.setStudent(student);
-            log.info("Demo student seeded with major CS, 27 completed ECTS, 14 enrolled ECTS");
+            log.info("Demo student seeded with major IS (SITAM), 41 completed ECTS, 20 enrolled ECTS");
         }
     }
 
-    private record CourseMeta(String name, int credits, int difficulty, String description) {}
+    private record CourseSeed(
+            String code,
+            String name,
+            int credits,
+            int difficulty,
+            int semester,
+            String courseType,
+            String description
+    ) {}
 }

@@ -24,8 +24,14 @@ If any other document conflicts with this file, this file takes precedence.
 | Credit Limit Warning (US-14) | `CartDto.exceedsLimit`, `CartDto.excessCredits`, `CartDto.limitWarning`, `#credit-limit-warning` banner, red counter styling | Implemented |
 | Academic Standing & Progress (US-07) | `AcademicStandingDto`, `DashboardController` (`/dashboard`), SVG circular progress ring (`27 / 240 ECTS`), GPA badge & program summary | Implemented |
 | Enrolled Courses List (US-08) | `EnrolledCourseDto`, `Student.enrolledCourses`, `DashboardController` (`/dashboard`), semester course list with ECTS credit weights | Implemented |
-| Completed Course History (US-29) | Read-only `CourseCompletion` view of `student_courses`, `CompletedCourseDto`, dashboard table; nullable recorded grades/terms | Implemented; transcript import/editing is outside scope |
-| Authentication | Session attributes (`authenticatedStudent`, `authenticatedStudentId`) with BCrypt password verification via `PasswordEncoder` | US-04 implemented |
+| Completed Course History (US-29) | `CourseCompletion` entity over `student_courses`, `CompletedCourseDto`, dashboard & profile tables | Implemented |
+| Manual Transcript Management (US-30) | `TranscriptService`, `ProfileController` (`/profile`), add/edit/remove completed courses, letter grades, semesters, and academic profile | Implemented |
+| Automatic Cumulative GPA (US-31) | `CumulativeGpaService` derives credit-weighted GPA from current completion records on `/dashboard` and `/profile` using SDU Handbook 2026–2027 scale | Implemented (`docs/US-31.md`) |
+| FAQ & AI Handoff (US-34, US-35, US-36) | `FaqController` (`/faq`), categorized accordion, real-time filter, and `"Ask AI about my situation"` handoff to Copilot | Implemented |
+| Floating AI Copilot Widget (US-40, US-42) | `fragments/copilot.html` included across `/dashboard`, `/planner`, `/profile`, `/faq` with `sessionStorage` state & quick prompt chips | Implemented |
+| Automatic Academic Context (US-41) | `AcademicContextService` injects major, GPA, degree progress, completed/enrolled courses, cart, and eligible courses into AI prompts | Implemented |
+| AI Semester Plan Builder (US-43) | `SemesterPlanService`, `CourseRecommendationDto` with `"Why this course?"` reasons, workload balancing (≤ 30 ECTS), and one-click `+ Add to Cart` | Implemented |
+| Authentication | Session attributes (`authenticatedStudent`, `authenticatedStudentId`) with BCrypt password verification via `PasswordEncoder` and `AuthSessionHelper` | US-04 implemented |
 | AI integration | Google Gemini API via `RestClient` | Implemented |
 | CI | GitHub Actions (`./mvnw clean test`, Docker build checks) | Implemented |
 

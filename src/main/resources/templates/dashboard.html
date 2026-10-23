@@ -426,6 +426,44 @@
             white-space: nowrap;
         }
 
+        .enrolled-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .btn-cancel-enrolled-dash {
+            background: #fff1f2;
+            color: #be123c;
+            border: 1px solid #fecdd3;
+            padding: 0.2rem 0.55rem;
+            border-radius: 5px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-cancel-enrolled-dash:hover {
+            background: #ffe4e6;
+        }
+
+        .btn-return-cart-dash {
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fcd34d;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-return-cart-dash:hover {
+            background: #fef3c7;
+        }
+
         .enrolled-empty {
             text-align: center;
             padding: 1rem 0.5rem;
@@ -795,7 +833,20 @@
             <div class="enrolled-courses-card" aria-label="Currently Enrolled Courses">
                 <div class="enrolled-header">
                     <h3 class="enrolled-title">📚 Currently Enrolled Courses</h3>
-                    <span class="enrolled-badge" id="enrolled-total-badge" th:text="${standing.enrolledCredits + ' ECTS'}">14 ECTS</span>
+                    <div class="enrolled-item-actions">
+                        <span class="enrolled-badge" id="enrolled-total-badge" th:text="${standing.enrolledCredits + ' ECTS'}">14 ECTS</span>
+                        <form th:if="${!#lists.isEmpty(standing.enrolledCourses)}"
+                              th:action="@{/planner/enrolled/return-to-cart}"
+                              method="post"
+                              style="margin: 0;">
+                            <input type="hidden" name="redirect" value="/planner">
+                            <button type="submit"
+                                    class="btn-return-cart-dash"
+                                    title="Вернуть принятые курсы в корзину для изменения">
+                                ✏️ Изменить
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- If courses enrolled -->
@@ -805,7 +856,18 @@
                             <span class="enrolled-course-code" th:text="${course.code}">CS201</span>
                             <span class="enrolled-course-name" th:text="${course.name}">Data Structures</span>
                         </div>
-                        <span class="enrolled-course-credits" th:text="${course.formattedCredits}">4 ECTS</span>
+                        <div class="enrolled-item-actions">
+                            <span class="enrolled-course-credits" th:text="${course.formattedCredits}">4 ECTS</span>
+                            <form th:action="@{/planner/enrolled/cancel}" method="post" style="margin: 0;">
+                                <input type="hidden" name="courseId" th:value="${course.id}">
+                                <input type="hidden" name="redirect" value="/dashboard">
+                                <button type="submit"
+                                        class="btn-cancel-enrolled-dash"
+                                        title="Отменить курс">
+                                    ↩️ Отменить
+                                </button>
+                            </form>
+                        </div>
                     </li>
                 </ul>
 

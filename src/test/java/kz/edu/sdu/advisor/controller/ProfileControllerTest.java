@@ -72,28 +72,28 @@ class ProfileControllerTest {
 
     @Test
     void saveTranscriptCourseAddsNewCompletionAndUpdatesExisting() throws Exception {
-        Course cs204 = courseRepository.findByCode("CS204").orElseThrow();
+        Course inf202 = courseRepository.findByCode("INF202").orElseThrow();
         Student student = studentRepository.findByStudentId("240103000").orElseThrow();
 
-        // Add CS204 as completed with grade A- in Spring 2025
+        // Add INF202 as completed with grade A- in Spring 2025
         mockMvc.perform(post("/profile/transcript/save")
                         .session(authSession("240103000"))
-                        .param("courseId", cs204.getId().toString())
+                        .param("courseId", inf202.getId().toString())
                         .param("letterGrade", "a-")
                         .param("semesterTaken", "Spring 2025"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/profile"))
-                .andExpect(flash().attribute("transcriptSuccess", containsString("CS204 (A-)")));
+                .andExpect(flash().attribute("transcriptSuccess", containsString("INF202 (A-)")));
 
         List<CompletedCourseDto> afterAdd = transcriptService.getCompletedCourses(student.getId());
         assertEquals(9, afterAdd.size());
         assertTrue(afterAdd.stream().anyMatch(c ->
-                "CS204".equals(c.code()) && "A-".equals(c.letterGrade()) && "Spring 2025".equals(c.semesterTaken())));
+                "INF202".equals(c.code()) && "A-".equals(c.letterGrade()) && "Spring 2025".equals(c.semesterTaken())));
 
-        // Update existing CS204 grade to A
+        // Update existing INF202 grade to A
         mockMvc.perform(post("/profile/transcript/save")
                         .session(authSession("240103000"))
-                        .param("courseId", cs204.getId().toString())
+                        .param("courseId", inf202.getId().toString())
                         .param("letterGrade", "A")
                         .param("semesterTaken", "Fall 2025"))
                 .andExpect(status().is3xxRedirection())
@@ -102,16 +102,16 @@ class ProfileControllerTest {
         List<CompletedCourseDto> afterUpdate = transcriptService.getCompletedCourses(student.getId());
         assertEquals(9, afterUpdate.size());
         assertTrue(afterUpdate.stream().anyMatch(c ->
-                "CS204".equals(c.code()) && "A".equals(c.letterGrade()) && "Fall 2025".equals(c.semesterTaken())));
+                "INF202".equals(c.code()) && "A".equals(c.letterGrade()) && "Fall 2025".equals(c.semesterTaken())));
     }
 
     @Test
     void saveTranscriptCourseRejectsInvalidGrade() throws Exception {
-        Course cs101 = courseRepository.findByCode("CS101").orElseThrow();
+        Course css105 = courseRepository.findByCode("CSS105").orElseThrow();
 
         mockMvc.perform(post("/profile/transcript/save")
                         .session(authSession("240103000"))
-                        .param("courseId", cs101.getId().toString())
+                        .param("courseId", css105.getId().toString())
                         .param("letterGrade", "INVALID_GRADE"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/profile"))
@@ -120,19 +120,19 @@ class ProfileControllerTest {
 
     @Test
     void removeTranscriptCourseDeletesCompletion() throws Exception {
-        Course cs101 = courseRepository.findByCode("CS101").orElseThrow();
+        Course css105 = courseRepository.findByCode("CSS105").orElseThrow();
         Student student = studentRepository.findByStudentId("240103000").orElseThrow();
 
         mockMvc.perform(post("/profile/transcript/remove")
                         .session(authSession("240103000"))
-                        .param("courseId", cs101.getId().toString()))
+                        .param("courseId", css105.getId().toString()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/profile"))
                 .andExpect(flash().attributeExists("transcriptSuccess"));
 
         List<CompletedCourseDto> remaining = transcriptService.getCompletedCourses(student.getId());
         assertEquals(7, remaining.size());
-        assertFalse(remaining.stream().anyMatch(c -> "CS101".equals(c.code())));
+        assertFalse(remaining.stream().anyMatch(c -> "CSS105".equals(c.code())));
     }
 
     @Test
@@ -150,4 +150,3 @@ class ProfileControllerTest {
         assertEquals("AI / Machine Learning Engineer", updated.getCareerGoal());
     }
 }
-

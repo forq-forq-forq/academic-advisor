@@ -7,6 +7,7 @@ import kz.edu.sdu.advisor.model.Prerequisite;
 import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.CartDto;
 import kz.edu.sdu.advisor.model.dto.CartItemDto;
+import kz.edu.sdu.advisor.model.dto.EnrolledCourseDto;
 import kz.edu.sdu.advisor.repository.CartItemRepository;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
@@ -18,8 +19,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
@@ -170,5 +173,89 @@ public class CartService {
         } else {
             return "red";
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<EnrolledCourseDto> getEnrolledCourses(String studentId) {
+        Student student = studentRepository.findByStudentId(studentId).orElse(null);
+        if (student == null || student.getEnrolledCourses() == null) {
+            return List.of();
+        }
+        return student.getEnrolledCourses().stream()
+                .filter(Objects::nonNull)
+                .map(EnrolledCourseDto::from)
+                .sorted(Comparator.comparing(EnrolledCourseDto::code))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public int getEnrolledCredits(String studentId) {
+        return getEnrolledCourses(studentId).stream().mapToInt(EnrolledCourseDto::credits).sum();
+    }
+
+    /**
+     * Confirms/enrolls all courses currently in the student's Semester Cart so they become
+     * Currently Enrolled Courses on the Dashboard, then clears the cart.
+     */
+    @Transactional
+    public List<EnrolledCourseDto> enrollCartCourses(String studentId) {
+        Student student = studentRepository.findByStudentId(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found: " + studentId));
+
+        List<CartItem> items = cartItemRepository.findByStudent_StudentIdOrderByCourse_CodeAsc(studentId);
+        if (items.isEmpty()) {
+            throw new IllegalArgumentException("Your cart is empty. Add courses before confirming enrollment.");
+        }
+
+        if (student.getEnrolledCourses() == null) {
+            student.setEnrolledCourses(new HashSet<>());
+        }
+        for (CartItem item : items) {
+            if (item.getCourse() != null) {
+                student.getEnrolledCourses().add(item.getCourse());
+            }
+        }
+        studentRepository.save(student);
+        cartItemRepository.deleteAll(items);
+        log.info("Enrolled {} course(s) from cart for student {}", items.size(), studentId);
+        return getEnrolledCourses(studentId);
+    }
+
+    /**
+     * Cancels/unenrolls a single currently enrolled course for the student.
+     */
+    @Transactional
+    public List<EnrolledCourseDto> cancelEnrolledCourse(String studentId, Long courseId) {
+        Student student = studentRepository.findByStudentId(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found: " + studentId));
+
+        if (student.getEnrolledCourses() != null) {
+            student.getEnrolledCourses().removeIf(c -> c != null && Objects.equals(c.getId(), courseId));
+            studentRepository.save(student);
+            log.info("Cancelled enrolled course ID {} for student {}", courseId, studentId);
+        }
+        return getEnrolledCourses(studentId);
+    }
+
+    /**
+     * Moves all currently enrolled courses back into the student's Semester Cart so the student
+     * can modify their selection at any time.
+     */
+    @Transactional
+    public CartDto returnEnrolledToCart(String studentId) {
+        Student student = studentRepository.findByStudentId(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found: " + studentId));
+
+        if (student.getEnrolledCourses() != null && !student.getEnrolledCourses().isEmpty()) {
+            for (Course course : new HashSet<>(student.getEnrolledCourses())) {
+                if (course != null && !cartItemRepository.existsByStudent_StudentIdAndCourse_Id(studentId, course.getId())) {
+                    cartItemRepository.save(new CartItem(student, course));
+                }
+            }
+            student.getEnrolledCourses().clear();
+            studentRepository.save(student);
+            log.info("Returned enrolled courses to cart for student {}", studentId);
+        }
+        return getCart(studentId);
     }
 }

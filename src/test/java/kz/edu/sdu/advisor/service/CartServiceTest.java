@@ -2,6 +2,7 @@ package kz.edu.sdu.advisor.service;
 
 import kz.edu.sdu.advisor.model.Course;
 import kz.edu.sdu.advisor.model.dto.CartDto;
+import kz.edu.sdu.advisor.model.dto.EnrolledCourseDto;
 import kz.edu.sdu.advisor.repository.CartItemRepository;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,34 +34,34 @@ class CartServiceTest {
     @Autowired
     private CourseRepository courseRepository;
 
-    private Course course3cr;
-    private Course course4cr;
+    private Course course2cr;
+    private Course course5cr;
     private Course course0cr;
 
     @BeforeEach
     void setUp() {
         cartItemRepository.deleteAll();
 
-        course3cr = courseRepository.findByCode("HIST101").orElseGet(() -> {
+        course2cr = courseRepository.findByCode("MDE291").orElseGet(() -> {
             Course c = new Course();
-            c.setCode("HIST101");
-            c.setName("History");
-            c.setCredits(3);
+            c.setCode("MDE291");
+            c.setName("Physical Education 1");
+            c.setCredits(2);
             return courseRepository.save(c);
         });
 
-        course4cr = courseRepository.findByCode("MATH101").orElseGet(() -> {
+        course5cr = courseRepository.findByCode("MAT137").orElseGet(() -> {
             Course c = new Course();
-            c.setCode("MATH101");
-            c.setName("Math");
-            c.setCredits(4);
+            c.setCode("MAT137");
+            c.setName("Mathematics for Information Systems 1");
+            c.setCredits(5);
             return courseRepository.save(c);
         });
 
-        course0cr = courseRepository.findByCode("ZERO101").orElseGet(() -> {
+        course0cr = courseRepository.findByCode("MDE160").orElseGet(() -> {
             Course c = new Course();
-            c.setCode("ZERO101");
-            c.setName("Zero Credit Course");
+            c.setCode("MDE160");
+            c.setName("Community Engagement and Value Based Society 1");
             c.setCredits(0);
             return courseRepository.save(c);
         });
@@ -80,10 +83,10 @@ class CartServiceTest {
     @Test
     @DisplayName("QA-2: Add course with credits -> Light workload (0-15 credits)")
     void addCourse_shouldIncreaseCreditsAndRetainLightWorkload() {
-        CartDto cart = cartService.addCourse(STUDENT_ID, course4cr.getId());
+        CartDto cart = cartService.addCourse(STUDENT_ID, course5cr.getId());
 
         assertThat(cart.items()).hasSize(1);
-        assertThat(cart.totalCredits()).isEqualTo(4);
+        assertThat(cart.totalCredits()).isEqualTo(5);
         assertThat(cart.workloadState()).isEqualTo("Light");
         assertThat(cart.workloadColor()).isEqualTo("green");
         assertThat(cart.empty()).isFalse();
@@ -115,15 +118,15 @@ class CartServiceTest {
     @Test
     @DisplayName("QA-5: Remove course updates credits and workload immediately")
     void removeCourse_shouldDecreaseCreditsAndReevaluateWorkload() {
-        cartService.addCourse(STUDENT_ID, course3cr.getId());
-        cartService.addCourse(STUDENT_ID, course4cr.getId());
+        cartService.addCourse(STUDENT_ID, course2cr.getId());
+        cartService.addCourse(STUDENT_ID, course5cr.getId());
 
         CartDto cartBefore = cartService.getCart(STUDENT_ID);
         assertThat(cartBefore.totalCredits()).isEqualTo(7);
 
-        CartDto cartAfter = cartService.removeCourse(STUDENT_ID, course3cr.getId());
+        CartDto cartAfter = cartService.removeCourse(STUDENT_ID, course2cr.getId());
         assertThat(cartAfter.items()).hasSize(1);
-        assertThat(cartAfter.totalCredits()).isEqualTo(4);
+        assertThat(cartAfter.totalCredits()).isEqualTo(5);
         assertThat(cartAfter.workloadState()).isEqualTo("Light");
     }
 
@@ -140,17 +143,17 @@ class CartServiceTest {
     @Test
     @DisplayName("Duplicate course addition should be idempotent (prevent duplicates)")
     void addSameCourseTwice_shouldNotDuplicateInCart() {
-        cartService.addCourse(STUDENT_ID, course3cr.getId());
-        CartDto cart = cartService.addCourse(STUDENT_ID, course3cr.getId());
+        cartService.addCourse(STUDENT_ID, course2cr.getId());
+        CartDto cart = cartService.addCourse(STUDENT_ID, course2cr.getId());
 
         assertThat(cart.items()).hasSize(1);
-        assertThat(cart.totalCredits()).isEqualTo(3);
+        assertThat(cart.totalCredits()).isEqualTo(2);
     }
 
     @Test
     @DisplayName("Adding with non-existent student or course should throw IllegalArgumentException")
     void invalidStudentOrCourse_shouldThrowException() {
-        assertThatThrownBy(() -> cartService.addCourse("999999999", course3cr.getId()))
+        assertThatThrownBy(() -> cartService.addCourse("999999999", course2cr.getId()))
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() -> cartService.addCourse(STUDENT_ID, 999999L))
@@ -160,49 +163,49 @@ class CartServiceTest {
     @Test
     @DisplayName("US-12 QA-1: Add course with satisfied prerequisites -> succeeds")
     void addCourse_withSatisfiedPrerequisites_shouldSucceed() {
-        Course cs204 = courseRepository.findByCode("CS204").orElseThrow();
-        CartDto cart = cartService.addCourse(STUDENT_ID, cs204.getId());
+        Course inf202 = courseRepository.findByCode("INF202").orElseThrow();
+        CartDto cart = cartService.addCourse(STUDENT_ID, inf202.getId());
 
         assertThat(cart.items()).hasSize(1);
-        assertThat(cart.items().get(0).code()).isEqualTo("CS204");
+        assertThat(cart.items().get(0).code()).isEqualTo("INF202");
     }
 
     @Test
     @DisplayName("US-12 QA-2: Add course with uncompleted prerequisite -> throws PrerequisiteNotMetException")
     void addCourse_withMissingPrerequisites_shouldThrowException() {
-        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+        Course css217 = courseRepository.findByCode("CSS217").orElseThrow();
 
-        assertThatThrownBy(() -> cartService.addCourse(STUDENT_ID, cs202.getId()))
+        assertThatThrownBy(() -> cartService.addCourse(STUDENT_ID, css217.getId()))
                 .isInstanceOf(kz.edu.sdu.advisor.exception.PrerequisiteNotMetException.class)
-                .hasMessageContaining("Cannot add CS202: missing prerequisite CS201")
+                .hasMessageContaining("Cannot add CSS217: missing prerequisite CSS215")
                 .satisfies(ex -> {
                     kz.edu.sdu.advisor.exception.PrerequisiteNotMetException pEx =
                             (kz.edu.sdu.advisor.exception.PrerequisiteNotMetException) ex;
-                    assertThat(pEx.getCourse().getCode()).isEqualTo("CS202");
+                    assertThat(pEx.getCourse().getCode()).isEqualTo("CSS217");
                     assertThat(pEx.getMissingPrerequisites())
                             .extracting(Course::getCode)
-                            .containsExactly("CS201");
+                            .containsExactly("CSS215");
                 });
     }
 
     @Test
     @DisplayName("US-12 QA-3: Currently enrolled courses do NOT satisfy prerequisite requirement")
     void currentlyEnrolledCourse_doesNotSatisfyPrerequisite() {
-        // CS201 is in student's enrolledCourses, but not completedCourses
-        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+        // CSS215 is in student's enrolledCourses, but not completedCourses
+        Course css217 = courseRepository.findByCode("CSS217").orElseThrow();
 
-        assertThatThrownBy(() -> cartService.addCourse(STUDENT_ID, cs202.getId()))
+        assertThatThrownBy(() -> cartService.addCourse(STUDENT_ID, css217.getId()))
                 .isInstanceOf(kz.edu.sdu.advisor.exception.PrerequisiteNotMetException.class);
     }
 
     @Test
     @DisplayName("US-12 QA-4: Add course with no prerequisites -> succeeds")
     void addCourse_withoutPrerequisites_shouldSucceed() {
-        Course cs101 = courseRepository.findByCode("CS101").orElseThrow();
-        CartDto cart = cartService.addCourse(STUDENT_ID, cs101.getId());
+        Course inf106 = courseRepository.findByCode("INF106").orElseThrow();
+        CartDto cart = cartService.addCourse(STUDENT_ID, inf106.getId());
 
         assertThat(cart.items()).hasSize(1);
-        assertThat(cart.items().get(0).code()).isEqualTo("CS101");
+        assertThat(cart.items().get(0).code()).isEqualTo("INF106");
     }
 
     @Test
@@ -213,44 +216,38 @@ class CartServiceTest {
         assertThat(emptyCart.formattedCodes()).isEmpty();
 
         // Add 1 course
-        cartService.addCourse(STUDENT_ID, course3cr.getId()); // HIST101
+        cartService.addCourse(STUDENT_ID, course5cr.getId()); // MAT137
         CartDto singleCart = cartService.getCart(STUDENT_ID);
-        assertThat(singleCart.formattedCodes()).isEqualTo("HIST101");
+        assertThat(singleCart.formattedCodes()).isEqualTo("MAT137");
 
         // Add 2nd course
-        cartService.addCourse(STUDENT_ID, course4cr.getId()); // MATH101
+        cartService.addCourse(STUDENT_ID, course2cr.getId()); // MDE291
         CartDto twoCart = cartService.getCart(STUDENT_ID);
-        assertThat(twoCart.formattedCodes()).isEqualTo("HIST101, MATH101");
+        assertThat(twoCart.formattedCodes()).isEqualTo("MAT137, MDE291");
 
         // Remove 1 course
-        CartDto afterRemove = cartService.removeCourse(STUDENT_ID, course3cr.getId());
-        assertThat(afterRemove.formattedCodes()).isEqualTo("MATH101");
+        CartDto afterRemove = cartService.removeCourse(STUDENT_ID, course5cr.getId());
+        assertThat(afterRemove.formattedCodes()).isEqualTo("MDE291");
     }
 
     @Test
     @DisplayName("US-12 Fix: Adding a prerequisite course to cart allows subsequently adding dependent course")
     void addPrerequisiteToCart_allowsAddingDependentCourse() {
-        Course cs201 = courseRepository.findByCode("CS201").orElseThrow();
-        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+        Course css215 = courseRepository.findByCode("CSS215").orElseThrow();
+        Course css217 = courseRepository.findByCode("CSS217").orElseThrow();
 
-        // 1. Initially CS202 cannot be added because CS201 is not completed
-        // (CS201 is in enrolledCourses, not completedCourses, and cart is currently empty)
-        // 2. Add CS201 to the cart
-        cartService.addCourse(STUDENT_ID, cs201.getId());
-
-        // 3. Now CS202 can be added because CS201 is in the cart!
-        CartDto updatedCart = cartService.addCourse(STUDENT_ID, cs202.getId());
+        cartService.addCourse(STUDENT_ID, css215.getId());
+        CartDto updatedCart = cartService.addCourse(STUDENT_ID, css217.getId());
         assertThat(updatedCart.items())
                 .extracting(kz.edu.sdu.advisor.model.dto.CartItemDto::code)
-                .contains("CS201", "CS202");
+                .contains("CSS215", "CSS217");
     }
 
     @Test
     @DisplayName("US-14 QA-1, QA-2 & QA-4: Cart evaluates maximum credit limit warning and excess credits")
     void creditLimitEvaluation_shouldProvideWarningWhenExceeded() {
-        // Normal cart within limit (e.g. 7 ECTS out of 40)
-        cartService.addCourse(STUDENT_ID, course3cr.getId()); // 3
-        cartService.addCourse(STUDENT_ID, course4cr.getId()); // 4
+        cartService.addCourse(STUDENT_ID, course2cr.getId()); // 2
+        cartService.addCourse(STUDENT_ID, course5cr.getId()); // 5
         CartDto normalCart = cartService.getCart(STUDENT_ID);
 
         assertThat(normalCart.totalCredits()).isEqualTo(7);
@@ -258,7 +255,6 @@ class CartServiceTest {
         assertThat(normalCart.excessCredits()).isEqualTo(0);
         assertThat(normalCart.limitWarning()).isNull();
 
-        // Create a CartDto representing an overloaded cart (e.g. 42 ECTS with maxCredits = 40)
         CartDto overloadedDto = new CartDto(
                 normalCart.items(),
                 42,
@@ -281,16 +277,29 @@ class CartServiceTest {
     @Test
     @DisplayName("US-12 Fix: Removing a prerequisite course from cart cascades removal of dependent course")
     void removePrerequisiteFromCart_shouldCascadeRemoveDependentCourse() {
-        Course cs201 = courseRepository.findByCode("CS201").orElseThrow();
-        Course cs202 = courseRepository.findByCode("CS202").orElseThrow();
+        Course css215 = courseRepository.findByCode("CSS215").orElseThrow();
+        Course css217 = courseRepository.findByCode("CSS217").orElseThrow();
 
-        cartService.addCourse(STUDENT_ID, cs201.getId());
-        cartService.addCourse(STUDENT_ID, cs202.getId());
+        cartService.addCourse(STUDENT_ID, css215.getId());
+        cartService.addCourse(STUDENT_ID, css217.getId());
         assertThat(cartService.getCart(STUDENT_ID).items()).hasSize(2);
 
-        CartDto afterRemove = cartService.removeCourse(STUDENT_ID, cs201.getId());
+        CartDto afterRemove = cartService.removeCourse(STUDENT_ID, css215.getId());
         assertThat(afterRemove.items()).isEmpty();
         assertThat(afterRemove.totalCredits()).isEqualTo(0);
     }
-}
 
+    @Test
+    @DisplayName("Course Enrollment: enrollCartCourses moves cart items to enrolledCourses and cancelEnrolledCourse removes them")
+    void enrollAndCancelCourses_shouldManageStudentEnrolledCourses() {
+        Course inf202 = courseRepository.findByCode("INF202").orElseThrow();
+        cartService.addCourse(STUDENT_ID, inf202.getId());
+
+        List<EnrolledCourseDto> enrolledAfterConfirm = cartService.enrollCartCourses(STUDENT_ID);
+        assertThat(enrolledAfterConfirm).extracting(EnrolledCourseDto::code).contains("INF202");
+        assertThat(cartService.getCart(STUDENT_ID).items()).isEmpty();
+
+        List<EnrolledCourseDto> enrolledAfterCancel = cartService.cancelEnrolledCourse(STUDENT_ID, inf202.getId());
+        assertThat(enrolledAfterCancel).extracting(EnrolledCourseDto::code).doesNotContain("INF202");
+    }
+}

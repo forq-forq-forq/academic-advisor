@@ -44,7 +44,7 @@ class CompletedCourseHistoryTest {
     void rendersRecordedHistoryAndEscapesSemester() throws Exception {
         Long id = students.findByStudentId("240103000").orElseThrow().getId();
         jdbc.update("update student_courses set letter_grade = ?, semester_taken = ? where student_id = ? and course_id = (select id from courses where code = ?)",
-                "A-", "Fall 2024 <script>alert(1)</script>", id, "CS101");
+                "A-", "Fall 2024 <script>alert(1)</script>", id, "CSS105");
 
         String html = mvc.perform(get("/dashboard").session(session("240103000")))
                 .andExpect(status().isOk())
@@ -52,10 +52,10 @@ class CompletedCourseHistoryTest {
                 .andExpect(content().string(containsString("Fall 2024 &lt;script&gt;")))
                 .andReturn().getResponse().getContentAsString();
         String table = completedTable(html);
-        assertTrue(table.matches("(?s).*<td>CS101</td>\\s*<td>Introduction to Computer Science</td>\\s*<td>A-</td>\\s*<td>3</td>.*"));
+        assertTrue(table.matches("(?s).*<td>CSS105</td>\\s*<td>Fundamentals of Programming</td>\\s*<td>A-</td>\\s*<td>5</td>.*"));
         assertFalse(table.contains("<script>"));
-        assertFalse(table.contains("CS201"));
-        assertTrue(table.indexOf("CS101") < table.indexOf("CS102"));
+        assertFalse(table.contains("CSS215"));
+        assertTrue(table.indexOf("CSS105") < table.indexOf("INF106"));
     }
 
     @Test
@@ -85,7 +85,7 @@ class CompletedCourseHistoryTest {
     @Test
     void sameCourseHasStudentSpecificGradesAndTermsAndIgnoresRequestStudentIds() throws Exception {
         Long demoId = students.findByStudentId("240103000").orElseThrow().getId();
-        Long courseId = courses.findByCode("CS101").orElseThrow().getId();
+        Long courseId = courses.findByCode("CSS105").orElseThrow().getId();
         Student other = new Student();
         other.setStudentId("us29-other");
         other.setName("Other Student");
@@ -99,17 +99,17 @@ class CompletedCourseHistoryTest {
                         .param("studentId", "240103000").param("student_id", demoId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("completedCourses", List.of(new CompletedCourseDto(
-                        "CS101", "Introduction to Computer Science", 3, "B+", "Spring 2025"))));
+                        "CSS105", "Fundamentals of Programming", 5, "B+", "Spring 2025"))));
         mvc.perform(get("/dashboard").session(session("240103000")))
                 .andExpect(model().attribute("completedCourses", hasItem(new CompletedCourseDto(
-                        "CS101", "Introduction to Computer Science", 3, "A-", "Fall 2024"))));
+                        "CSS105", "Fundamentals of Programming", 5, "A-", "Fall 2024"))));
     }
 
     @Test
     void unauthenticatedStudentSelectorCannotAccessHistory() throws Exception {
         mvc.perform(get("/dashboard").param("studentId", "240103000"))
                 .andExpect(redirectedUrl("/login"))
-                .andExpect(content().string(not(containsString("CS101"))));
+                .andExpect(content().string(not(containsString("CSS105"))));
     }
 
     @Test
@@ -120,15 +120,15 @@ class CompletedCourseHistoryTest {
 
         mvc.perform(get("/dashboard").session(session("240103000")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("27 / 240 ECTS completed")))
-                .andExpect(content().string(containsString("14 ECTS")))
+                .andExpect(content().string(containsString("41 / 240 ECTS completed")))
+                .andExpect(content().string(containsString("20 ECTS")))
                 .andExpect(content().string(containsString("4.00")))
                 .andExpect(content().string(containsString("Honor Standing")));
         Student student = students.findByStudentId("240103000").orElseThrow();
-        assertEquals(27, student.getCompletedCredits());
-        assertDoesNotThrow(() -> cart.validatePrerequisites(student, courses.findByCode("CS204").orElseThrow()));
+        assertEquals(41, student.getCompletedCredits());
+        assertDoesNotThrow(() -> cart.validatePrerequisites(student, courses.findByCode("INF202").orElseThrow()));
         assertThrows(PrerequisiteNotMetException.class,
-                () -> cart.validatePrerequisites(student, courses.findByCode("CS202").orElseThrow()));
+                () -> cart.validatePrerequisites(student, courses.findByCode("CSS217").orElseThrow()));
     }
 
     @Test

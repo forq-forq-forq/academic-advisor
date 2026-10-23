@@ -49,6 +49,14 @@ public class AuthController {
     private final AuthSessionHelper authSessionHelper;
     private final PasswordEncoder passwordEncoder;
 
+    @GetMapping("/")
+    public String rootRedirect(HttpSession session) {
+        if (authSessionHelper.isAuthenticated(session)) {
+            return "redirect:/dashboard";
+        }
+        return "redirect:/login";
+    }
+
     @GetMapping("/login")
     public String showLoginPage(HttpSession session) {
         // If already logged in, redirect to planner

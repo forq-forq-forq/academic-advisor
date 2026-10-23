@@ -442,6 +442,32 @@
             background: #f8fafc;
         }
 
+        .btn-explain {
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #cbd5e0;
+            padding: 0.3rem 0.55rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .btn-explain:hover {
+            background: #edf2ff;
+            color: #3b5bdb;
+            border-color: #bac8ff;
+        }
+
+        .catalog-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-shrink: 0;
+        }
+
         .btn-add {
             background: #4c6ef5;
             color: #ffffff;
@@ -595,6 +621,119 @@
             border: 1px solid #f87171 !important;
             font-weight: 800;
         }
+
+        /* ── Course Enrollment / Confirm & Cancel (Принять / Отменить курсы) ── */
+        .btn-enroll-cart {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #16a34a;
+            border: 1px solid #15803d;
+            color: #ffffff;
+            padding: 0.35rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.825rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-enroll-cart:hover:not(:disabled) {
+            background: #15803d;
+            transform: translateY(-1px);
+        }
+
+        .btn-enroll-cart:disabled {
+            background: #cbd5e1;
+            border-color: #cbd5e1;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        .planner-enrolled-section {
+            margin-top: 1.5rem;
+            padding-top: 1.25rem;
+            border-top: 2px dashed #e2e8f0;
+        }
+
+        .planner-enrolled-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .planner-enrolled-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .planner-enrolled-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .enrolled-credit-pill {
+            background: #ebf8ff;
+            color: #2b6cb0;
+            border: 1px solid #bee3f8;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+        }
+
+        .btn-return-cart {
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fcd34d;
+            padding: 0.25rem 0.65rem;
+            border-radius: 6px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-return-cart:hover {
+            background: #fef3c7;
+        }
+
+        .btn-cancel-enrolled {
+            background: #fff1f2;
+            color: #be123c;
+            border: 1px solid #fecdd3;
+            padding: 0.28rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+
+        .btn-cancel-enrolled:hover {
+            background: #ffe4e6;
+        }
+
+        .badge-enrolled {
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #bfdbfe;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -636,6 +775,21 @@
                 🛒 Your Semester Cart
             </h2>
             <div class="cart-actions">
+                <button type="button"
+                        id="btn-ai-build-plan"
+                        class="btn-copy-codes"
+                        onclick="window.openCopilotWithPrompt && window.openCopilotWithPrompt('Build my next semester', true)"
+                        title="Generate a balanced semester plan with AI Copilot">
+                    ✨ AI Build Plan
+                </button>
+                <button type="button"
+                        id="btn-enroll-cart"
+                        class="btn-enroll-cart"
+                        onclick="enrollCart()"
+                        th:disabled="${cart.empty}"
+                        title="Подтвердить выбранные предметы — они отобразятся на Dashboard как принятые курсы семестра">
+                    ✅ Принять курсы
+                </button>
                 <button type="button"
                         id="btn-copy-codes"
                         class="btn-copy-codes"
@@ -722,6 +876,57 @@
                         aria-label="Remove course">×</button>
             </li>
         </ul>
+
+        <!-- Confirmed / Currently Enrolled Courses Section (Принятые курсы с возможностью отмены) -->
+        <div class="planner-enrolled-section" id="planner-enrolled-section">
+            <div class="planner-enrolled-header">
+                <h3 class="planner-enrolled-title">
+                    📚 Принятые курсы семестра (Enrolled)
+                </h3>
+                <div class="planner-enrolled-actions">
+                    <span class="enrolled-credit-pill" id="planner-enrolled-credits"
+                          th:text="${(enrolledCredits != null ? enrolledCredits : 0) + ' ECTS'}">0 ECTS</span>
+                    <button type="button"
+                            id="btn-return-to-cart"
+                            class="btn-return-cart"
+                            onclick="returnEnrolledToCart()"
+                            th:style="${#lists.isEmpty(enrolledCourses) ? 'display: none;' : 'display: inline-block;'}"
+                            title="Вернуть все принятые курсы обратно в корзину для изменения">
+                        ✏️ Изменить выбор (в корзину)
+                    </button>
+                </div>
+            </div>
+
+            <div id="planner-enrolled-empty"
+                 class="cart-placeholder"
+                 th:style="${#lists.isEmpty(enrolledCourses) ? 'display: block;' : 'display: none;'}">
+                Пока нет принятых курсов. Добавьте предметы в корзину выше и нажмите «✅ Принять курсы».
+            </div>
+
+            <ul id="planner-enrolled-list"
+                class="cart-items"
+                th:style="${#lists.isEmpty(enrolledCourses) ? 'display: none;' : 'display: flex;'}">
+                <li class="cart-item"
+                    th:each="enrolled : ${enrolledCourses}"
+                    th:id="'enrolled-item-' + ${enrolled.id}">
+                    <div class="item-info">
+                        <div class="item-code-credits">
+                            <span class="course-code" th:text="${enrolled.code}">MAT251</span>
+                            <span class="credit-tag" th:text="${enrolled.formattedCredits}">5 ECTS</span>
+                            <span class="badge-enrolled">Принят ✓</span>
+                        </div>
+                        <span class="course-name" th:text="${enrolled.name}">Course Name</span>
+                    </div>
+                    <button type="button"
+                            class="btn-cancel-enrolled"
+                            th:attr="data-course-id=${enrolled.id}"
+                            onclick="cancelEnrolledCourse(this.getAttribute('data-course-id'))"
+                            title="Отменить принятый курс">
+                        ↩️ Отменить
+                    </button>
+                </li>
+            </ul>
+        </div>
     </section>
 
     <!-- Right Column: Course Catalog Quick Add for Testing/MVP -->
@@ -731,7 +936,7 @@
 
         <div class="catalog-controls">
             <input type="text" id="catalog-search" class="catalog-search"
-                   placeholder="Search by course code or title (e.g. CS204, Database)..."
+                   placeholder="Search by course code or title (e.g. INF106, CSS215, Database)..."
                    oninput="filterCatalog()">
             <div class="catalog-filters">
                 <button type="button" class="filter-chip active" data-filter="ALL" onclick="setCatalogFilter('ALL', this)">All</button>
@@ -746,13 +951,14 @@
             <li class="catalog-item"
                 th:each="course : ${availableCourses}"
                 th:id="'catalog-item-' + ${course.id}"
-                th:attr="data-course-id=${course.id},data-course-code=${course.code},data-course-name=${course.name},data-course-type=${course.courseType},data-completed=${course.completed},data-prereqs-met=${course.prerequisitesMet},data-has-prereqs=${course.hasPrerequisites},data-prereqs=${#strings.listJoin(course.prerequisiteCodes, ',')}">
+                th:attr="data-course-id=${course.id},data-course-code=${course.code},data-course-name=${course.name},data-course-type=${course.courseType},data-completed=${course.completed},data-enrolled=${course.enrolled},data-prereqs-met=${course.prerequisitesMet},data-has-prereqs=${course.hasPrerequisites},data-prereqs=${#strings.listJoin(course.prerequisiteCodes, ',')}">
                 <div class="item-info">
                     <div class="item-code-credits">
                         <span class="course-code" th:text="${course.code}">MATH101</span>
                         <span class="credit-tag" th:text="${course.credits + ' ECTS'}">4 ECTS</span>
                         <span class="badge-type" th:text="${course.courseType}">CORE</span>
                         <span th:if="${course.completed}" class="badge-completed">Completed ✓</span>
+                        <span th:if="${course.enrolled}" class="badge-enrolled">Enrolled 📚</span>
                         <span th:if="${course.hasPrerequisites and course.prerequisitesMet}"
                               class="badge-prereq-met"
                               th:title="'Prerequisites satisfied: ' + ${#strings.listJoin(course.prerequisiteCodes, ', ')}">
@@ -773,12 +979,25 @@
                               th:text="'(' + ${course.missingSummary} + ')'"></span>
                     </div>
                 </div>
-                <span th:if="${course.inCart}" class="badge-in-cart">In Cart</span>
-                <button th:unless="${course.inCart}"
-                        type="button"
-                        class="btn-add"
-                        th:attr="data-course-id=${course.id}"
-                        onclick="addCourse(this.getAttribute('data-course-id'))">+ Add</button>
+                <div class="catalog-item-actions">
+                    <button type="button"
+                            class="btn-explain"
+                            th:attr="data-course-code=${course.code}"
+                            onclick="window.openCopilotWithPrompt && window.openCopilotWithPrompt('Explain course ' + this.getAttribute('data-course-code'), true)"
+                            title="Ask AI Copilot to explain this course">ℹ️ Explain</button>
+                    <button th:if="${course.enrolled}"
+                            type="button"
+                            class="btn-cancel-enrolled"
+                            th:attr="data-course-id=${course.id}"
+                            onclick="cancelEnrolledCourse(this.getAttribute('data-course-id'))"
+                            title="Отменить принятый курс">↩️ Отменить</button>
+                    <span th:if="${!course.enrolled and course.inCart}" class="badge-in-cart">In Cart</span>
+                    <button th:if="${!course.enrolled and !course.inCart}"
+                            type="button"
+                            class="btn-add"
+                            th:attr="data-course-id=${course.id}"
+                            onclick="addCourse(this.getAttribute('data-course-id'))">+ Add</button>
+                </div>
             </li>
         </ul>
     </aside>
@@ -807,7 +1026,7 @@
         bar.style.width = pct + '%';
         bar.className = 'progress-bar bar-' + cart.workloadColor;
 
-        // 3. Update copy codes button (US-13)
+        // 3. Update copy codes & enroll button (US-13 + Enrollment)
         currentFormattedCodes = cart.formattedCodes !== undefined && cart.formattedCodes !== null
             ? cart.formattedCodes
             : (cart.items ? cart.items.map(i => i.code).join(', ') : '');
@@ -815,6 +1034,10 @@
         if (copyBtn) {
             copyBtn.disabled = cart.empty || !currentFormattedCodes;
             copyBtn.setAttribute('data-codes', currentFormattedCodes);
+        }
+        const enrollBtn = document.getElementById('btn-enroll-cart');
+        if (enrollBtn) {
+            enrollBtn.disabled = cart.empty || !cart.items || cart.items.length === 0;
         }
 
         // 4. Update credit limit warning (US-14)
@@ -840,15 +1063,18 @@
         const inCartIds = new Set(cart.items ? cart.items.map(i => String(i.courseId)) : []);
         document.querySelectorAll('.catalog-item').forEach(item => {
             const itemCourseId = item.getAttribute('data-course-id');
+            const isEnrolled = item.getAttribute('data-enrolled') === 'true';
             const existingBtn = item.querySelector('.btn-add');
             const existingCartBadge = item.querySelector('.badge-in-cart');
-            if (inCartIds.has(String(itemCourseId))) {
-                if (existingBtn) {
-                    existingBtn.outerHTML = '<span class="badge-in-cart">In Cart</span>';
-                }
-            } else {
-                if (existingCartBadge) {
-                    existingCartBadge.outerHTML = `<button type="button" class="btn-add" data-course-id="${itemCourseId}" onclick="addCourse(${itemCourseId})">+ Add</button>`;
+            if (!isEnrolled) {
+                if (inCartIds.has(String(itemCourseId))) {
+                    if (existingBtn) {
+                        existingBtn.outerHTML = '<span class="badge-in-cart">In Cart</span>';
+                    }
+                } else {
+                    if (existingCartBadge) {
+                        existingCartBadge.outerHTML = `<button type="button" class="btn-add" data-course-id="${itemCourseId}" onclick="addCourse(${itemCourseId})">+ Add</button>`;
+                    }
                 }
             }
 
@@ -1067,6 +1293,189 @@
             console.error(err);
             showAlert('An unexpected error occurred while removing the course.');
         });
+    }
+
+    function renderEnrolledCourses(enrolledCourses, enrolledCredits) {
+        const listEl = document.getElementById('planner-enrolled-list');
+        const emptyEl = document.getElementById('planner-enrolled-empty');
+        const creditsPill = document.getElementById('planner-enrolled-credits');
+        const returnBtn = document.getElementById('btn-return-to-cart');
+
+        const courses = Array.isArray(enrolledCourses) ? enrolledCourses : [];
+        const totalCr = enrolledCredits !== undefined
+            ? enrolledCredits
+            : courses.reduce((sum, c) => sum + (c.credits || 0), 0);
+
+        if (creditsPill) {
+            creditsPill.textContent = totalCr + ' ECTS';
+        }
+        if (returnBtn) {
+            returnBtn.style.display = courses.length > 0 ? 'inline-block' : 'none';
+        }
+
+        if (courses.length === 0) {
+            if (emptyEl) emptyEl.style.display = 'block';
+            if (listEl) {
+                listEl.style.display = 'none';
+                listEl.innerHTML = '';
+            }
+        } else {
+            if (emptyEl) emptyEl.style.display = 'none';
+            if (listEl) {
+                listEl.style.display = 'flex';
+                listEl.innerHTML = '';
+                courses.forEach(c => {
+                    const li = document.createElement('li');
+                    li.className = 'cart-item';
+                    li.id = 'enrolled-item-' + c.id;
+                    const crText = c.formattedCredits || ((c.credits || 0) + ' ECTS');
+                    li.innerHTML = `
+                        <div class="item-info">
+                            <div class="item-code-credits">
+                                <span class="course-code">${escapeHtml(c.code)}</span>
+                                <span class="credit-tag">${escapeHtml(crText)}</span>
+                                <span class="badge-enrolled">Принят ✓</span>
+                            </div>
+                            <span class="course-name">${escapeHtml(c.name)}</span>
+                        </div>
+                        <button type="button"
+                                class="btn-cancel-enrolled"
+                                data-course-id="${c.id}"
+                                onclick="cancelEnrolledCourse(${c.id})"
+                                title="Отменить принятый курс">↩️ Отменить</button>
+                    `;
+                    listEl.appendChild(li);
+                });
+            }
+        }
+
+        const enrolledIdSet = new Set(courses.map(c => String(c.id)));
+        document.querySelectorAll('.catalog-item').forEach(item => {
+            const itemCourseId = String(item.getAttribute('data-course-id'));
+            const isEnrolled = enrolledIdSet.has(itemCourseId);
+            item.setAttribute('data-enrolled', isEnrolled ? 'true' : 'false');
+
+            const headerRow = item.querySelector('.item-code-credits');
+            let enrolledBadge = headerRow ? headerRow.querySelector('.badge-enrolled') : null;
+            if (isEnrolled && !enrolledBadge && headerRow) {
+                const span = document.createElement('span');
+                span.className = 'badge-enrolled';
+                span.textContent = 'Enrolled 📚';
+                headerRow.appendChild(span);
+            } else if (!isEnrolled && enrolledBadge) {
+                enrolledBadge.remove();
+            }
+
+            const actionsBox = item.querySelector('.catalog-item-actions');
+            if (!actionsBox) return;
+            const cancelBtn = actionsBox.querySelector('.btn-cancel-enrolled');
+            const addBtn = actionsBox.querySelector('.btn-add');
+            const cartBadge = actionsBox.querySelector('.badge-in-cart');
+
+            if (isEnrolled) {
+                if (addBtn) addBtn.remove();
+                if (cartBadge) cartBadge.remove();
+                if (!cancelBtn) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn-cancel-enrolled';
+                    btn.setAttribute('data-course-id', itemCourseId);
+                    btn.setAttribute('onclick', `cancelEnrolledCourse(${itemCourseId})`);
+                    btn.title = 'Отменить принятый курс';
+                    btn.textContent = '↩️ Отменить';
+                    actionsBox.appendChild(btn);
+                }
+            } else if (cancelBtn) {
+                cancelBtn.outerHTML = `<button type="button" class="btn-add" data-course-id="${itemCourseId}" onclick="addCourse(${itemCourseId})">+ Add</button>`;
+            }
+        });
+    }
+
+    function enrollCart() {
+        hideAlert();
+        fetch('/planner/cart/enroll', { method: 'POST' })
+            .then(async res => {
+                if (res.status === 401) {
+                    window.location.href = '/login';
+                    return null;
+                }
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showAlert(data.error || 'Failed to confirm course enrollment.');
+                    return null;
+                }
+                return data;
+            })
+            .then(data => {
+                if (data) {
+                    renderEnrolledCourses(data.enrolledCourses, data.enrolledCredits);
+                    if (data.cart) {
+                        renderCart(data.cart);
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showAlert('An unexpected error occurred while confirming courses.');
+            });
+    }
+
+    function cancelEnrolledCourse(courseId) {
+        hideAlert();
+        fetch('/planner/enrolled/cancel?courseId=' + encodeURIComponent(courseId), { method: 'POST' })
+            .then(async res => {
+                if (res.status === 401) {
+                    window.location.href = '/login';
+                    return null;
+                }
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showAlert(data.error || 'Failed to cancel enrolled course.');
+                    return null;
+                }
+                return data;
+            })
+            .then(data => {
+                if (data) {
+                    renderEnrolledCourses(data.enrolledCourses, data.enrolledCredits);
+                    if (data.cart) {
+                        renderCart(data.cart);
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showAlert('An unexpected error occurred while cancelling the course.');
+            });
+    }
+
+    function returnEnrolledToCart() {
+        hideAlert();
+        fetch('/planner/enrolled/return-to-cart', { method: 'POST' })
+            .then(async res => {
+                if (res.status === 401) {
+                    window.location.href = '/login';
+                    return null;
+                }
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showAlert(data.error || 'Failed to return enrolled courses to cart.');
+                    return null;
+                }
+                return data;
+            })
+            .then(data => {
+                if (data) {
+                    renderEnrolledCourses(data.enrolledCourses, data.enrolledCredits);
+                    if (data.cart) {
+                        renderCart(data.cart);
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showAlert('An unexpected error occurred while returning courses to cart.');
+            });
     }
 
     let activeCatalogFilter = 'ALL';
