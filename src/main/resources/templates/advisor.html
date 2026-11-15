@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advisor Portal - SDU Academic Advisor</title>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Advisor Portal</h1>
+      <p>Role-protected academic advising roster (<span th:text="${studentCount}">0</span> students)</p>
+      <nav>
+        <a th:href="@{/dashboard}">Dashboard</a>
+        <a th:href="@{/planner}">Planner</a>
+        <a th:href="@{/logout}">Logout</a>
+      </nav>
+    </header>
+    <section>
+      <table>
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="s : ${students}">
+            <td th:text="${s.studentId}">240103000</td>
+            <td th:text="${s.name}">Student Name</td>
+            <td th:text="${s.email}">student@sdu.edu.kz</td>
+            <td th:text="${s.effectiveRole}">STUDENT</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

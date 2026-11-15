@@ -31,7 +31,7 @@ If any other document conflicts with this file, this file takes precedence.
 | Floating AI Copilot Widget (US-40, US-42) | `fragments/copilot.html` included across `/dashboard`, `/planner`, `/profile`, `/faq` with `sessionStorage` state & quick prompt chips | Implemented |
 | Automatic Academic Context (US-41) | `AcademicContextService` injects major, GPA, degree progress, completed/enrolled courses, cart, and eligible courses into AI prompts | Implemented |
 | AI Semester Plan Builder (US-43) | `SemesterPlanService`, `CourseRecommendationDto` with `"Why this course?"` reasons, workload balancing (≤ 30 ECTS), and one-click `+ Add to Cart` | Implemented |
-| Authentication | Session attributes (`authenticatedStudent`, `authenticatedStudentId`) with BCrypt password verification via `PasswordEncoder` and `AuthSessionHelper` | US-04 implemented |
+| Authentication & RBAC (T-06) | `spring-boot-starter-security` (`SecurityConfig`), `CustomUserDetailsService`, `SessionSecurityAuthenticationFilter`, `Role` (`STUDENT`, `ADVISOR`, `ADMIN`), `/advisor/**` role guard, CSRF protection | Implemented (`docs/T-06.md`) |
 | AI integration | Google Gemini API via `RestClient` | Implemented |
 | CI | GitHub Actions (`./mvnw clean test`, Docker build checks) | Implemented |
 
@@ -47,14 +47,14 @@ If any other document conflicts with this file, this file takes precedence.
 
 ---
 
-## Security Baseline for MVP (Current)
+## Security Baseline (Spring Security + RBAC, T-06)
 
-1. Login form collects Student ID and password.
-2. Student ID is verified in the `students` table and password is verified against the stored BCrypt hash via `PasswordEncoder` (never plaintext).
-3. Successful authentication creates an active session (`authenticatedStudent` and `authenticatedStudentId` in `HttpSession`) and redirects to `/planner`.
-4. Invalid credentials display `"Invalid Student ID or password"` while preserving the entered Student ID.
-5. Client-side and server-side validation reject empty submissions and highlight required fields.
-6. Protected pages (`/dashboard`, `/dashboard/chat`, `/planner`) enforce session presence and redirect unauthenticated users back to `/login`.
+1. Login form collects Student ID or SDU email and password; credentials are checked against BCrypt hashes via `PasswordEncoder` and `CustomUserDetailsService`.
+2. Successful authentication stores `authenticatedStudent`, `authenticatedStudentId`, and `SPRING_SECURITY_CONTEXT` in `HttpSession`, and `SessionSecurityAuthenticationFilter` restores the principal on each request.
+3. Invalid credentials display `"Invalid Student ID or password"` while preserving the entered identifier.
+4. `SecurityConfig` enforces authenticated access on protected routes (`/dashboard/**`, `/planner/**`, `/profile/**`, `/faq/**`, `/api/**`), redirecting HTML requests to `/login` and returning `401` JSON errors for unauthenticated API calls.
+5. Role-Based Access Control (RBAC) assigns `Role.STUDENT` by default and protects `/advisor/**` (`AdvisorController`) with `hasAnyRole('ADVISOR', 'ADMIN')` (`403 Forbidden` for `STUDENT`).
+6. CSRF protection is enabled (`advisor.security.csrf.strict=true` in production; controllable via `advisor.security.csrf.strict=false` and `X-Enforce-Csrf: true` in automated test profile) along with standard security headers (`X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`).
 
 ---
 

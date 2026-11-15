@@ -2,6 +2,8 @@ package kz.edu.sdu.advisor.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -39,6 +41,10 @@ public class StudentAccount {
 
     @Column(name = "catalog_year")
     private Integer catalogYear;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", length = 30)
+    private Role role = Role.STUDENT;
 
     @OneToOne(mappedBy = "account", cascade = jakarta.persistence.CascadeType.ALL)
     private Student student;

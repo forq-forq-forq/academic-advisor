@@ -46,6 +46,10 @@ public class Student {
     @Column(name = "career_goal", length = 255)
     private String careerGoal;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", length = 30)
+    private Role role = Role.STUDENT;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "account_id")
     private StudentAccount account;
@@ -92,5 +96,15 @@ public class Student {
             return account.getPasswordHash();
         }
         return null;
+    }
+
+    public Role getEffectiveRole() {
+        if (role != null) {
+            return role;
+        }
+        if (account != null && account.getRole() != null) {
+            return account.getRole();
+        }
+        return Role.STUDENT;
     }
 }
