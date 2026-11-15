@@ -7,12 +7,14 @@
     <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
     <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/tailwind-utilities.css}">
     <link rel="stylesheet" th:href="@{/css/dashboard.css}">
     <link rel="stylesheet" th:href="@{/css/copilot.css}">
+    <script th:src="@{/js/tailwind-config.js}" defer></script>
     <script th:src="@{/js/common.js}" defer></script>
     <script th:src="@{/js/copilot.js}" defer></script>
 </head>
-<body>
+<body class="font-sans antialiased">
 
 <header>
     <div class="brand">

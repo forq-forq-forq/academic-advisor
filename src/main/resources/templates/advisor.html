@@ -7,11 +7,13 @@
     <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
     <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/tailwind-utilities.css}">
     <link rel="stylesheet" th:href="@{/css/advisor.css}">
+    <script th:src="@{/js/tailwind-config.js}" defer></script>
     <script th:src="@{/js/common.js}" defer></script>
 </head>
-<body>
-  <main>
+<body class="font-sans antialiased">
+  <main class="rounded-xl shadow-md">
     <header>
       <h1>Advisor Portal</h1>
       <p>Role-protected academic advising roster (<span th:text="${studentCount}">0</span> students)</p>

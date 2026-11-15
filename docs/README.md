@@ -18,6 +18,7 @@ Project documentation for the Academic Advisor system.
 | ID | Title | Status |
 |---|---|---|
 | [ADR-0001](adr/0001-sqlite-to-postgresql.md) | SQLite to PostgreSQL migration | Accepted |
+| [ADR-0002](adr/0002-adopt-tailwind-css-utility-architecture.md) | Adopt local Tailwind CSS utility architecture | Accepted |
 
 ---
 
