@@ -10,10 +10,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@TestPropertySource(properties = "spring.datasource.url=jdbc:sqlite:target/test-course-repository.db")
 public class CourseRepositoryTest {
 
     @Autowired
