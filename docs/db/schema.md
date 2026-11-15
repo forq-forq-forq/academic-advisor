@@ -203,6 +203,20 @@ Stores semester planning cart items per student (US-11).
 
 **Unique constraint:** `(student_id, course_id)`
 
+### `password_reset_tokens`
+
+Single-use expiring password reset tokens (`US-05`).
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | BIGINT | PK, AUTO | Database primary key. |
+| `token` | VARCHAR(64) | NOT NULL, UNIQUE | Random UUID reset token. |
+| `student_id` | VARCHAR(32) | NOT NULL | Target student business identifier. |
+| `email` | VARCHAR(254) | NOT NULL | Target student university email. |
+| `expires_at` | TIMESTAMP | NOT NULL | Token expiration timestamp (30 min TTL). |
+| `used` | BOOLEAN | NOT NULL, DEFAULT FALSE | Prevents replay after completion/rotation. |
+| `created_at` | TIMESTAMP | NOT NULL | Creation timestamp. |
+
 ### Join Tables
 
 - **`student_courses`**: Many-to-Many join table representing courses completed by the student.
