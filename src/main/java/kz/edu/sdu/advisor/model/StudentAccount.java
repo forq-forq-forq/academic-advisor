@@ -42,6 +42,9 @@ public class StudentAccount {
     @Column(name = "catalog_year")
     private Integer catalogYear;
 
+    @Column(name = "career_goal", length = 255)
+    private String careerGoal;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role", length = 30)
     private Role role = Role.STUDENT;

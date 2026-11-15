@@ -31,12 +31,17 @@ public class StudentRegistrationService {
                 ? form.getFullName().trim()
                 : "Student " + studentId;
 
+        String careerGoal = StringUtils.hasText(form.getCareerGoal())
+                ? form.getCareerGoal().trim()
+                : null;
+
         StudentAccount account = new StudentAccount();
         account.setEmail(email);
         account.setStudentId(studentId);
         account.setPasswordHash(passwordEncoder.encode(form.getPassword()));
         account.setMajor(major);
         account.setCatalogYear(form.getCatalogYear());
+        account.setCareerGoal(careerGoal);
         account.setRole(Role.STUDENT);
         account = studentAccountRepository.save(account);
 
@@ -50,9 +55,7 @@ public class StudentRegistrationService {
         student.setCurrentSemester(1);
         student.setGpa(0.0);
         student.setRole(Role.STUDENT);
-        if (StringUtils.hasText(form.getCareerGoal())) {
-            student.setCareerGoal(form.getCareerGoal().trim());
-        }
+        student.setCareerGoal(careerGoal);
         student.setAccount(account);
         studentRepository.save(student);
 

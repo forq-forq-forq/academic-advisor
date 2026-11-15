@@ -128,7 +128,7 @@ h1 { font-size: 1.5rem; color: #1a202c; margin-bottom: 0.35rem; }
     color: #2d3748;
 }
 .register-card input:focus, .register-card select:focus { outline: 2px solid #4c6ef5; outline-offset: 1px; }
-.register-card button {
+.register-card button[type="submit"] {
     width: 100%;
     margin-top: 1.25rem;
     padding: 0.75rem;
@@ -140,6 +140,21 @@ h1 { font-size: 1.5rem; color: #1a202c; margin-bottom: 0.35rem; }
     font-weight: 600;
     cursor: pointer;
 }
-.register-card button:hover { background: #3b5bdb; }
+.register-card button[type="submit"]:hover { background: #3b5bdb; }
+.aspiration-presets { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.55rem; }
+.aspiration-chip {
+    padding: 0.35rem 0.7rem;
+    border-radius: 9999px;
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    color: #3b5bdb;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+.aspiration-chip:hover { background: #e0e7ff; }
+.aspiration-chip.active { background: #4c6ef5; color: #ffffff; border-color: #3b5bdb; }
+.aspiration-helper { font-size: 0.78rem; color: #718096; margin-top: 0.35rem; }
 .field-error { color: #c53030; font-size: 0.82rem; margin-top: 0.3rem; }
 .login-link { display: block; margin-top: 1rem; text-align: center; color: #3b5bdb; }

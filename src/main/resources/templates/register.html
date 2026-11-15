@@ -54,6 +54,15 @@
 
         <label for="careerGoal">Career goal (optional)</label>
         <input type="text" id="careerGoal" th:field="*{careerGoal}" placeholder="e.g. Backend Developer, Data Scientist">
+        <p class="aspiration-helper">Choose an onboarding track or enter a custom career aspiration for AI course matching:</p>
+        <div id="aspiration-presets" class="aspiration-presets" aria-label="Career aspiration presets">
+            <button type="button" class="aspiration-chip" data-goal="AI / Machine Learning Engineer">AI / Machine Learning Engineer</button>
+            <button type="button" class="aspiration-chip" data-goal="Backend Software Engineer">Backend Software Engineer</button>
+            <button type="button" class="aspiration-chip" data-goal="Data Scientist &amp; Analytics">Data Scientist &amp; Analytics</button>
+            <button type="button" class="aspiration-chip" data-goal="Cloud &amp; DevOps Engineer">Cloud &amp; DevOps Engineer</button>
+            <button type="button" class="aspiration-chip" data-goal="Cybersecurity Specialist">Cybersecurity Specialist</button>
+            <button type="button" class="aspiration-chip" data-goal="Product &amp; Systems Analyst">Product &amp; Systems Analyst</button>
+        </div>
         <p class="field-error" th:if="${#fields.hasErrors('careerGoal')}" th:errors="*{careerGoal}"></p>
 
         <label for="password">Password</label>
