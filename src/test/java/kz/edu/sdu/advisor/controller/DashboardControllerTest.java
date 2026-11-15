@@ -127,4 +127,17 @@ class DashboardControllerTest {
                 .andExpect(content().string(containsString("Fall 2026 Course Registration")))
                 .andExpect(content().string(containsString("/planner")));
     }
+
+    @Test
+    @DisplayName("GET /dashboard displays recommended next action hero card")
+    void showDashboard_displaysRecommendedNextActionCard() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(get("/dashboard").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"recommended-next-action-card\"")))
+                .andExpect(content().string(containsString("Build your Fall 2026 plan")))
+                .andExpect(content().string(containsString("Open Planner")));
+    }
 }

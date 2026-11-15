@@ -777,3 +777,21 @@ body {
 }
 
 .banner-cta:hover { background: #3b5bdb; }
+
+.next-action-card {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    border-left-color: #059669;
+}
+
+.next-action-card .banner-badge {
+    color: #047857;
+}
+
+.next-action-card .banner-cta {
+    background: #059669;
+}
+
+.next-action-card .banner-cta:hover {
+    background: #047857;
+}
