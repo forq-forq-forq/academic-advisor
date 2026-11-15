@@ -1,0 +1,55 @@
+/* Advisor portal styles (T-06 / T-07) */
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--sdu-bg, #f0f4f8);
+    color: var(--sdu-text-body, #2d3748);
+    padding: 2rem 1rem;
+}
+
+main {
+    max-width: 960px;
+    margin: 0 auto;
+    background: var(--sdu-surface, #ffffff);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+header h1 {
+    font-size: 1.5rem;
+    color: var(--sdu-text, #1a202c);
+    margin-bottom: 0.35rem;
+}
+
+header p {
+    color: var(--sdu-muted, #718096);
+    margin-bottom: 1rem;
+}
+
+header nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+header nav a {
+    color: var(--sdu-primary-dark, #3b5bdb);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 0.7rem;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+}
+
+th {
+    background: #f7fafc;
+    color: #334e68;
+}

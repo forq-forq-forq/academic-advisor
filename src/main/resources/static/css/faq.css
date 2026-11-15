@@ -1,0 +1,147 @@
+/* Faq page styles (T-07) */
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f0f4f8;
+    color: #2d3748;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+header {
+    background: #4c6ef5;
+    color: #fff;
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+header .brand {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+header h1 { font-size: 1.15rem; font-weight: 700; }
+header .nav-links { display: flex; gap: 0.5rem; }
+header .nav-links a {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+}
+header .nav-links a:hover, header .nav-links a.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+header .user-actions { display: flex; align-items: center; gap: 1rem; }
+header .student-info { font-size: 0.875rem; opacity: 0.95; }
+header a.logout {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.825rem;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 6px;
+}
+.faq-container {
+    max-width: 920px;
+    width: 100%;
+    margin: 1.75rem auto;
+    padding: 0 1rem 2.5rem;
+}
+.faq-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+.faq-header h2 { font-size: 1.4rem; color: #1a202c; }
+.search-wrapper { margin-bottom: 1.5rem; }
+#faqSearchInput {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #cbd5e0;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    background: #fff;
+    color: #2d3748;
+    outline: none;
+}
+#faqSearchInput:focus {
+    border-color: #4c6ef5;
+    box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.15);
+}
+.category-title {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: #3b5bdb;
+    font-size: 1.05rem;
+    border-bottom: 2px solid #bac8ff;
+    padding-bottom: 0.35rem;
+}
+.accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+.accordion-item {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.accordion-button {
+    width: 100%;
+    text-align: left;
+    background: #fff;
+    border: none;
+    padding: 0.85rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a202c;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.accordion-button:hover { background: #f8fafc; }
+.accordion-button:not(.collapsed) {
+    background-color: #edf2ff;
+    color: #3b5bdb;
+}
+.accordion-collapse { display: none; }
+.accordion-collapse.show { display: block; }
+.accordion-body {
+    padding: 0.85rem 1rem 1rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: #4a5568;
+    border-top: 1px solid #edf2f7;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+.btn-ask-ai-faq {
+    align-self: flex-start;
+    background: #edf2ff;
+    color: #3b5bdb;
+    border: 1px solid #bac8ff;
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.btn-ask-ai-faq:hover {
+    background: #4c6ef5;
+    color: #ffffff;
+}
