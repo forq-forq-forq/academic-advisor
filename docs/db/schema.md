@@ -165,6 +165,7 @@ Stores login credentials.
 | `password_hash` | VARCHAR | NOT NULL | BCrypt hash. |
 | `major_id` | BIGINT | FK → `majors.id` | Major selected during registration. |
 | `catalog_year` | INTEGER | — | Curriculum version selected during registration. |
+| `career_goal` | VARCHAR(255) | — | Career aspiration captured during onboarding. |
 | `role` | VARCHAR(30) | DEFAULT `'STUDENT'` | Security role (`STUDENT`, `ADVISOR`, `ADMIN`). |
 
 ### `courses`

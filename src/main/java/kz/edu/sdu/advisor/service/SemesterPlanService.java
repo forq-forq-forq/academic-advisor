@@ -479,17 +479,40 @@ public class SemesterPlanService {
         String text = ((course.getName() != null ? course.getName() : "") + " "
                 + (course.getDescription() != null ? course.getDescription() : "")).toLowerCase(Locale.ROOT);
 
-        for (String token : goalLower.split("[\\s,/;-]+")) {
-            if (token.length() >= 3 && text.contains(token)) {
+        for (String token : goalLower.split("[\\s,/;&-]+")) {
+            if (token.length() >= 3
+                    && !Set.of("and", "the", "for", "with", "into", "from").contains(token)
+                    && text.contains(token)) {
                 return true;
             }
         }
-        if ((goalLower.contains("ai") || goalLower.contains("data") || goalLower.contains("ml"))
-                && (text.contains("intelligence") || text.contains("machine learning") || text.contains("data") || text.contains("neural"))) {
+        if ((goalLower.contains("ai") || goalLower.contains("data") || goalLower.contains("ml")
+                || goalLower.contains("analytics") || goalLower.contains("scientist"))
+                && (text.contains("intelligence") || text.contains("machine learning")
+                || text.contains("data") || text.contains("neural")
+                || text.contains("statistics") || text.contains("probability") || text.contains("analytics"))) {
             return true;
         }
-        if ((goalLower.contains("backend") || goalLower.contains("software") || goalLower.contains("web") || goalLower.contains("cloud"))
-                && (text.contains("web") || text.contains("cloud") || text.contains("distributed") || text.contains("database") || text.contains("software"))) {
+        if ((goalLower.contains("backend") || goalLower.contains("software") || goalLower.contains("web")
+                || goalLower.contains("cloud") || goalLower.contains("devops"))
+                && (text.contains("web") || text.contains("cloud") || text.contains("distributed")
+                || text.contains("database") || text.contains("software") || text.contains("linux")
+                || text.contains("operating"))) {
+            return true;
+        }
+        if ((goalLower.contains("cyber") || goalLower.contains("security") || goalLower.contains("network"))
+                && (text.contains("security") || text.contains("network") || text.contains("crypt")
+                || text.contains("operating") || text.contains("linux"))) {
+            return true;
+        }
+        if ((goalLower.contains("product") || goalLower.contains("systems") || goalLower.contains("analyst"))
+                && (text.contains("system") || text.contains("software") || text.contains("database")
+                || text.contains("management") || text.contains("human-computer"))) {
+            return true;
+        }
+        if ((goalLower.contains("mobile") || goalLower.contains("frontend"))
+                && (text.contains("mobile") || text.contains("web") || text.contains("interface")
+                || text.contains("human-computer"))) {
             return true;
         }
         return false;

@@ -33,6 +33,7 @@ If any other document conflicts with this file, this file takes precedence.
 | Floating AI Copilot Widget (US-40, US-42) | `fragments/copilot.html` included across `/dashboard`, `/planner`, `/profile`, `/faq` with `sessionStorage` state & quick prompt chips | Implemented |
 | Automatic Academic Context (US-41) | `AcademicContextService` injects major, GPA, degree progress, completed/enrolled courses, cart, and eligible courses into AI prompts | Implemented |
 | AI Semester Plan Builder (US-43) | `SemesterPlanService`, `CourseRecommendationDto` with `"Why this course?"` reasons, workload balancing (≤ 30 ECTS), and one-click `+ Add to Cart` | Implemented |
+| Onboarding & Career Aspirations (US-03) | Quick-select aspiration chips on `/register`, dual persistence on `StudentAccount` & `Student`, onboarding goal banner, expanded career matching in `SemesterPlanService` | Implemented (`docs/US-03.md`) |
 | Authentication & RBAC (T-06) | `spring-boot-starter-security` (`SecurityConfig`), `CustomUserDetailsService`, `SessionSecurityAuthenticationFilter`, `Role` (`STUDENT`, `ADVISOR`, `ADMIN`), `/advisor/**` role guard, CSRF protection | Implemented (`docs/T-06.md`) |
 | AI integration | Google Gemini API via `RestClient` | Implemented |
 | CI | GitHub Actions (`./mvnw clean test`, Docker build checks) | Implemented |

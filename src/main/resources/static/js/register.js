@@ -41,3 +41,29 @@ emailInput.addEventListener('blur', () => {
 
 facultySelect.addEventListener('change', filterMajors);
 filterMajors();
+
+const careerGoalInput = document.getElementById('careerGoal');
+const aspirationChips = document.querySelectorAll('#aspiration-presets .aspiration-chip');
+
+function syncAspirationChips() {
+    if (!careerGoalInput) {
+        return;
+    }
+    const current = careerGoalInput.value.trim().toLowerCase();
+    aspirationChips.forEach(chip => {
+        const target = (chip.dataset.goal || '').trim().toLowerCase();
+        chip.classList.toggle('active', Boolean(current) && current === target);
+    });
+}
+
+if (careerGoalInput && aspirationChips.length > 0) {
+    aspirationChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            careerGoalInput.value = chip.dataset.goal || '';
+            syncAspirationChips();
+            careerGoalInput.focus();
+        });
+    });
+    careerGoalInput.addEventListener('input', syncAspirationChips);
+    syncAspirationChips();
+}
