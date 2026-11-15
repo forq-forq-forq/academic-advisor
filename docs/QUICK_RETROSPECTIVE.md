@@ -88,16 +88,19 @@ Each sprint concludes with a Quick Retrospective ceremony following the 4-quadra
 * **Sprint Focus:** End-to-end integration testing of student user journey (Onboarding → Catalog → AI Recommendation → Cart Export), Gemini API resilience testing, and MVP UI polish.
 
 ### ⏩ Continue
-* *...to be filled by the team during the Sprint 3 Retrospective...*
+* Maintaining clean separation between domain services, controllers, and additive SQL migration scripts (`V4`–`V7`).
+* Keeping controller and UI structural tests (`CompletedCourseHistoryTest`, `StaticAssetsArchitectureTest`, `TailwindUiConsistencyTest`) running cleanly alongside new security and onboarding flows.
 
 ### ⛔ Stop
-* *...to be filled by the team during the Sprint 3 Retrospective...*
+* Leaving inline `<style>` and `<script>` blocks embedded inside Thymeleaf templates, which made asset caching and CSRF header injection harder to maintain.
+* Relying strictly on manual `HttpSession` attribute checks without `spring-boot-starter-security` RBAC and CSRF enforcement.
 
 ### 🌸 Invent
-* *...to be filled by the team during the Sprint 3 Retrospective...*
+* Bridging `HttpSession` attributes seamlessly via `SessionSecurityAuthenticationFilter` while providing offline-safe local Tailwind CSS utilities (`tailwind-utilities.css`) and DOM `data-*` state hydration.
 
 ### 💪 Act
-* *...to be filled by the team during the Sprint 3 Retrospective...*
+1. [x] Complete Sprint 3 security & frontend architecture tasks (`T-06`, `T-07`, `T-08`).
+2. [x] Deliver remaining student onboarding, recovery, and proactive dashboard journeys (`US-03`, `US-05`, `US-09`, `US-10`).
 
 ---
 

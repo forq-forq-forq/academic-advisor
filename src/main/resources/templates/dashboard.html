@@ -37,7 +37,7 @@
 </header>
 
 <main>
-    <div class="dashboard-banners" th:if="${registrationAlert != null}">
+    <div class="dashboard-banners" th:if="${registrationAlert != null or recommendedAction != null}">
         <section id="registration-alert-card"
                  class="action-banner-card alert-banner-card rounded-xl shadow-sm"
                  th:if="${registrationAlert != null}"
@@ -49,6 +49,18 @@
                 <p class="banner-message" th:text="${registrationAlert.message}">Registration opens soon.</p>
             </div>
             <a class="banner-cta" th:href="@{${registrationAlert.ctaUrl}}" th:text="${registrationAlert.ctaLabel}">Open Planner</a>
+        </section>
+
+        <section id="recommended-next-action-card"
+                 class="action-banner-card next-action-card rounded-xl shadow-sm"
+                 th:if="${recommendedAction != null}"
+                 aria-label="Recommended Next Action">
+            <div class="banner-body">
+                <span class="banner-badge">Recommended Next Action</span>
+                <h2 class="banner-title" th:text="${recommendedAction.headline}">Build your Fall 2026 plan</h2>
+                <p class="banner-message" th:text="${recommendedAction.description}">Plan your upcoming semester courses.</p>
+            </div>
+            <a class="banner-cta" th:href="@{${recommendedAction.ctaUrl}}" th:text="${recommendedAction.ctaLabel}">Open Planner</a>
         </section>
     </div>
 

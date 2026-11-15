@@ -10,6 +10,7 @@ import kz.edu.sdu.advisor.service.AcademicContextService;
 import kz.edu.sdu.advisor.service.AiService;
 import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import kz.edu.sdu.advisor.service.CumulativeGpaService;
+import kz.edu.sdu.advisor.service.RecommendedActionService;
 import kz.edu.sdu.advisor.service.RegistrationAlertService;
 import kz.edu.sdu.advisor.service.SemesterPlanService;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class DashboardController {
     private final AcademicContextService academicContextService;
     private final SemesterPlanService semesterPlanService;
     private final RegistrationAlertService registrationAlertService;
+    private final RecommendedActionService recommendedActionService;
 
     @GetMapping("/dashboard")
     public String showDashboard(HttpSession session, Model model) {
@@ -61,6 +63,8 @@ public class DashboardController {
         model.addAttribute("enrolledCourses", academicStanding.enrolledCourses());
         model.addAttribute("completedCourses", completedCourses);
         model.addAttribute("registrationAlert", registrationAlertService.getActiveAlert().orElse(null));
+        model.addAttribute("recommendedAction", recommendedActionService.determineNextAction(
+                student, academicStanding.completedCredits(), academicStanding.enrolledCredits()));
         return "dashboard";
     }
 
