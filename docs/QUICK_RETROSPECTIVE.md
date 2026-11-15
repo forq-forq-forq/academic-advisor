@@ -84,23 +84,33 @@ Each sprint concludes with a Quick Retrospective ceremony following the 4-quadra
 
 ## 🏃‍♂️ Sprint 3: MVP Stabilization, Testing & Demo Readiness
 
-* **Timeline:** October 2026
-* **Sprint Focus:** End-to-end integration testing of student user journey (Onboarding → Catalog → AI Recommendation → Cart Export), Gemini API resilience testing, and MVP UI polish.
+* **Timeline:** October–November 2026
+* **Sprint Focus:** Spring Security RBAC & CSRF hardening (`T-06`), static CSS/JS extraction & offline Tailwind utility layer (`T-07`, `T-08`), Career Aspirations onboarding & Self-Service Password Reset (`US-03`, `US-05`), Proactive Registration Alerts & Recommended Next Action hero card (`US-09`, `US-10`), Manual Transcript & GPA Auto-Recalculation (`US-29`, `US-30`, `US-31`), FAQ Knowledge Base (`US-34`, `US-35`), Floating Context-Aware AI Copilot & AI Semester Plan Builder (`US-40`, `US-41`, `US-42`, `US-43`), and SDU SITAM Information Systems handbook curriculum seeding.
+* **Completed Stories & Tasks:** `T-06`, `T-07`, `T-08`, `US-03`, `US-05`, `US-09`, `US-10`, `US-29`, `US-30`, `US-31`, `US-34`, `US-35`, `US-40`, `US-41`, `US-42`, `US-43`, SITAM IS curriculum seeding, and the expanded automated test suite (`155` unit and integration tests passing).
 
-### ⏩ Continue
-* Maintaining clean separation between domain services, controllers, and additive SQL migration scripts (`V4`–`V7`).
-* Keeping controller and UI structural tests (`CompletedCourseHistoryTest`, `StaticAssetsArchitectureTest`, `TailwindUiConsistencyTest`) running cleanly alongside new security and onboarding flows.
+### ⏩ Continue (What helped us move forward?)
+* **Stacked Feature Branches & Atomic Pull Requests:** Breaking down technical foundation tasks (`T-06`–`T-08`) and student-facing stories (`US-03`–`US-10`) into focused, sequential branches with dedicated docs and tests kept reviews fast and conflict-free.
+* **Context-Aware Floating AI Copilot & Prompt Grounding:** Injecting real-time student academic data (GPA, completed courses, career goals, active cart) into the floating Copilot widget (`US-40`–`US-43`) made AI advice immediately actionable across all pages.
+* **Architecture & UI Regression Guards (`155` Tests Passing):** Adding structural tests (`StaticAssetsArchitectureTest`, `TailwindUiConsistencyTest`, `SecurityConfigTest`) alongside controller and service tests prevented template regressions and CSRF breakage during the frontend refactor.
+* **Authentic SDU SITAM Curriculum Dataset:** Replacing synthetic demo courses with the real SDU Information Systems BSc handbook curriculum made prerequisite chains and career-track matching realistic during live demos.
 
-### ⛔ Stop
-* Leaving inline `<style>` and `<script>` blocks embedded inside Thymeleaf templates, which made asset caching and CSRF header injection harder to maintain.
-* Relying strictly on manual `HttpSession` attribute checks without `spring-boot-starter-security` RBAC and CSRF enforcement.
+### ⛔ Stop (What held us back?)
+* **Embedding Inline `<style>` and `<script>` inside Thymeleaf Templates:** Scattering CSS rules and JavaScript logic directly inside HTML templates caused duplication and made CSRF header injection painful until `T-07` extracted them into `static/css/*` and `static/js/*`.
+* **Postponing Spring Security & CSRF Integration:** Adding `spring-boot-starter-security` (`T-06`) after multiple `POST` forms and `fetch()` endpoints were already built required retrofitting CSRF tokens and `SessionSecurityAuthenticationFilter` across existing flows.
+* **Stacked Branch Rebase Overhead:** Chaining seven dependent PRs (`#44`–`#50`) meant that any small fix on an earlier branch required rebasing downstream branches carefully to avoid drift.
+* **Last-Minute Documentation Batching:** Waiting until the end of a feature burst to sync ADRs and schema docs (`V4`–`V7`) increased context-switching overhead for developers.
 
-### 🌸 Invent
-* Bridging `HttpSession` attributes seamlessly via `SessionSecurityAuthenticationFilter` while providing offline-safe local Tailwind CSS utilities (`tailwind-utilities.css`) and DOM `data-*` state hydration.
+### 🌸 Invent (How could we do things differently?)
+* **Offline-First Tailwind Utility Layer + Custom Design Tokens:** Combining a local `tailwind-utilities.css` stylesheet with domain-specific stylesheets (`ADR-0002`) gave us utility-class productivity without external CDN or Node.js build fragile dependencies.
+* **DOM `data-*` State Hydration Pattern:** Passing server-side Thymeleaf state via `#planner-state` `data-*` attributes and a shared `window.advisorCsrfHeaders()` helper cleanly decoupled external JS modules from server template rendering.
+* **Automated Merge-Queue / Stacked PR Workflow:** Introduce a strict merge order checklist (or GitHub merge queue) so stacked PRs merge into `main` continuously rather than accumulating in a 7-PR chain.
+* **Interactive Seed Personas for QA:** Add pre-configured student personas (e.g., Freshman onboarding, Probation GPA warning, Senior capstone planning) in `DataSeeder` to test dashboard alerts (`US-09`, `US-10`) in one click.
 
-### 💪 Act
-1. [x] Complete Sprint 3 security & frontend architecture tasks (`T-06`, `T-07`, `T-08`).
-2. [x] Deliver remaining student onboarding, recovery, and proactive dashboard journeys (`US-03`, `US-05`, `US-09`, `US-10`).
+### 💪 Act (What should we do next?)
+1. [ ] **Tech Lead / Team:** Merge stacked Pull Requests (`#44`–`#50`) sequentially into `main` and verify the production Docker image build.
+2. [ ] **Frontend Team:** Begin prototyping the interactive 8-semester timeline grid and drag-and-drop course allocation for Sprint 4 (`v1.0 Course Planner`).
+3. [ ] **Backend Team:** Expand `RegistrationAlertService` and `RecommendedActionService` with multi-semester graduation milestone tracking and advisor hold indicators.
+4. [ ] **AI Engineer:** Benchmark Gemini API fallback latency under rate-limiting scenarios and prepare mock response fixtures for offline classroom demos.
 
 ---
 
