@@ -149,6 +149,8 @@ Stores student academic profiles.
 | `major_id` | BIGINT | FK → `majors.id` | Student's enrolled major. |
 | `catalog_year` | INTEGER | — | Catalog year governing their curriculum. |
 | `current_semester` | INTEGER | — | Current semester (e.g. 3). |
+| `career_goal` | VARCHAR(255) | — | Optional student career aspiration. |
+| `role` | VARCHAR(30) | DEFAULT `'STUDENT'` | Security role (`STUDENT`, `ADVISOR`, `ADMIN`). |
 | `account_id` | BIGINT | FK → `student_accounts.id` | Linked authentication account. |
 
 ### `student_accounts`
@@ -163,6 +165,7 @@ Stores login credentials.
 | `password_hash` | VARCHAR | NOT NULL | BCrypt hash. |
 | `major_id` | BIGINT | FK → `majors.id` | Major selected during registration. |
 | `catalog_year` | INTEGER | — | Curriculum version selected during registration. |
+| `role` | VARCHAR(30) | DEFAULT `'STUDENT'` | Security role (`STUDENT`, `ADVISOR`, `ADMIN`). |
 
 ### `courses`
 

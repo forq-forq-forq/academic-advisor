@@ -1,6 +1,7 @@
 package kz.edu.sdu.advisor.service;
 
 import kz.edu.sdu.advisor.model.Major;
+import kz.edu.sdu.advisor.model.Role;
 import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.StudentAccount;
 import kz.edu.sdu.advisor.model.dto.RegistrationForm;
@@ -36,6 +37,7 @@ public class StudentRegistrationService {
         account.setPasswordHash(passwordEncoder.encode(form.getPassword()));
         account.setMajor(major);
         account.setCatalogYear(form.getCatalogYear());
+        account.setRole(Role.STUDENT);
         account = studentAccountRepository.save(account);
 
         Student student = new Student();
@@ -47,6 +49,7 @@ public class StudentRegistrationService {
         student.setCatalogYear(form.getCatalogYear());
         student.setCurrentSemester(1);
         student.setGpa(0.0);
+        student.setRole(Role.STUDENT);
         if (StringUtils.hasText(form.getCareerGoal())) {
             student.setCareerGoal(form.getCareerGoal().trim());
         }
