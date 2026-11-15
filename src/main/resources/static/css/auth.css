@@ -105,6 +105,18 @@ button[type="submit"]:hover {
 }
 
 .success-msg { color: #276749; margin-bottom: 1rem; font-size: 0.9rem; }
+.dev-reset-box {
+    margin-bottom: 1rem;
+    padding: 0.65rem 0.85rem;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #364fc7;
+}
+.dev-reset-box a { color: #2457c5; font-weight: 600; }
+.forgot-link { display: block; margin-top: 0.85rem; text-align: center; color: #4a5568; font-size: 0.88rem; }
+.forgot-link:hover { color: #3b5bdb; }
 .register-link { display: block; margin-top: 1rem; text-align: center; color: #3b5bdb; }
 
 .register-card {

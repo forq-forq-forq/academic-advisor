@@ -18,6 +18,10 @@
     <h1>Academic Advisor</h1>
     <p class="subtitle">Enter your Student ID and password to continue</p>
     <p class="success-msg" th:if="${param.registered}">Your account has been created successfully.</p>
+    <p class="success-msg" th:if="${param.resetSuccess != null or resetSuccessMessage != null}"
+       th:text="${resetSuccessMessage != null ? resetSuccessMessage : 'Your password has been reset successfully. You can now log in.'}">
+        Your password has been reset successfully.
+    </p>
     <form th:action="@{/login}" method="post" id="loginForm" novalidate>
         <div class="form-group">
             <label for="studentId">Student ID</label>
@@ -35,6 +39,7 @@
         <button type="submit">Log In</button>
     </form>
     <div class="error-msg" th:if="${error}" th:text="${error}"></div>
+    <a class="forgot-link" th:href="@{/forgot-password}">Forgot your password?</a>
     <a class="register-link" th:href="@{/register}">Create an account</a>
 </div>
 </body>
