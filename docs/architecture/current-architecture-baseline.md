@@ -14,6 +14,7 @@ If any other document conflicts with this file, this file takes precedence.
 | Runtime language/platform | Java 17 + Spring Boot 3.4.7 | Implemented |
 | Web layer | Spring MVC + Thymeleaf | Implemented |
 | Static Assets (T-07) | Extracted CSS (`static/css/*`) and deferred JS modules (`static/js/*`, CSRF meta headers) with zero inline `<style>`/`<script>` blocks | Implemented (`docs/T-07.md`) |
+| Tailwind CSS Utilities (T-08) | Local offline-safe `tailwind-utilities.css` & `tailwind-config.js` token layer loaded across all Thymeleaf views | Implemented (`docs/T-08.md`, ADR-0002) |
 | Persistence | Spring Data JPA + Hibernate | Implemented |
 | Default database | SQLite (`application.properties`) | Implemented |
 | Docker database profile | PostgreSQL 16 (`application-docker.properties`) | Implemented |
