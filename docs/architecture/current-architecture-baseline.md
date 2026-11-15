@@ -35,6 +35,7 @@ If any other document conflicts with this file, this file takes precedence.
 | AI Semester Plan Builder (US-43) | `SemesterPlanService`, `CourseRecommendationDto` with `"Why this course?"` reasons, workload balancing (≤ 30 ECTS), and one-click `+ Add to Cart` | Implemented |
 | Onboarding & Career Aspirations (US-03) | Quick-select aspiration chips on `/register`, dual persistence on `StudentAccount` & `Student`, onboarding goal banner, expanded career matching in `SemesterPlanService` | Implemented (`docs/US-03.md`) |
 | Self-Service Password Reset (US-05) | `PasswordResetToken`, `PasswordResetService`, `PasswordResetController` (`/forgot-password`, `/reset-password`), anti-enumeration, 30m single-use UUID tokens, dual hash updates | Implemented (`docs/US-05.md`) |
+| Registration Alert Banner (US-09) | `RegistrationPeriod`, `RegistrationAlertService`, seeded Fall 2026 registration period, `#registration-alert-card` urgency banner on `/dashboard` | Implemented (`docs/US-09.md`) |
 | Authentication & RBAC (T-06) | `spring-boot-starter-security` (`SecurityConfig`), `CustomUserDetailsService`, `SessionSecurityAuthenticationFilter`, `Role` (`STUDENT`, `ADVISOR`, `ADMIN`), `/advisor/**` role guard, CSRF protection | Implemented (`docs/T-06.md`) |
 | AI integration | Google Gemini API via `RestClient` | Implemented |
 | CI | GitHub Actions (`./mvnw clean test`, Docker build checks) | Implemented |

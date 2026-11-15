@@ -699,3 +699,81 @@ body {
             text-align: left; padding: 0.65rem; border-bottom: 1px solid #e2e8f0;
         }
         .completed-table th { background: #f0f4f8; }
+
+.dashboard-banners {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.action-banner-card {
+    background: #ffffff;
+    border: 1px solid #cbd5e0;
+    border-left: 5px solid #4c6ef5;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.alert-banner-card.urgency-upcoming {
+    background: #fffbeb;
+    border-color: #fcd34d;
+    border-left-color: #d97706;
+}
+
+.alert-banner-card.urgency-open {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    border-left-color: #4c6ef5;
+}
+
+.alert-banner-card.urgency-closing_soon {
+    background: #fff5f5;
+    border-color: #feb2b2;
+    border-left-color: #c53030;
+}
+
+.banner-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #3b5bdb;
+    margin-bottom: 0.25rem;
+}
+
+.alert-banner-card.urgency-upcoming .banner-badge { color: #b45309; }
+.alert-banner-card.urgency-closing_soon .banner-badge { color: #c53030; }
+
+.banner-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 0.2rem;
+}
+
+.banner-message {
+    font-size: 0.88rem;
+    color: #4a5568;
+    line-height: 1.4;
+}
+
+.banner-cta {
+    flex-shrink: 0;
+    padding: 0.55rem 0.95rem;
+    background: #4c6ef5;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.banner-cta:hover { background: #3b5bdb; }

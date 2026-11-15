@@ -114,4 +114,17 @@ class DashboardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reply", is("Here is your degree advice.")));
     }
+
+    @Test
+    @DisplayName("GET /dashboard displays Fall 2026 registration alert card when period is active")
+    void showDashboard_displaysRegistrationAlertCard() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(get("/dashboard").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"registration-alert-card\"")))
+                .andExpect(content().string(containsString("Fall 2026 Course Registration")))
+                .andExpect(content().string(containsString("/planner")));
+    }
 }

@@ -37,6 +37,21 @@
 </header>
 
 <main>
+    <div class="dashboard-banners" th:if="${registrationAlert != null}">
+        <section id="registration-alert-card"
+                 class="action-banner-card alert-banner-card rounded-xl shadow-sm"
+                 th:if="${registrationAlert != null}"
+                 th:classappend="${'urgency-' + #strings.toLowerCase(registrationAlert.urgencyLevel)}"
+                 aria-label="Course Registration Alert">
+            <div class="banner-body">
+                <span class="banner-badge">Registration Alert</span>
+                <h2 class="banner-title" th:text="${registrationAlert.title}">Fall 2026 Course Registration</h2>
+                <p class="banner-message" th:text="${registrationAlert.message}">Registration opens soon.</p>
+            </div>
+            <a class="banner-cta" th:href="@{${registrationAlert.ctaUrl}}" th:text="${registrationAlert.ctaLabel}">Open Planner</a>
+        </section>
+    </div>
+
     <!-- Left Column: Academic Standing Overview (US-07) -->
     <section class="panel standing-panel" aria-label="Academic Standing Overview">
         <h2 class="panel-title">

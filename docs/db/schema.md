@@ -217,6 +217,19 @@ Single-use expiring password reset tokens (`US-05`).
 | `used` | BOOLEAN | NOT NULL, DEFAULT FALSE | Prevents replay after completion/rotation. |
 | `created_at` | TIMESTAMP | NOT NULL | Creation timestamp. |
 
+### `registration_periods`
+
+Academic registration schedule windows powering dashboard alerts (`US-09`).
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | BIGINT | PK, AUTO | Database primary key. |
+| `term_name` | VARCHAR(120) | NOT NULL | Registration window title (e.g. `Fall 2026 Course Registration`). |
+| `start_date` | DATE | NOT NULL | Registration opening date. |
+| `end_date` | DATE | NOT NULL | Registration closing deadline. |
+| `active` | BOOLEAN | NOT NULL, DEFAULT TRUE | Whether alert evaluation considers this period. |
+| `description` | VARCHAR(500) | — | Guidance text displayed inside the dashboard alert. |
+
 ### Join Tables
 
 - **`student_courses`**: Many-to-Many join table representing courses completed by the student.

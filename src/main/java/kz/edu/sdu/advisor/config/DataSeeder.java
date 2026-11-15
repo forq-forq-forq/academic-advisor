@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ public class DataSeeder implements CommandLineRunner {
     private final CurriculumCourseRepository curriculumCourseRepository;
     private final StudentAccountRepository studentAccountRepository;
     private final StudentRepository studentRepository;
+    private final RegistrationPeriodRepository registrationPeriodRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -48,6 +50,7 @@ public class DataSeeder implements CommandLineRunner {
             seedCurriculum(isMajor, year, courses);
         }
         seedDemoStudent(isMajor, courses);
+        seedRegistrationPeriods();
     }
 
     private void cleanLegacyData() {
@@ -491,6 +494,21 @@ public class DataSeeder implements CommandLineRunner {
             studentRepository.save(student);
             account.setStudent(student);
             log.info("Demo student seeded with major IS (SITAM), 41 completed ECTS, 20 enrolled ECTS");
+        }
+    }
+
+    private void seedRegistrationPeriods() {
+        if (registrationPeriodRepository.count() == 0) {
+            RegistrationPeriod fallPeriod = new RegistrationPeriod();
+            fallPeriod.setTermName("Fall 2026 Course Registration");
+            LocalDate today = LocalDate.now();
+            fallPeriod.setStartDate(today.plusDays(3));
+            fallPeriod.setEndDate(today.plusDays(17));
+            fallPeriod.setActive(true);
+            fallPeriod.setDescription("Plan your Fall 2026 courses and verify prerequisites in advance.");
+            registrationPeriodRepository.save(fallPeriod);
+            log.info("Seeded active registration window: {} ({} to {})",
+                    fallPeriod.getTermName(), fallPeriod.getStartDate(), fallPeriod.getEndDate());
         }
     }
 
