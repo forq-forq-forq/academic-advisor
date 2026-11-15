@@ -1,0 +1,19 @@
+/* Common design tokens and base resets shared across all views (T-07) */
+:root {
+    --sdu-bg: #f0f4f8;
+    --sdu-surface: #ffffff;
+    --sdu-primary: #4c6ef5;
+    --sdu-primary-dark: #3b5bdb;
+    --sdu-text: #1a202c;
+    --sdu-text-body: #2d3748;
+    --sdu-muted: #718096;
+    --sdu-border: #cbd5e0;
+    --sdu-danger: #c53030;
+    --sdu-success: #276749;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
