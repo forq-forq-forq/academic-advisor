@@ -40,6 +40,7 @@ Project documentation for the Academic Advisor system.
 | [US-21](US-21.md) | Fall-only / Spring-only course availability mismatch flagging on roadmap |
 | [US-22](US-22.md) | Multiple named plan drafts (`Safe plan`, `Ambitious plan`) in Planner and Profile |
 | [US-23](US-23.md) | Downloadable PDF export (`GET /planner/export/pdf`) for cart and 4-year roadmap |
+| [US-25](US-25.md) | GPA Planner (`/gpa`) with credit-weighted projected cumulative GPA simulation |
 | [US-29](US-29.md) | Completed course history view |
 | [US-31](US-31.md) | Automatic credit-weighted cumulative GPA |
 

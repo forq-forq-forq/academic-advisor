@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPA Planner — Academic Advisor</title>
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/tailwind-utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/gpa.css}">
+    <link rel="stylesheet" th:href="@{/css/copilot.css}">
+    <script th:src="@{/js/tailwind-config.js}" defer></script>
+    <script th:src="@{/js/common.js}" defer></script>
+    <script th:src="@{/js/gpa.js}" defer></script>
+    <script th:src="@{/js/copilot.js}" defer></script>
+</head>
+<body class="font-sans antialiased">
+
+<header>
+    <div class="brand">
+        <h1>🎓 Academic Advisor</h1>
+        <nav class="nav-links">
+            <a th:href="@{/dashboard}">Dashboard</a>
+            <a th:href="@{/planner}">Planner</a>
+            <a th:href="@{/gpa}" class="active">GPA Planner</a>
+            <a th:href="@{/profile}">Transcript</a>
+            <a th:href="@{/faq}">FAQ</a>
+        </nav>
+    </div>
+    <div class="user-actions">
+        <span class="student-info">
+            <span th:text="${student.name}">Student</span>
+            &nbsp;·&nbsp;
+            <span th:text="${student.studentId}">ID</span>
+        </span>
+        <a class="logout" th:href="@{/logout}">Log out</a>
+    </div>
+</header>
+
+<main>
+    <section class="panel gpa-summary-panel" aria-label="Projected GPA Summary">
+        <div class="gpa-header">
+            <div>
+                <h2 class="panel-title">📈 GPA Planner &amp; Grade Simulator</h2>
+                <p class="gpa-subtext">
+                    Enter expected letter grades for your upcoming courses to preview your projected cumulative GPA before registration.
+                </p>
+            </div>
+            <div class="gpa-preset-actions">
+                <button type="button" class="btn-preset" onclick="applyPresetGrades('A')">All A's (4.00)</button>
+                <button type="button" class="btn-preset" onclick="applyPresetGrades('B+')">Reset B+ (3.33)</button>
+            </div>
+        </div>
+
+        <div id="gpa-error-alert" class="gpa-error-alert" style="display: none;" role="alert"></div>
+
+        <div class="gpa-kpi-grid">
+            <div class="kpi-card">
+                <span class="kpi-label">Current Cumulative GPA</span>
+                <span id="current-gpa-value" class="kpi-value" th:text="${simulation.formattedCurrentGpa}">3.80</span>
+                <span class="kpi-meta" th:text="${simulation.completedGradedCredits + ' graded ECTS'}">41 graded ECTS</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Projected Semester GPA</span>
+                <span id="semester-gpa-value" class="kpi-value" th:text="${simulation.formattedSemesterGpa}">3.33</span>
+                <span class="kpi-meta" th:text="${simulation.simulatedCredits + ' simulated ECTS'}">20 simulated ECTS</span>
+            </div>
+            <div class="kpi-card highlight">
+                <span class="kpi-label">Projected Cumulative GPA</span>
+                <div class="kpi-projected-row">
+                    <span id="projected-gpa-value" class="kpi-value" th:text="${simulation.formattedProjectedGpa}">3.65</span>
+                    <span id="gpa-delta-value" class="kpi-delta" th:text="${simulation.formattedGpaDelta}">-0.15</span>
+                </div>
+                <span id="projected-standing-badge" class="kpi-standing" th:text="${simulation.projectedStandingLabel}">Honor Standing</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel gpa-courses-panel" aria-label="Expected Grades Form">
+        <div class="courses-panel-header">
+            <h3>Simulated Course Load</h3>
+            <button type="button" id="btn-run-simulation" class="btn-simulate" onclick="runGpaSimulation()">Recalculate GPA</button>
+        </div>
+
+        <div th:if="${#lists.isEmpty(simulation.items)}" class="gpa-empty-state">
+            <p>Your Semester Cart and Enrolled Courses are currently empty. Add courses in the <a th:href="@{/planner}">Course Planner</a> to simulate grades.</p>
+        </div>
+
+        <div class="gpa-table-wrapper" th:if="${!#lists.isEmpty(simulation.items)}">
+            <table class="gpa-table" id="gpa-simulation-table">
+                <thead>
+                <tr>
+                    <th scope="col">Course</th>
+                    <th scope="col">Credits</th>
+                    <th scope="col">Source</th>
+                    <th scope="col">Expected Grade</th>
+                    <th scope="col">Points</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${simulation.items}" th:id="'gpa-row-' + ${item.courseId}">
+                    <td>
+                        <div class="course-cell-code" th:text="${item.code}">CSS215</div>
+                        <div class="course-cell-name" th:text="${item.name}">Introduction to Algorithms</div>
+                    </td>
+                    <td th:text="${item.credits + ' ECTS'}">5 ECTS</td>
+                    <td><span class="source-pill" th:text="${item.source}">CART</span></td>
+                    <td>
+                        <select class="gpa-grade-select"
+                                th:id="'grade-select-' + ${item.courseId}"
+                                th:attr="data-course-id=${item.courseId},name=${'grade_' + item.courseId}"
+                                aria-label="Expected letter grade"
+                                onchange="runGpaSimulation()">
+                            <option th:each="g : ${supportedGrades}"
+                                    th:value="${g}"
+                                    th:selected="${g == item.expectedGrade}"
+                                    th:text="${g}">B+</option>
+                        </select>
+                    </td>
+                    <td class="grade-points-cell"
+                        th:id="'points-cell-' + ${item.courseId}"
+                        th:text="${#numbers.formatDecimal(item.gradePoints, 1, 2)}">3.33</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<div th:replace="~{fragments/copilot :: copilotWidget}"></div>
+
+</body>
+</html>
