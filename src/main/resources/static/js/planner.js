@@ -62,9 +62,10 @@ function renderCart(cart) {
     document.querySelectorAll('.catalog-item').forEach(item => {
         const itemCourseId = item.getAttribute('data-course-id');
         const isEnrolled = item.getAttribute('data-enrolled') === 'true';
+        const isCompleted = item.getAttribute('data-completed') === 'true';
         const existingBtn = item.querySelector('.btn-add');
         const existingCartBadge = item.querySelector('.badge-in-cart');
-        if (!isEnrolled) {
+        if (!isEnrolled && !isCompleted) {
             if (inCartIds.has(String(itemCourseId))) {
                 if (existingBtn) {
                     existingBtn.outerHTML = '<span class="badge-in-cart">In Cart</span>';
@@ -279,12 +280,17 @@ function removeCourse(courseId) {
     .then(cart => {
         if (cart) {
             renderCart(cart);
-            // If catalog item had "In Cart", restore the button
+            // If catalog item had "In Cart", restore the button (unless completed)
             const catalogItem = document.getElementById('catalog-item-' + courseId);
             if (catalogItem) {
+                const isCompleted = catalogItem.getAttribute('data-completed') === 'true';
                 const badge = catalogItem.querySelector('.badge-in-cart');
                 if (badge) {
-                    badge.outerHTML = `<button type="button" class="btn-add" data-course-id="${courseId}" onclick="addCourse(${courseId})">+ Add</button>`;
+                    if (isCompleted) {
+                        badge.remove();
+                    } else {
+                        badge.outerHTML = `<button type="button" class="btn-add" data-course-id="${courseId}" onclick="addCourse(${courseId})">+ Add</button>`;
+                    }
                 }
             }
         }
@@ -353,6 +359,7 @@ function renderEnrolledCourses(enrolledCourses, enrolledCredits) {
     document.querySelectorAll('.catalog-item').forEach(item => {
         const itemCourseId = String(item.getAttribute('data-course-id'));
         const isEnrolled = enrolledIdSet.has(itemCourseId);
+        const isCompleted = item.getAttribute('data-completed') === 'true';
         item.setAttribute('data-enrolled', isEnrolled ? 'true' : 'false');
 
         const headerRow = item.querySelector('.item-code-credits');
@@ -386,7 +393,11 @@ function renderEnrolledCourses(enrolledCourses, enrolledCredits) {
                 actionsBox.appendChild(btn);
             }
         } else if (cancelBtn) {
-            cancelBtn.outerHTML = `<button type="button" class="btn-add" data-course-id="${itemCourseId}" onclick="addCourse(${itemCourseId})">+ Add</button>`;
+            if (isCompleted) {
+                cancelBtn.remove();
+            } else {
+                cancelBtn.outerHTML = `<button type="button" class="btn-add" data-course-id="${itemCourseId}" onclick="addCourse(${itemCourseId})">+ Add</button>`;
+            }
         }
     });
 }
@@ -479,6 +490,7 @@ function returnEnrolledToCart() {
 }
 
 let activeCatalogFilter = 'ALL';
+let hideCompletedCourses = false;
 
 function toggleCatalogDrawer(forceOpen) {
     const drawer = document.getElementById('catalog-drawer');
@@ -518,10 +530,38 @@ function clearCatalogSearch() {
     filterCatalog();
 }
 
+function toggleHideCompleted(btn) {
+    hideCompletedCourses = !hideCompletedCourses;
+    const hideBtn = btn || document.getElementById('btn-hide-completed');
+    if (hideBtn) {
+        hideBtn.classList.toggle('active', hideCompletedCourses);
+        hideBtn.setAttribute('aria-pressed', String(hideCompletedCourses));
+    }
+    if (activeCatalogFilter === 'UNCOMPLETED' && !hideCompletedCourses) {
+        activeCatalogFilter = 'ALL';
+        const allBtn = document.querySelector('.catalog-filters .filter-chip[data-filter="ALL"]');
+        if (allBtn) allBtn.classList.add('active');
+    }
+    filterCatalog();
+}
+
 function setCatalogFilter(filter, btn) {
+    if (filter === 'UNCOMPLETED') {
+        toggleHideCompleted(btn);
+        return;
+    }
     activeCatalogFilter = filter;
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.filter-chip').forEach(c => {
+        if (c.getAttribute('data-filter') !== 'UNCOMPLETED') {
+            c.classList.remove('active');
+        }
+    });
     if (btn) btn.classList.add('active');
+    const hideBtn = document.getElementById('btn-hide-completed');
+    if (hideBtn) {
+        hideBtn.classList.toggle('active', hideCompletedCourses);
+        hideBtn.setAttribute('aria-pressed', String(hideCompletedCourses));
+    }
     filterCatalog();
 }
 
@@ -535,6 +575,7 @@ function filterCatalog() {
     const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
     const selectedSeason = seasonSelect ? seasonSelect.value.toUpperCase() : 'ALL';
     const selectedDifficulty = difficultySelect ? difficultySelect.value : 'ALL';
+    const hideCompleted = hideCompletedCourses || activeCatalogFilter === 'UNCOMPLETED';
 
     if (clearBtn) {
         clearBtn.style.display = query ? 'inline-flex' : 'none';
@@ -542,13 +583,18 @@ function filterCatalog() {
 
     let visibleCount = 0;
     document.querySelectorAll('.catalog-item').forEach(item => {
-        const code = (item.getAttribute('data-course-code') || '').toLowerCase();
+        const codeRaw = item.getAttribute('data-course-code') || '';
+        const code = codeRaw.toLowerCase();
+        const codeUpper = codeRaw.trim().toUpperCase();
         const name = (item.getAttribute('data-course-name') || '').toLowerCase();
         const type = (item.getAttribute('data-course-type') || '').toUpperCase();
         const category = (item.getAttribute('data-course-category') || type).toUpperCase();
         const season = (item.getAttribute('data-course-season') || 'BOTH').toUpperCase();
         const difficulty = String(item.getAttribute('data-course-difficulty') || '');
-        const completed = item.getAttribute('data-completed') === 'true';
+        const completed = item.getAttribute('data-completed') === 'true'
+            || item.classList.contains('is-completed')
+            || Boolean(item.querySelector('.badge-completed'))
+            || studentCompletedCodes.has(codeUpper);
         const prereqsMet = item.getAttribute('data-prereqs-met') === 'true';
 
         const matchesQuery = !query || code.includes(query) || name.includes(query);
@@ -561,13 +607,14 @@ function filterCatalog() {
             matchesFilter = category === 'ELECTIVE';
         } else if (activeCatalogFilter === 'GENERAL') {
             matchesFilter = category === 'GENERAL';
-        } else if (activeCatalogFilter === 'UNCOMPLETED') {
-            matchesFilter = !completed;
         }
+        const matchesCompletedVisibility = !hideCompleted || !completed;
         const matchesSeason = selectedSeason === 'ALL' || season === 'BOTH' || season === selectedSeason;
         const matchesDifficulty = selectedDifficulty === 'ALL' || difficulty === selectedDifficulty;
 
-        const isVisible = matchesQuery && matchesFilter && matchesSeason && matchesDifficulty;
+        const isVisible = matchesQuery && matchesFilter && matchesCompletedVisibility && matchesSeason && matchesDifficulty;
+        item.classList.toggle('hidden-by-filter', !isVisible);
+        item.hidden = !isVisible;
         item.style.display = isVisible ? 'flex' : 'none';
         if (isVisible) visibleCount++;
     });
@@ -1088,4 +1135,10 @@ function renderPlanDrafts(drafts) {
             </div>
         </li>
     `).join('');
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => filterCatalog());
+} else {
+    filterCatalog();
 }

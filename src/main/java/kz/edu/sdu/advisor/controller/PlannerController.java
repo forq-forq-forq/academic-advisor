@@ -3,6 +3,7 @@ package kz.edu.sdu.advisor.controller;
 import jakarta.servlet.http.HttpSession;
 import kz.edu.sdu.advisor.exception.PrerequisiteNotMetException;
 import kz.edu.sdu.advisor.model.Course;
+import kz.edu.sdu.advisor.model.CourseCompletion;
 import kz.edu.sdu.advisor.model.CurriculumCourse;
 import kz.edu.sdu.advisor.model.Prerequisite;
 import kz.edu.sdu.advisor.model.Student;
@@ -13,6 +14,7 @@ import kz.edu.sdu.advisor.model.dto.EnrolledCourseDto;
 import kz.edu.sdu.advisor.model.dto.LoadedPlanDraftDto;
 import kz.edu.sdu.advisor.model.dto.PlanDraftDto;
 import kz.edu.sdu.advisor.model.dto.RoadmapBoardDto;
+import kz.edu.sdu.advisor.repository.CourseCompletionRepository;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.CurriculumCourseRepository;
 import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
@@ -35,10 +37,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,6 +53,7 @@ public class PlannerController {
 
     private final AuthSessionHelper authSessionHelper;
     private final CourseRepository courseRepository;
+    private final CourseCompletionRepository courseCompletionRepository;
     private final CurriculumCourseRepository curriculumCourseRepository;
     private final PrerequisiteRepository prerequisiteRepository;
     private final CartService cartService;
@@ -66,9 +71,12 @@ public class PlannerController {
 
         CartDto cart = cartService.getCart(studentId);
         List<AvailableCourseDto> availableCourseDtos = buildAvailableCourses(student, cart);
-        List<String> completedCodes = student.getCompletedCourses() == null
-                ? List.of()
-                : student.getCompletedCourses().stream().map(Course::getCode).toList();
+        List<String> completedCodes = resolveCompletedCourses(student).values().stream()
+                .map(Course::getCode)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
 
         List<EnrolledCourseDto> enrolledCourses = cartService.getEnrolledCourses(studentId);
         int enrolledCredits = enrolledCourses.stream().mapToInt(EnrolledCourseDto::credits).sum();
@@ -445,11 +453,7 @@ public class PlannerController {
                         Collectors.mapping(Prerequisite::getPrerequisiteCourse, Collectors.toList())
                 ));
 
-        Set<Long> completedIds = student.getCompletedCourses() == null
-                ? Set.of()
-                : student.getCompletedCourses().stream()
-                        .map(Course::getId)
-                        .collect(Collectors.toSet());
+        Set<Long> completedIds = resolveCompletedCourses(student).keySet();
 
         Set<Long> enrolledIds = student.getEnrolledCourses() == null
                 ? Set.of()
@@ -503,6 +507,29 @@ public class PlannerController {
                     );
                 })
                 .toList();
+    }
+
+    private Map<Long, Course> resolveCompletedCourses(Student student) {
+        Map<Long, Course> merged = new LinkedHashMap<>();
+        if (student == null) {
+            return merged;
+        }
+        if (student.getCompletedCourses() != null) {
+            for (Course course : student.getCompletedCourses()) {
+                if (course != null && course.getId() != null) {
+                    merged.put(course.getId(), course);
+                }
+            }
+        }
+        if (student.getId() != null) {
+            for (CourseCompletion completion : courseCompletionRepository.findForStudent(student.getId())) {
+                Course course = completion.getCourse();
+                if (course != null && course.getId() != null) {
+                    merged.putIfAbsent(course.getId(), course);
+                }
+            }
+        }
+        return merged;
     }
 
     private String resolveCourseCategory(String code, String courseType) {

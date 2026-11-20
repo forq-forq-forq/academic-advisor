@@ -1525,3 +1525,13 @@ main.drawer-collapsed {
 .btn-export-pdf {
     text-decoration: none;
 }
+
+.catalog-item.hidden-by-filter {
+    display: none !important;
+}
+
+.filter-chip.toggle-chip.active {
+    background: #0f766e;
+    border-color: #0f766e;
+    color: #ffffff;
+}

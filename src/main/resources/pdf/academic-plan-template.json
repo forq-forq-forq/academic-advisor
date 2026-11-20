@@ -1,0 +1,59 @@
+{
+  "name": "sdu-academic-plan-default",
+  "version": "1.0",
+  "page": {
+    "width": 612,
+    "height": 792,
+    "marginLeft": 36,
+    "marginRight": 36,
+    "marginTop": 30,
+    "marginBottom": 56
+  },
+  "branding": {
+    "universityName": "SDU University",
+    "headerTitle": "SDU Academic Advisor - Study Plan Export",
+    "headerSubtitle": "Official Semester Plan & 4-Year Degree Roadmap",
+    "footerText": "SDU Academic Advisor | Academic Planning Report",
+    "cartSectionTitle": "SEMESTER CART PLAN",
+    "roadmapSectionTitle": "4-YEAR DEGREE ROADMAP (8 SEMESTERS)"
+  },
+  "palette": {
+    "brandDark": "#364FC7",
+    "brandPrimary": "#4C6EF5",
+    "brandLight": "#EDF2FF",
+    "brandBorder": "#BAC8FF",
+    "surfaceWhite": "#FFFFFF",
+    "surfaceMuted": "#F8FAFC",
+    "surfaceZebra": "#F1F5F9",
+    "borderSlate": "#CBD5E1",
+    "borderLight": "#E2E8F0",
+    "textPrimary": "#1E293B",
+    "textSecondary": "#475569",
+    "textMuted": "#64748B",
+    "successBg": "#DCFCE7",
+    "successText": "#166534",
+    "warnBg": "#FEF3C7",
+    "warnText": "#92400E",
+    "dangerBg": "#FEE2E2",
+    "dangerText": "#991B1B",
+    "infoBg": "#E0E7FF",
+    "infoText": "#3730A3",
+    "neutralBg": "#E2E8F0",
+    "neutralText": "#334155"
+  },
+  "cartColumns": [
+    { "key": "index", "label": "#", "width": 28, "align": "center" },
+    { "key": "code", "label": "Course", "width": 78, "align": "left" },
+    { "key": "name", "label": "Course Title", "width": 274, "align": "left" },
+    { "key": "credits", "label": "Credits", "width": 70, "align": "right" },
+    { "key": "status", "label": "Status", "width": 90, "align": "center" }
+  ],
+  "roadmapColumns": [
+    { "key": "code", "label": "Course", "width": 68, "align": "left" },
+    { "key": "name", "label": "Course Title", "width": 216, "align": "left" },
+    { "key": "category", "label": "Category", "width": 72, "align": "center" },
+    { "key": "season", "label": "Season", "width": 62, "align": "center" },
+    { "key": "credits", "label": "Credits", "width": 48, "align": "right" },
+    { "key": "status", "label": "Status", "width": 74, "align": "center" }
+  ]
+}
