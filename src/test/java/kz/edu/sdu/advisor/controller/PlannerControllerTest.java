@@ -358,4 +358,34 @@ class PlannerControllerTest {
                 .andExpect(jsonPath("$[*].category", everyItem(is("ELECTIVE"))))
                 .andExpect(jsonPath("$[*].difficulty", everyItem(is(4))));
     }
+
+    @Test
+    @DisplayName("US-17: GET /planner/courses/{courseId} returns description, credits, difficulty rating, prerequisite chain, unlocked courses, and season")
+    void courseDetailEndpoint_shouldReturnFullCourseDetailCard() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+        Course css217 = courseRepository.findByCode("CSS217").orElseThrow();
+        Course css215 = courseRepository.findByCode("CSS215").orElseThrow();
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"course-detail-modal\"")))
+                .andExpect(content().string(containsString("btn-course-details")));
+
+        mockMvc.perform(get("/planner/courses/" + css217.getId()).session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is("CSS217")))
+                .andExpect(jsonPath("$.credits", is(5)))
+                .andExpect(jsonPath("$.difficulty", is(4)))
+                .andExpect(jsonPath("$.difficultyLabel", containsString("4/5")))
+                .andExpect(jsonPath("$.description", containsString("GoF design patterns")))
+                .andExpect(jsonPath("$.season", is("Spring")))
+                .andExpect(jsonPath("$.prerequisiteCodes", contains("CSS215")))
+                .andExpect(jsonPath("$.prerequisiteChain", contains("CSS105", "INF108", "CSS215")));
+
+        mockMvc.perform(get("/planner/courses/" + css215.getId()).session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", is("CSS215")))
+                .andExpect(jsonPath("$.unlocksCourseCodes", hasItems("CSS217", "INF319")));
+    }
 }

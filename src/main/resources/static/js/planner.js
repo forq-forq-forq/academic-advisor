@@ -589,3 +589,130 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
+function openCourseDetailModal(courseId) {
+    const modal = document.getElementById('course-detail-modal');
+    if (!modal || !courseId) return;
+
+    fetch('/planner/courses/' + encodeURIComponent(courseId), {
+        headers: { 'Accept': 'application/json' }
+    })
+        .then(async res => {
+            if (res.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showAlert(data.error || 'Failed to load course details.');
+                return null;
+            }
+            return data;
+        })
+        .then(detail => {
+            if (!detail) return;
+            renderCourseDetailModal(detail);
+            modal.style.display = 'flex';
+        })
+        .catch(() => {
+            showAlert('Unable to load course details right now.');
+        });
+}
+
+function renderCourseDetailModal(detail) {
+    document.getElementById('detail-course-code').textContent = detail.code || '';
+    document.getElementById('detail-course-name').textContent = detail.name || '';
+    document.getElementById('detail-course-credits').textContent = (detail.credits || 0) + ' ECTS';
+    document.getElementById('detail-course-category').textContent = detail.category || detail.courseType || 'COURSE';
+    document.getElementById('detail-course-season').textContent = detail.season || 'Fall & Spring';
+    document.getElementById('detail-course-description').textContent = detail.description || 'No description available.';
+    document.getElementById('detail-course-difficulty').textContent = detail.difficultyLabel || ((detail.difficulty || 3) + '/5');
+
+    const diffBar = document.getElementById('detail-difficulty-bar');
+    if (diffBar) {
+        const pct = Math.min(100, Math.max(20, ((detail.difficulty || 3) * 20)));
+        diffBar.style.width = pct + '%';
+    }
+
+    const recSemEl = document.getElementById('detail-recommended-semester');
+    if (recSemEl) {
+        recSemEl.textContent = detail.recommendedSemester ? ('Semester ' + detail.recommendedSemester) : 'Elective / Flexible';
+    }
+
+    const statusEl = document.getElementById('detail-course-status');
+    if (statusEl) {
+        if (detail.completed) statusEl.textContent = 'Completed ✓';
+        else if (detail.enrolled) statusEl.textContent = 'Currently Enrolled 📚';
+        else if (detail.inCart) statusEl.textContent = 'In Semester Cart 🛒';
+        else if (detail.prerequisitesMet) statusEl.textContent = 'Prerequisites Satisfied ✅';
+        else statusEl.textContent = 'Missing: ' + (detail.missingSummary || 'Prerequisites');
+    }
+
+    const prereqChainEl = document.getElementById('detail-prereq-chain');
+    if (prereqChainEl) {
+        if (Array.isArray(detail.prerequisiteChain) && detail.prerequisiteChain.length > 0) {
+            prereqChainEl.innerHTML = detail.prerequisiteChain
+                .map(code => `<span class="detail-chain-pill">${escapeHtml(code)}</span>`)
+                .join('<span class="detail-chain-arrow">→</span>')
+                + `<span class="detail-chain-arrow">→</span><span class="detail-chain-pill current">${escapeHtml(detail.code)}</span>`;
+        } else {
+            prereqChainEl.innerHTML = '<span class="detail-empty-chain">No prerequisites required</span>';
+        }
+    }
+
+    const unlocksEl = document.getElementById('detail-unlocks-chain');
+    if (unlocksEl) {
+        if (Array.isArray(detail.unlocksCourseCodes) && detail.unlocksCourseCodes.length > 0) {
+            unlocksEl.innerHTML = detail.unlocksCourseCodes
+                .map(code => `<span class="detail-chain-pill">${escapeHtml(code)}</span>`)
+                .join('');
+        } else {
+            unlocksEl.innerHTML = '<span class="detail-empty-chain">No downstream dependent courses</span>';
+        }
+    }
+
+    const explainBtn = document.getElementById('detail-btn-explain');
+    if (explainBtn) {
+        explainBtn.onclick = () => {
+            closeCourseDetailModal();
+            if (window.openCopilotWithPrompt) {
+                window.openCopilotWithPrompt('Explain course ' + detail.code, true);
+            }
+        };
+    }
+
+    const addBtn = document.getElementById('detail-btn-add-cart');
+    if (addBtn) {
+        if (detail.enrolled || detail.inCart || detail.completed) {
+            addBtn.style.display = 'none';
+        } else {
+            addBtn.style.display = 'inline-flex';
+            addBtn.onclick = () => {
+                closeCourseDetailModal();
+                addCourse(detail.id);
+            };
+        }
+    }
+}
+
+function closeCourseDetailModal() {
+    const modal = document.getElementById('course-detail-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeCourseDetailModal();
+    }
+});
+
+const courseDetailBackdrop = document.getElementById('course-detail-modal');
+if (courseDetailBackdrop) {
+    courseDetailBackdrop.addEventListener('click', (e) => {
+        if (e.target === courseDetailBackdrop) {
+            closeCourseDetailModal();
+        }
+    });
+}
