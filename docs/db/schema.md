@@ -19,11 +19,20 @@ erDiagram
     courses ||--o{ student_enrolled_courses : taken_by
     students ||--o{ cart_items : plans
     courses ||--o{ cart_items : planned_in
+    students ||--o{ roadmap_items : schedules
+    courses ||--o{ roadmap_items : scheduled_in
 
     cart_items {
         BIGINT id PK "Auto-generated"
         BIGINT student_id FK "References students.id"
         BIGINT course_id FK "References courses.id"
+    }
+
+    roadmap_items {
+        BIGINT id PK "Auto-generated"
+        BIGINT student_id FK "References students.id"
+        BIGINT course_id FK "References courses.id"
+        INTEGER semester "Target semester 1-8"
     }
 
     faculties {
@@ -206,6 +215,19 @@ Stores semester planning cart items per student (US-11).
 | `id` | BIGINT | PK, AUTO | Database primary key. |
 | `student_id` | BIGINT | FK → `students.id`, NOT NULL | Student who owns the cart. |
 | `course_id` | BIGINT | FK → `courses.id`, NOT NULL | Planned course added to cart. |
+
+**Unique constraint:** `(student_id, course_id)`
+
+### `roadmap_items`
+
+Stores multi-year 8-semester roadmap placements per student (US-18).
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | BIGINT | PK, AUTO | Database primary key. |
+| `student_id` | BIGINT | FK → `students.id`, NOT NULL | Student owning the roadmap. |
+| `course_id` | BIGINT | FK → `courses.id`, NOT NULL | Course placed on roadmap. |
+| `semester` | INTEGER | NOT NULL | Target semester number (`1`–`8`). |
 
 **Unique constraint:** `(student_id, course_id)`
 

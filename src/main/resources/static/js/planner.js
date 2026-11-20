@@ -716,3 +716,74 @@ if (courseDetailBackdrop) {
         }
     });
 }
+
+function switchPlannerView(viewName) {
+    const cartSection = document.getElementById('cart-panel-section');
+    const roadmapSection = document.getElementById('roadmap-board-section');
+    const cartTab = document.getElementById('tab-cart-view');
+    const roadmapTab = document.getElementById('tab-roadmap-view');
+    const isRoadmap = viewName === 'roadmap';
+
+    if (cartSection) cartSection.style.display = isRoadmap ? 'none' : 'block';
+    if (roadmapSection) roadmapSection.style.display = isRoadmap ? 'block' : 'none';
+    if (cartTab) {
+        cartTab.classList.toggle('active', !isRoadmap);
+        cartTab.setAttribute('aria-selected', String(!isRoadmap));
+    }
+    if (roadmapTab) {
+        roadmapTab.classList.toggle('active', isRoadmap);
+        roadmapTab.setAttribute('aria-selected', String(isRoadmap));
+    }
+}
+
+function renderRoadmapBoard(board) {
+    if (!board || !Array.isArray(board.semesters)) return;
+    const totalCreditsEl = document.getElementById('roadmap-total-credits');
+    const totalCoursesEl = document.getElementById('roadmap-total-courses');
+    if (totalCreditsEl) totalCreditsEl.textContent = board.totalCredits;
+    if (totalCoursesEl) totalCoursesEl.textContent = board.totalCourses;
+
+    const grid = document.getElementById('roadmap-grid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    board.semesters.forEach(sem => {
+        const col = document.createElement('div');
+        col.className = 'roadmap-semester-col' + (sem.overloaded ? ' semester-overloaded' : '');
+        col.id = 'roadmap-semester-' + sem.semester;
+        col.setAttribute('data-semester', String(sem.semester));
+        col.setAttribute('data-season', sem.season || 'FALL');
+
+        const cardsHtml = Array.isArray(sem.courses) && sem.courses.length > 0
+            ? sem.courses.map(card => `
+                <div class="roadmap-course-card" id="roadmap-card-${card.courseId}" data-course-id="${card.courseId}" data-semester="${sem.semester}">
+                    <div class="roadmap-card-top">
+                        <span class="course-code">${escapeHtml(card.code)}</span>
+                        <span class="credit-tag">${card.credits} ECTS</span>
+                    </div>
+                    <div class="roadmap-card-name">${escapeHtml(card.name)}</div>
+                    <div class="roadmap-card-badges">
+                        <span class="badge-type">${escapeHtml(card.category || card.courseType)}</span>
+                        <span class="roadmap-status-badge status-${escapeHtml((card.status || 'planned').toLowerCase())}">${escapeHtml(card.status)}</span>
+                    </div>
+                    <div class="roadmap-card-actions">
+                        <button type="button" class="btn-course-details" data-course-id="${card.courseId}" onclick="openCourseDetailModal(${card.courseId})">Details</button>
+                    </div>
+                </div>
+            `).join('')
+            : '<div class="roadmap-empty-slot">No courses planned for this semester yet.</div>';
+
+        const stateClass = 'state-' + (sem.workloadState || 'light').toLowerCase();
+        col.innerHTML = `
+            <div class="roadmap-semester-header">
+                <div>
+                    <h3 class="roadmap-sem-title">${escapeHtml(sem.title)}</h3>
+                    <span class="roadmap-sem-load ${stateClass}">${escapeHtml(sem.workloadState)}</span>
+                </div>
+                <span class="roadmap-sem-credits">${sem.totalCredits} ECTS</span>
+            </div>
+            <div class="roadmap-semester-cards">${cardsHtml}</div>
+        `;
+        grid.appendChild(col);
+    });
+}

@@ -10,11 +10,13 @@ import kz.edu.sdu.advisor.model.dto.AvailableCourseDto;
 import kz.edu.sdu.advisor.model.dto.CartDto;
 import kz.edu.sdu.advisor.model.dto.CourseDetailDto;
 import kz.edu.sdu.advisor.model.dto.EnrolledCourseDto;
+import kz.edu.sdu.advisor.model.dto.RoadmapBoardDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.CurriculumCourseRepository;
 import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
 import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import kz.edu.sdu.advisor.service.CartService;
+import kz.edu.sdu.advisor.service.RoadmapService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
@@ -44,6 +46,7 @@ public class PlannerController {
     private final CurriculumCourseRepository curriculumCourseRepository;
     private final PrerequisiteRepository prerequisiteRepository;
     private final CartService cartService;
+    private final RoadmapService roadmapService;
 
     @GetMapping("/planner")
     public String showPlanner(HttpSession session, Model model) {
@@ -61,6 +64,7 @@ public class PlannerController {
 
         List<EnrolledCourseDto> enrolledCourses = cartService.getEnrolledCourses(studentId);
         int enrolledCredits = enrolledCourses.stream().mapToInt(EnrolledCourseDto::credits).sum();
+        RoadmapBoardDto roadmap = roadmapService.getRoadmap(studentId);
 
         model.addAttribute("student", student);
         model.addAttribute("cart", cart);
@@ -68,8 +72,20 @@ public class PlannerController {
         model.addAttribute("enrolledCredits", enrolledCredits);
         model.addAttribute("availableCourses", availableCourseDtos);
         model.addAttribute("completedCourseCodes", completedCodes);
+        model.addAttribute("roadmap", roadmap);
 
         return "planner";
+    }
+
+    @GetMapping("/planner/roadmap")
+    @ResponseBody
+    public ResponseEntity<?> getRoadmap(HttpSession session) {
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+        return ResponseEntity.ok(roadmapService.getRoadmap(studentId));
     }
 
     @GetMapping("/planner/catalog")

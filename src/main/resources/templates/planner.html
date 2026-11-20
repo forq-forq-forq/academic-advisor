@@ -48,6 +48,24 @@
             <span class="planner-toolbar-subtitle">Plan your semester cart and search the university course catalog</span>
         </div>
         <div class="planner-toolbar-actions">
+            <div class="planner-view-tabs" role="tablist" aria-label="Planner Views">
+                <button type="button"
+                        id="tab-cart-view"
+                        class="btn-view-tab active"
+                        role="tab"
+                        aria-selected="true"
+                        onclick="switchPlannerView('cart')">
+                    🛒 Semester Cart
+                </button>
+                <button type="button"
+                        id="tab-roadmap-view"
+                        class="btn-view-tab"
+                        role="tab"
+                        aria-selected="false"
+                        onclick="switchPlannerView('roadmap')">
+                    🗓️ 8-Semester Roadmap
+                </button>
+            </div>
             <button type="button"
                     id="btn-toggle-catalog-drawer"
                     class="btn-toggle-drawer active"
@@ -68,8 +86,10 @@
         <button type="button" class="btn-close-alert" onclick="hideAlert()" aria-label="Close">×</button>
     </div>
 
-    <!-- Left Column: Semester Cart (US-11) -->
-    <section class="panel cart-panel" aria-label="Semester Cart">
+    <!-- Left Column Workspace: Cart View + 8-Semester Roadmap View -->
+    <div class="planner-workspace-column">
+        <!-- Left Column: Semester Cart (US-11) -->
+        <section id="cart-panel-section" class="panel cart-panel" aria-label="Semester Cart">
         <div class="cart-header">
             <h2 class="cart-title">
                 🛒 Your Semester Cart
@@ -228,6 +248,66 @@
             </ul>
         </div>
     </section>
+
+        <!-- Multi-Year 8-Semester Interactive Roadmap Board (US-18) -->
+        <section id="roadmap-board-section" class="panel roadmap-panel" aria-label="8-Semester Degree Roadmap" style="display: none;">
+            <div class="roadmap-header">
+                <div>
+                    <h2 class="cart-title">🗓️ 4-Year Degree Roadmap (8 Semesters)</h2>
+                    <p class="roadmap-subtitle">
+                        Overview of all 8 semesters (<span id="roadmap-total-credits" th:text="${roadmap.totalCredits}">0</span> ECTS across
+                        <span id="roadmap-total-courses" th:text="${roadmap.totalCourses}">0</span> courses)
+                    </p>
+                </div>
+            </div>
+
+            <div id="roadmap-grid" class="roadmap-grid">
+                <div class="roadmap-semester-col"
+                     th:each="sem : ${roadmap.semesters}"
+                     th:id="'roadmap-semester-' + ${sem.semester}"
+                     th:attr="data-semester=${sem.semester},data-season=${sem.season}"
+                     th:classappend="${sem.overloaded ? 'semester-overloaded' : ''}">
+                    <div class="roadmap-semester-header">
+                        <div>
+                            <h3 class="roadmap-sem-title" th:text="${sem.title}">Semester 1 (Fall)</h3>
+                            <span class="roadmap-sem-load"
+                                  th:classappend="'state-' + ${#strings.toLowerCase(sem.workloadState)}"
+                                  th:text="${sem.workloadState}">Balanced</span>
+                        </div>
+                        <span class="roadmap-sem-credits" th:text="${sem.totalCredits + ' ECTS'}">0 ECTS</span>
+                    </div>
+
+                    <div class="roadmap-semester-cards">
+                        <div class="roadmap-course-card"
+                             th:each="card : ${sem.courses}"
+                             th:id="'roadmap-card-' + ${card.courseId}"
+                             th:attr="data-course-id=${card.courseId},data-semester=${sem.semester}">
+                            <div class="roadmap-card-top">
+                                <span class="course-code" th:text="${card.code}">CSS105</span>
+                                <span class="credit-tag" th:text="${card.credits + ' ECTS'}">5 ECTS</span>
+                            </div>
+                            <div class="roadmap-card-name" th:text="${card.name}">Fundamentals of Programming</div>
+                            <div class="roadmap-card-badges">
+                                <span class="badge-type" th:text="${card.category}">CORE</span>
+                                <span class="roadmap-status-badge"
+                                      th:classappend="'status-' + ${#strings.toLowerCase(card.status)}"
+                                      th:text="${card.status}">PLANNED</span>
+                            </div>
+                            <div class="roadmap-card-actions">
+                                <button type="button"
+                                        class="btn-course-details"
+                                        th:attr="data-course-id=${card.courseId}"
+                                        onclick="openCourseDetailModal(this.getAttribute('data-course-id'))">Details</button>
+                            </div>
+                        </div>
+                        <div class="roadmap-empty-slot" th:if="${#lists.isEmpty(sem.courses)}">
+                            No courses planned for this semester yet.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
 
     <!-- Right Column: Slide-Out Course Catalog Drawer (US-15) -->
     <aside id="catalog-drawer" class="panel catalog-panel catalog-drawer open" aria-label="Course Catalog">
