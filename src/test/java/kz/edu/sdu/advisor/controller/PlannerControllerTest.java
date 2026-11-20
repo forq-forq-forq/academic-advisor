@@ -439,4 +439,31 @@ class PlannerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.semesters[1].courses[?(@.code=='CSS217')]", empty()));
     }
+
+    @Test
+    @DisplayName("US-20: GET /planner renders pacing controls and POST /planner/roadmap/pacing switches between BALANCED and FAST_TRACK")
+    void roadmapPacingEndpoint_shouldRearrangeRoadmap() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"pacing-strategy-select\"")))
+                .andExpect(content().string(containsString("Fast-track: light 4th year for internship")));
+
+        mockMvc.perform(post("/planner/roadmap/pacing")
+                        .session(session)
+                        .param("strategy", "FAST_TRACK"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activePacingStrategy", is("FAST_TRACK")))
+                .andExpect(jsonPath("$.prerequisiteConflictCount", is(0)))
+                .andExpect(jsonPath("$.pacingSummary", containsString("Fast-track")));
+
+        mockMvc.perform(post("/planner/roadmap/pacing")
+                        .session(session)
+                        .param("strategy", "BALANCED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activePacingStrategy", is("BALANCED")))
+                .andExpect(jsonPath("$.prerequisiteConflictCount", is(0)));
+    }
 }

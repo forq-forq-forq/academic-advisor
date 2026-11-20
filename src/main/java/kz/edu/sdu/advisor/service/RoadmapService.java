@@ -103,12 +103,250 @@ public class RoadmapService {
                 "Course removed from roadmap.");
     }
 
+    @Transactional
+    public RoadmapBoardDto applyPacingStrategy(String studentId, String strategy) {
+        if (!StringUtils.hasText(strategy)) {
+            throw new IllegalArgumentException("Pacing strategy is required.");
+        }
+        String normalized = strategy.trim().toUpperCase(Locale.ROOT).replace('-', '_');
+        if (!"BALANCED".equals(normalized) && !"FAST_TRACK".equals(normalized)) {
+            throw new IllegalArgumentException("Unsupported pacing strategy: " + strategy);
+        }
+
+        Student student = studentRepository.findByStudentId(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found: " + studentId));
+
+        List<RoadmapItem> currentItems = roadmapItemRepository.findByStudent_StudentIdOrderBySemesterAscCourse_CodeAsc(studentId);
+        if (currentItems.isEmpty()) {
+            currentItems = initializeDefaultRoadmap(student);
+        }
+
+        int currentSem = clampSemester(student.getCurrentSemester() != null ? student.getCurrentSemester() : 1);
+        int futureStart = Math.min(TOTAL_SEMESTERS, currentSem + 1);
+
+        Set<Long> completedIds = student.getCompletedCourses() == null
+                ? Set.of()
+                : student.getCompletedCourses().stream().map(Course::getId).collect(Collectors.toSet());
+        Set<Long> enrolledIds = student.getEnrolledCourses() == null
+                ? Set.of()
+                : student.getEnrolledCourses().stream().map(Course::getId).collect(Collectors.toSet());
+
+        Map<Long, CurriculumCourse> curriculumByCourseId = loadCurriculumByCourseId(student);
+        Map<Long, List<Course>> prereqMap = loadPrerequisiteMap();
+
+        Map<Long, Integer> fixedSemesterByCourseId = new HashMap<>();
+        Map<Integer, Integer> semCredits = new HashMap<>();
+        for (int s = 1; s <= TOTAL_SEMESTERS; s++) {
+            semCredits.put(s, 0);
+        }
+
+        List<RoadmapItem> movableItems = new ArrayList<>();
+        for (RoadmapItem item : currentItems) {
+            Course c = item.getCourse();
+            if (c == null || c.getId() == null) continue;
+            int sem = clampSemester(item.getSemester());
+            boolean isLocked = completedIds.contains(c.getId())
+                    || enrolledIds.contains(c.getId())
+                    || sem <= currentSem;
+            if (isLocked) {
+                fixedSemesterByCourseId.put(c.getId(), sem);
+                semCredits.merge(sem, c.getCredits() != null ? c.getCredits() : 0, Integer::sum);
+            } else {
+                movableItems.add(item);
+            }
+        }
+
+        List<RoadmapItem> orderedMovables = topologicalSortItems(movableItems, prereqMap, curriculumByCourseId);
+        Set<Long> movableIds = orderedMovables.stream()
+                .map(i -> i.getCourse().getId())
+                .collect(Collectors.toSet());
+        Map<Long, Integer> downstreamDepth = computeDownstreamDepths(movableIds, prereqMap);
+        Map<Long, Integer> assignedSemesterByCourseId = new HashMap<>(fixedSemesterByCourseId);
+
+        for (RoadmapItem item : orderedMovables) {
+            Course c = item.getCourse();
+            int credits = c.getCredits() != null ? c.getCredits() : 0;
+            int minSem = futureStart;
+            for (Course req : prereqMap.getOrDefault(c.getId(), List.of())) {
+                if (req == null || req.getId() == null) continue;
+                Integer reqSem = assignedSemesterByCourseId.get(req.getId());
+                if (reqSem != null) {
+                    minSem = Math.max(minSem, Math.min(TOTAL_SEMESTERS, reqSem + 1));
+                }
+            }
+            int maxSem = Math.max(minSem, TOTAL_SEMESTERS - downstreamDepth.getOrDefault(c.getId(), 0));
+
+            CurriculumCourse cc = curriculumByCourseId.get(c.getId());
+            int recommendedSem = cc != null && cc.getSemester() != null
+                    ? clampSemester(cc.getSemester())
+                    : minSem;
+
+            int chosenSem;
+            if ("FAST_TRACK".equals(normalized)) {
+                chosenSem = chooseFastTrackSemester(c, minSem, maxSem, credits, semCredits);
+            } else {
+                chosenSem = chooseBalancedSemester(minSem, maxSem, recommendedSem, credits, semCredits);
+            }
+
+            item.setSemester(chosenSem);
+            assignedSemesterByCourseId.put(c.getId(), chosenSem);
+            semCredits.merge(chosenSem, credits, Integer::sum);
+        }
+
+        roadmapItemRepository.saveAllAndFlush(currentItems);
+        List<RoadmapItem> updatedItems = roadmapItemRepository.findByStudent_StudentIdOrderBySemesterAscCourse_CodeAsc(studentId);
+        String summary = "FAST_TRACK".equals(normalized)
+                ? "Fast-track applied: core and eligible courses front-loaded into earlier semesters to free up Year 4 (Semesters 7–8) for an internship."
+                : "Balanced 4-year plan applied: credits distributed evenly across remaining semesters (≤ 30 ECTS target).";
+        return buildBoard(student, updatedItems, normalized, summary);
+    }
+
+    private List<RoadmapItem> topologicalSortItems(
+            List<RoadmapItem> items,
+            Map<Long, List<Course>> prereqMap,
+            Map<Long, CurriculumCourse> curriculumByCourseId) {
+        Set<Long> movableCourseIds = items.stream()
+                .map(i -> i.getCourse().getId())
+                .collect(Collectors.toSet());
+        List<RoadmapItem> remaining = new ArrayList<>(items);
+        remaining.sort(Comparator
+                .comparingInt((RoadmapItem i) -> {
+                    CurriculumCourse cc = curriculumByCourseId.get(i.getCourse().getId());
+                    return cc != null && cc.getSemester() != null ? cc.getSemester() : 8;
+                })
+                .thenComparing(i -> i.getCourse().getCode()));
+
+        List<RoadmapItem> result = new ArrayList<>();
+        Set<Long> placed = new HashSet<>();
+        while (!remaining.isEmpty()) {
+            boolean progressed = false;
+            var it = remaining.iterator();
+            while (it.hasNext()) {
+                RoadmapItem item = it.next();
+                Long cid = item.getCourse().getId();
+                boolean depsSatisfied = prereqMap.getOrDefault(cid, List.of()).stream()
+                        .map(Course::getId)
+                        .filter(movableCourseIds::contains)
+                        .allMatch(placed::contains);
+                if (depsSatisfied) {
+                    result.add(item);
+                    placed.add(cid);
+                    it.remove();
+                    progressed = true;
+                }
+            }
+            if (!progressed) {
+                result.addAll(remaining);
+                break;
+            }
+        }
+        return result;
+    }
+
+    private Map<Long, Integer> computeDownstreamDepths(
+            Set<Long> movableIds,
+            Map<Long, List<Course>> prereqMap) {
+        Map<Long, List<Long>> dependents = new HashMap<>();
+        for (Long courseId : movableIds) {
+            for (Course req : prereqMap.getOrDefault(courseId, List.of())) {
+                if (req != null && req.getId() != null && movableIds.contains(req.getId())) {
+                    dependents.computeIfAbsent(req.getId(), k -> new ArrayList<>()).add(courseId);
+                }
+            }
+        }
+        Map<Long, Integer> depths = new HashMap<>();
+        for (Long courseId : movableIds) {
+            computeDepthMemo(courseId, dependents, depths, new HashSet<>());
+        }
+        return depths;
+    }
+
+    private int computeDepthMemo(
+            Long courseId,
+            Map<Long, List<Long>> dependents,
+            Map<Long, Integer> depths,
+            Set<Long> visiting) {
+        if (depths.containsKey(courseId)) {
+            return depths.get(courseId);
+        }
+        if (!visiting.add(courseId)) {
+            return 0;
+        }
+        int maxChild = 0;
+        for (Long depId : dependents.getOrDefault(courseId, List.of())) {
+            maxChild = Math.max(maxChild, 1 + computeDepthMemo(depId, dependents, depths, visiting));
+        }
+        visiting.remove(courseId);
+        depths.put(courseId, maxChild);
+        return maxChild;
+    }
+
+    private int chooseBalancedSemester(
+            int minSem,
+            int maxSem,
+            int recommendedSem,
+            int credits,
+            Map<Integer, Integer> semCredits) {
+        int bestSem = minSem;
+        int bestLoad = Integer.MAX_VALUE;
+        int bestDistance = Integer.MAX_VALUE;
+
+        for (int s = minSem; s <= maxSem; s++) {
+            int load = semCredits.getOrDefault(s, 0);
+            int distance = Math.abs(s - Math.min(maxSem, Math.max(minSem, recommendedSem)));
+            if (load < bestLoad || (load == bestLoad && distance < bestDistance)) {
+                bestLoad = load;
+                bestDistance = distance;
+                bestSem = s;
+            }
+        }
+        return bestSem;
+    }
+
+    private int chooseFastTrackSemester(
+            Course course,
+            int minSem,
+            int maxSem,
+            int credits,
+            Map<Integer, Integer> semCredits) {
+        String code = course.getCode() != null ? course.getCode().toUpperCase(Locale.ROOT) : "";
+        boolean isFinalCapstone = "CSS479".equals(code) || "INF420".equals(code);
+        if (isFinalCapstone && maxSem == TOTAL_SEMESTERS) {
+            return TOTAL_SEMESTERS;
+        }
+        int fastTrackCap = 35;
+        int preInternshipMaxSem = Math.min(maxSem, Math.max(minSem, 6));
+        for (int s = minSem; s <= preInternshipMaxSem; s++) {
+            int load = semCredits.getOrDefault(s, 0);
+            if (load + credits <= fastTrackCap) {
+                return s;
+            }
+        }
+        for (int s = minSem; s <= maxSem; s++) {
+            int load = semCredits.getOrDefault(s, 0);
+            if (load + credits <= MAX_RECOMMENDED_CREDITS) {
+                return s;
+            }
+        }
+        int bestSem = minSem;
+        int bestLoad = Integer.MAX_VALUE;
+        for (int s = minSem; s <= maxSem; s++) {
+            int load = semCredits.getOrDefault(s, 0);
+            if (load < bestLoad) {
+                bestLoad = load;
+                bestSem = s;
+            }
+        }
+        return bestSem;
+    }
+
     protected List<RoadmapItem> initializeDefaultRoadmap(Student student) {
         String studentId = student.getStudentId();
         int currentSem = clampSemester(student.getCurrentSemester() != null ? student.getCurrentSemester() : 1);
 
         Map<Long, CurriculumCourse> curriculumByCourseId = loadCurriculumByCourseId(student);
         List<CurriculumCourse> curriculumList = loadCurriculumList(student);
+        Map<Long, List<Course>> prereqMap = loadPrerequisiteMap();
 
         Map<Long, RoadmapItem> placedByCourseId = new LinkedHashMap<>();
         Map<Integer, Integer> semesterCredits = new HashMap<>();
@@ -150,14 +388,14 @@ public class RoadmapService {
             }
         }
 
-        // Fill remaining capacity in each semester (up to 30 ECTS) with career-aligned electives
+        // Fill remaining capacity in each semester (up to 30 ECTS) with prerequisite-valid career-aligned electives
         String careerGoal = student.getCareerGoal();
         List<CurriculumCourse> remainingElectives = curriculumList.stream()
                 .filter(cc -> cc.getCourse() != null && cc.getCourse().getId() != null)
                 .filter(cc -> !placedByCourseId.containsKey(cc.getCourse().getId()))
                 .sorted(Comparator
-                        .comparingInt((CurriculumCourse cc) -> matchesCareerGoal(cc.getCourse(), careerGoal) ? 0 : 1)
-                        .thenComparingInt(cc -> cc.getSemester() != null ? cc.getSemester() : 6)
+                        .comparingInt((CurriculumCourse cc) -> cc.getSemester() != null ? cc.getSemester() : 6)
+                        .thenComparingInt(cc -> matchesCareerGoal(cc.getCourse(), careerGoal) ? 0 : 1)
                         .thenComparing(cc -> cc.getCourse().getCode()))
                 .toList();
 
@@ -165,6 +403,9 @@ public class RoadmapService {
             Course c = cc.getCourse();
             int credits = c.getCredits() != null ? c.getCredits() : 5;
             int targetSem = clampSemester(cc.getSemester());
+            if (!arePrereqsPlacedBefore(c.getId(), targetSem, prereqMap, placedByCourseId)) {
+                continue;
+            }
             int currentLoad = semesterCredits.getOrDefault(targetSem, 0);
             if (currentLoad + credits <= MAX_RECOMMENDED_CREDITS) {
                 addPlacement(placedByCourseId, semesterCredits, student, c, targetSem);
@@ -178,7 +419,8 @@ public class RoadmapService {
             if (emptySem) {
                 for (CurriculumCourse cc : remainingElectives) {
                     Course c = cc.getCourse();
-                    if (!placedByCourseId.containsKey(c.getId())) {
+                    if (!placedByCourseId.containsKey(c.getId())
+                            && arePrereqsPlacedBefore(c.getId(), s, prereqMap, placedByCourseId)) {
                         addPlacement(placedByCourseId, semesterCredits, student, c, s);
                         break;
                     }
@@ -190,6 +432,22 @@ public class RoadmapService {
             return List.of();
         }
         return roadmapItemRepository.saveAll(placedByCourseId.values());
+    }
+
+    private boolean arePrereqsPlacedBefore(
+            Long courseId,
+            int targetSemester,
+            Map<Long, List<Course>> prereqMap,
+            Map<Long, RoadmapItem> placedByCourseId) {
+        List<Course> reqs = prereqMap.getOrDefault(courseId, List.of());
+        for (Course req : reqs) {
+            if (req == null || req.getId() == null) continue;
+            RoadmapItem reqItem = placedByCourseId.get(req.getId());
+            if (reqItem == null || clampSemester(reqItem.getSemester()) >= targetSemester) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected RoadmapBoardDto buildBoard(

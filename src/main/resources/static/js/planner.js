@@ -823,12 +823,49 @@ function removeRoadmapCourse(courseId) {
         .catch(() => showAlert('Unable to remove course from roadmap.'));
 }
 
+function applyRoadmapPacing() {
+    hideAlert();
+    const select = document.getElementById('pacing-strategy-select');
+    const strategy = select ? select.value : 'BALANCED';
+    fetch('/planner/roadmap/pacing?strategy=' + encodeURIComponent(strategy), {
+        method: 'POST',
+        headers: Object.assign({ 'Accept': 'application/json' }, window.advisorCsrfHeaders ? window.advisorCsrfHeaders() : {})
+    })
+        .then(async res => {
+            if (res.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showAlert(data.error || 'Failed to apply pacing strategy.');
+                return null;
+            }
+            return data;
+        })
+        .then(board => {
+            if (board) {
+                renderRoadmapBoard(board);
+            }
+        })
+        .catch(() => showAlert('Unable to rearrange roadmap right now.'));
+}
+
 function renderRoadmapBoard(board) {
     if (!board || !Array.isArray(board.semesters)) return;
     const totalCreditsEl = document.getElementById('roadmap-total-credits');
     const totalCoursesEl = document.getElementById('roadmap-total-courses');
     if (totalCreditsEl) totalCreditsEl.textContent = board.totalCredits;
     if (totalCoursesEl) totalCoursesEl.textContent = board.totalCourses;
+
+    const pacingSummaryEl = document.getElementById('roadmap-pacing-summary');
+    if (pacingSummaryEl && board.pacingSummary) {
+        pacingSummaryEl.textContent = board.pacingSummary;
+    }
+    const pacingSelect = document.getElementById('pacing-strategy-select');
+    if (pacingSelect && board.activePacingStrategy) {
+        pacingSelect.value = board.activePacingStrategy;
+    }
 
     const prereqConflictEl = document.getElementById('roadmap-prereq-conflicts');
     if (prereqConflictEl) {

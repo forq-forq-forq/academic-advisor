@@ -80,4 +80,23 @@ class RoadmapServiceTest {
         assertThat(afterRemove.semesters().get(3).courses())
                 .noneMatch(c -> "INF317".equals(c.code()));
     }
+
+    @Test
+    @DisplayName("US-20: applyPacingStrategy supports BALANCED and FAST_TRACK with zero prerequisite violations and lighter 4th year in FAST_TRACK")
+    void applyPacingStrategy_shouldRearrangeSemestersWithLighterFourthYearInFastTrack() {
+        RoadmapBoardDto balanced = roadmapService.applyPacingStrategy("240103000", "BALANCED");
+        int balancedYear4Credits = balanced.semesters().get(6).totalCredits()
+                + balanced.semesters().get(7).totalCredits();
+
+        assertThat(balanced.activePacingStrategy()).isEqualTo("BALANCED");
+        assertThat(balanced.prerequisiteConflictCount()).isZero();
+
+        RoadmapBoardDto fastTrack = roadmapService.applyPacingStrategy("240103000", "FAST_TRACK");
+        int fastTrackYear4Credits = fastTrack.semesters().get(6).totalCredits()
+                + fastTrack.semesters().get(7).totalCredits();
+
+        assertThat(fastTrack.activePacingStrategy()).isEqualTo("FAST_TRACK");
+        assertThat(fastTrack.prerequisiteConflictCount()).isZero();
+        assertThat(fastTrackYear4Credits).isLessThan(balancedYear4Credits);
+    }
 }
