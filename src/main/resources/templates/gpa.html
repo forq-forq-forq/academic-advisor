@@ -55,6 +55,44 @@
 
         <div id="gpa-error-alert" class="gpa-error-alert" style="display: none;" role="alert"></div>
 
+        <!-- Risk Warning Banners (US-26) -->
+        <div id="gpa-probation-warning"
+             class="gpa-risk-banner risk-danger"
+             th:style="${simulation.academicProbationRisk ? 'display: flex;' : 'display: none;'}"
+             role="alert">
+            <span class="risk-icon">🚨</span>
+            <div>
+                <strong>Academic Probation Warning</strong>
+                <p id="gpa-probation-msg" th:text="${simulation.probationWarningMessage}">
+                    Projected cumulative GPA drops below 2.00.
+                </p>
+            </div>
+        </div>
+
+        <div id="gpa-scholarship-warning"
+             class="gpa-risk-banner risk-warning"
+             th:style="${simulation.belowScholarshipThreshold ? 'display: flex;' : 'display: none;'}"
+             role="alert">
+            <span class="risk-icon">⚠️</span>
+            <div>
+                <strong>Scholarship Retention Warning</strong>
+                <p id="gpa-scholarship-msg" th:text="${simulation.scholarshipWarningMessage}">
+                    Projected cumulative GPA drops below 3.00.
+                </p>
+            </div>
+        </div>
+
+        <div id="gpa-safe-banner"
+             class="gpa-risk-banner risk-safe"
+             th:style="${simulation.riskLevel == 'SAFE' ? 'display: flex;' : 'display: none;'}"
+             role="status">
+            <span class="risk-icon">✅</span>
+            <div>
+                <strong>On Track for Scholarship &amp; Good Standing</strong>
+                <p>Projected cumulative GPA meets the ≥ 3.00 threshold with no failing grades.</p>
+            </div>
+        </div>
+
         <div class="gpa-kpi-grid">
             <div class="kpi-card">
                 <span class="kpi-label">Current Cumulative GPA</span>
