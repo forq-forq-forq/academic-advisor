@@ -119,6 +119,12 @@
                         title="Copy course codes to clipboard">
                     📋 Copy Codes
                 </button>
+                <a th:href="@{/planner/export/pdf(scope='all')}"
+                   id="btn-export-pdf"
+                   class="btn-copy-codes btn-export-pdf"
+                   title="Export semester plan and 4-year roadmap as PDF">
+                    📄 Export PDF
+                </a>
                 <div class="credit-counter" id="credit-counter" th:classappend="${cart.exceedsLimit ? 'limit-exceeded' : ''}">
                     <span id="current-credits" th:text="${cart.totalCredits}">0</span> /
                     <span id="max-credits" th:text="${cart.maxCredits}">40</span> ECTS
@@ -330,6 +336,12 @@
                           th:text="${roadmap.seasonConflictCount > 0 ? ('⚠️ ' + roadmap.seasonConflictCount + ' Season Mismatch(es)') : '✓ Seasons Compatible'}">
                         ✓ Seasons Compatible
                     </span>
+                    <a th:href="@{/planner/export/pdf(scope='roadmap')}"
+                       id="btn-export-roadmap-pdf"
+                       class="btn-copy-codes btn-export-pdf"
+                       title="Download 4-year roadmap as PDF">
+                        📄 Export Roadmap PDF
+                    </a>
                 </div>
             </div>
 

@@ -19,11 +19,14 @@ import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
 import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import kz.edu.sdu.advisor.service.CartService;
 import kz.edu.sdu.advisor.service.PlanDraftService;
+import kz.edu.sdu.advisor.service.PlanPdfExportService;
 import kz.edu.sdu.advisor.service.RoadmapService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -51,6 +54,7 @@ public class PlannerController {
     private final CartService cartService;
     private final RoadmapService roadmapService;
     private final PlanDraftService planDraftService;
+    private final PlanPdfExportService planPdfExportService;
 
     @GetMapping("/planner")
     public String showPlanner(HttpSession session, Model model) {
@@ -92,6 +96,26 @@ public class PlannerController {
                     .body(Map.of("error", "Session expired. Please log in again."));
         }
         return ResponseEntity.ok(roadmapService.getRoadmap(studentId));
+    }
+
+    @GetMapping(value = "/planner/export/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> exportPlanPdf(
+            @RequestParam(value = "scope", defaultValue = "all") String scope,
+            HttpSession session) {
+        Student student = authSessionHelper.resolveAuthenticatedStudent(session).orElse(null);
+        if (student == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String studentId = student.getStudentId();
+        CartDto cart = cartService.getCart(studentId);
+        RoadmapBoardDto roadmap = roadmapService.getRoadmap(studentId);
+        byte[] pdfBytes = planPdfExportService.generatePlanPdf(student, cart, roadmap, scope);
+        String safeId = studentId.replaceAll("[^a-zA-Z0-9_-]", "");
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"academic-plan-" + safeId + ".pdf\"")
+                .body(pdfBytes);
     }
 
     @PostMapping("/planner/roadmap/move")

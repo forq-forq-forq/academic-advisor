@@ -1520,3 +1520,8 @@ main.drawer-collapsed {
     gap: 0.35rem;
     flex-shrink: 0;
 }
+
+/* ── PDF Export Link Button (US-23) ── */
+.btn-export-pdf {
+    text-decoration: none;
+}
