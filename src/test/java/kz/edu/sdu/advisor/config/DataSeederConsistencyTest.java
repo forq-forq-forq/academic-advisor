@@ -7,6 +7,7 @@ import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.repository.CurriculumCourseRepository;
 import kz.edu.sdu.advisor.repository.FacultyRepository;
 import kz.edu.sdu.advisor.repository.MajorRepository;
+import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
 import kz.edu.sdu.advisor.repository.StudentRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,12 @@ class DataSeederConsistencyTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private DataSeeder dataSeeder;
+
+    @Autowired
+    private PrerequisiteRepository prerequisiteRepository;
 
     @Test
     @Transactional
@@ -92,5 +99,17 @@ class DataSeederConsistencyTest {
         assertThat(curriculum).anyMatch(c -> c.getSemester() == 3 && c.getCourse().getCode().equals("CSS215"));
         assertThat(curriculum.stream().map(CurriculumCourse::getSemester).distinct().sorted().toList())
                 .containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
+    }
+
+    @Test
+    @Transactional
+    void dataSeederRun_isIdempotentAcrossRepeatedRestarts() {
+        long initialPrereqCount = prerequisiteRepository.count();
+        assertThat(initialPrereqCount).isPositive();
+
+        dataSeeder.run();
+        dataSeeder.run();
+
+        assertThat(prerequisiteRepository.count()).isEqualTo(initialPrereqCount);
     }
 }

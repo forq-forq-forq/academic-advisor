@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -366,54 +368,96 @@ public class DataSeeder implements CommandLineRunner {
      * in the Handbook have no prerequisite restrictions.
      */
     private void seedPrerequisites(Map<String, Course> courses) {
-        prerequisiteRepository.deleteAll();
+        List<Course[]> desiredRules = List.of(
+                // p. 48: MDE 191 Foreign Languages 2 -> MDE 190 Foreign Languages 1
+                new Course[]{courses.get("MDE191"), courses.get("MDE190")},
 
-        // p. 48: MDE 191 Foreign Languages 2 -> MDE 190 Foreign Languages 1
-        addPrereq(courses.get("MDE191"), courses.get("MDE190"));
+                // p. 74: INF 108 Object-Oriented Programming and Educational Practice -> CSS 105 Fundamentals of Programming
+                new Course[]{courses.get("INF108"), courses.get("CSS105")},
 
-        // p. 74: INF 108 Object-Oriented Programming and Educational Practice -> CSS 105 Fundamentals of Programming
-        addPrereq(courses.get("INF108"), courses.get("CSS105"));
+                // p. 77: CSS 215 Introduction to Algorithms -> CSS 105, INF 108
+                new Course[]{courses.get("CSS215"), courses.get("CSS105")},
+                new Course[]{courses.get("CSS215"), courses.get("INF108")},
 
-        // p. 77: CSS 215 Introduction to Algorithms -> CSS 105, INF 108
-        addPrereq(courses.get("CSS215"), courses.get("CSS105"));
-        addPrereq(courses.get("CSS215"), courses.get("INF108"));
+                // p. 80: CSS 319 / INF 319 Advanced Algorithms -> CSS 105, INF 108, CSS 215
+                new Course[]{courses.get("INF319"), courses.get("CSS105")},
+                new Course[]{courses.get("INF319"), courses.get("INF108")},
+                new Course[]{courses.get("INF319"), courses.get("CSS215")},
 
-        // p. 80: CSS 319 / INF 319 Advanced Algorithms -> CSS 105, INF 108, CSS 215
-        addPrereq(courses.get("INF319"), courses.get("CSS105"));
-        addPrereq(courses.get("INF319"), courses.get("INF108"));
-        addPrereq(courses.get("INF319"), courses.get("CSS215"));
+                // p. 83: CSS 217 Software Architecture and Design Patterns -> CSS 215 Introduction to Algorithms
+                new Course[]{courses.get("CSS217"), courses.get("CSS215")},
 
-        // p. 83: CSS 217 Software Architecture and Design Patterns -> CSS 215 Introduction to Algorithms
-        addPrereq(courses.get("CSS217"), courses.get("CSS215"));
+                // p. 89: INF 316 Web Front-End Development -> INF 995 Fundamentals of Web Development
+                new Course[]{courses.get("INF316"), courses.get("INF995")},
 
-        // p. 89: INF 316 Web Front-End Development -> INF 995 Fundamentals of Web Development
-        addPrereq(courses.get("INF316"), courses.get("INF995"));
+                // p. 92: INF 373 Web Back-End Development -> INF 995 Fundamentals of Web Development
+                new Course[]{courses.get("INF373"), courses.get("INF995")},
 
-        // p. 92: INF 373 Web Back-End Development -> INF 995 Fundamentals of Web Development
-        addPrereq(courses.get("INF373"), courses.get("INF995"));
+                // p. 98: INF 234 Mobile Application Development 2 -> CSS 216 Mobile Programming
+                new Course[]{courses.get("INF234"), courses.get("CSS216")},
 
-        // p. 98: INF 234 Mobile Application Development 2 -> CSS 216 Mobile Programming
-        addPrereq(courses.get("INF234"), courses.get("CSS216"));
+                // p. 213: INF 429 IT Audit and Controls -> INF 381 Project Management in IT Business, INF 114 Fundamentals of IS
+                new Course[]{courses.get("INF429"), courses.get("INF381")},
+                new Course[]{courses.get("INF429"), courses.get("INF114")},
 
-        // p. 213: INF 429 IT Audit and Controls -> INF 381 Project Management in IT Business, INF 114 Fundamentals of IS
-        addPrereq(courses.get("INF429"), courses.get("INF381"));
-        addPrereq(courses.get("INF429"), courses.get("INF114"));
+                // p. 215: INF 412 IT Asset Management -> INF 381, INF 114
+                new Course[]{courses.get("INF412"), courses.get("INF381")},
+                new Course[]{courses.get("INF412"), courses.get("INF114")},
 
-        // p. 215: INF 412 IT Asset Management -> INF 381, INF 114
-        addPrereq(courses.get("INF412"), courses.get("INF381"));
-        addPrereq(courses.get("INF412"), courses.get("INF114"));
+                // p. 217: INF 414 IT Governance, Risk and Compliance -> INF 381, INF 114
+                new Course[]{courses.get("INF414"), courses.get("INF381")},
+                new Course[]{courses.get("INF414"), courses.get("INF114")}
+        );
 
-        // p. 217: INF 414 IT Governance, Risk and Compliance -> INF 381, INF 114
-        addPrereq(courses.get("INF414"), courses.get("INF381"));
-        addPrereq(courses.get("INF414"), courses.get("INF114"));
+        Set<String> desiredKeys = new HashSet<>();
+        for (Course[] rule : desiredRules) {
+            if (rule[0] != null && rule[1] != null) {
+                desiredKeys.add(rule[0].getId() + ":" + rule[1].getId());
+            }
+        }
+
+        List<Prerequisite> existing = prerequisiteRepository.findAllWithCourses();
+        Set<String> existingKeys = new HashSet<>();
+        List<Prerequisite> obsolete = new ArrayList<>();
+        for (Prerequisite prereq : existing) {
+            if (prereq.getCourse() != null && prereq.getPrerequisiteCourse() != null) {
+                String key = prereq.getCourse().getId() + ":" + prereq.getPrerequisiteCourse().getId();
+                if (desiredKeys.contains(key)) {
+                    existingKeys.add(key);
+                } else {
+                    obsolete.add(prereq);
+                }
+            } else {
+                obsolete.add(prereq);
+            }
+        }
+
+        if (!obsolete.isEmpty()) {
+            prerequisiteRepository.deleteAll(obsolete);
+            prerequisiteRepository.flush();
+        }
+
+        for (Course[] rule : desiredRules) {
+            Course target = rule[0];
+            Course required = rule[1];
+            if (target != null && required != null) {
+                String key = target.getId() + ":" + required.getId();
+                if (!existingKeys.contains(key)) {
+                    addPrereq(target, required);
+                    existingKeys.add(key);
+                }
+            }
+        }
     }
 
     private void addPrereq(Course target, Course required) {
-        if (target != null && required != null) {
+        if (target != null
+                && required != null
+                && !prerequisiteRepository.existsByCourse_IdAndPrerequisiteCourse_Id(target.getId(), required.getId())) {
             Prerequisite prereq = new Prerequisite();
             prereq.setCourse(target);
             prereq.setPrerequisiteCourse(required);
-            prerequisiteRepository.save(prereq);
+            prerequisiteRepository.saveAndFlush(prereq);
         }
     }
 
