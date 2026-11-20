@@ -556,6 +556,52 @@ main.drawer-collapsed {
     text-transform: uppercase;
 }
 
+.catalog-subfilters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.subfilter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.subfilter-group label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.catalog-select {
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    background: #ffffff;
+    font-size: 0.78rem;
+    color: #334155;
+}
+
+.badge-season {
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+}
+
+.badge-difficulty {
+    background: #f3e8ff;
+    color: #6b21a8;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+}
+
 .badge-completed {
     background: #dcfce7;
     color: #166534;

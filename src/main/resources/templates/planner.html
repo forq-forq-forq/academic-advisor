@@ -264,8 +264,30 @@
                 <button type="button" class="filter-chip active" data-filter="ALL" onclick="setCatalogFilter('ALL', this)">All</button>
                 <button type="button" class="filter-chip" data-filter="READY" onclick="setCatalogFilter('READY', this)">Prereqs Met</button>
                 <button type="button" class="filter-chip" data-filter="CORE" onclick="setCatalogFilter('CORE', this)">Core</button>
-                <button type="button" class="filter-chip" data-filter="ELECTIVE" onclick="setCatalogFilter('ELECTIVE', this)">Elective</button>
+                <button type="button" class="filter-chip" data-filter="ELECTIVE" onclick="setCatalogFilter('ELECTIVE', this)">Area Elective</button>
+                <button type="button" class="filter-chip" data-filter="GENERAL" onclick="setCatalogFilter('GENERAL', this)">General</button>
                 <button type="button" class="filter-chip" data-filter="UNCOMPLETED" onclick="setCatalogFilter('UNCOMPLETED', this)">Hide Completed</button>
+            </div>
+            <div class="catalog-subfilters">
+                <div class="subfilter-group">
+                    <label for="catalog-season-filter">Season</label>
+                    <select id="catalog-season-filter" class="catalog-select" onchange="filterCatalog()">
+                        <option value="ALL">All Seasons</option>
+                        <option value="FALL">Fall</option>
+                        <option value="SPRING">Spring</option>
+                    </select>
+                </div>
+                <div class="subfilter-group">
+                    <label for="catalog-difficulty-filter">Difficulty</label>
+                    <select id="catalog-difficulty-filter" class="catalog-select" onchange="filterCatalog()">
+                        <option value="ALL">All Levels</option>
+                        <option value="1">1 / 5 (Very Light)</option>
+                        <option value="2">2 / 5 (Light)</option>
+                        <option value="3">3 / 5 (Moderate)</option>
+                        <option value="4">4 / 5 (Challenging)</option>
+                        <option value="5">5 / 5 (Intensive)</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -277,12 +299,16 @@
             <li class="catalog-item"
                 th:each="course : ${availableCourses}"
                 th:id="'catalog-item-' + ${course.id}"
-                th:attr="data-course-id=${course.id},data-course-code=${course.code},data-course-name=${course.name},data-course-type=${course.courseType},data-completed=${course.completed},data-enrolled=${course.enrolled},data-prereqs-met=${course.prerequisitesMet},data-has-prereqs=${course.hasPrerequisites},data-prereqs=${#strings.listJoin(course.prerequisiteCodes, ',')}">
+                th:attr="data-course-id=${course.id},data-course-code=${course.code},data-course-name=${course.name},data-course-type=${course.courseType},data-course-category=${course.category},data-course-season=${course.season},data-course-difficulty=${course.difficulty},data-completed=${course.completed},data-enrolled=${course.enrolled},data-prereqs-met=${course.prerequisitesMet},data-has-prereqs=${course.hasPrerequisites},data-prereqs=${#strings.listJoin(course.prerequisiteCodes, ',')}">
                 <div class="item-info">
                     <div class="item-code-credits">
                         <span class="course-code" th:text="${course.code}">MATH101</span>
                         <span class="credit-tag" th:text="${course.credits + ' ECTS'}">4 ECTS</span>
-                        <span class="badge-type" th:text="${course.courseType}">CORE</span>
+                        <span class="badge-type" th:text="${course.category}">CORE</span>
+                        <span class="badge-season"
+                              th:text="${course.season == 'FALL' ? 'Fall' : (course.season == 'SPRING' ? 'Spring' : 'Fall/Spring')}">Fall</span>
+                        <span class="badge-difficulty"
+                              th:text="${'Diff ' + course.difficulty + '/5'}">Diff 3/5</span>
                         <span th:if="${course.completed}" class="badge-completed">Completed ✓</span>
                         <span th:if="${course.enrolled}" class="badge-enrolled">Enrolled 📚</span>
                         <span th:if="${course.hasPrerequisites and course.prerequisitesMet}"

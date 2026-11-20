@@ -511,6 +511,10 @@ function clearCatalogSearch() {
         searchInput.value = '';
         searchInput.focus();
     }
+    const seasonSelect = document.getElementById('catalog-season-filter');
+    if (seasonSelect) seasonSelect.value = 'ALL';
+    const difficultySelect = document.getElementById('catalog-difficulty-filter');
+    if (difficultySelect) difficultySelect.value = 'ALL';
     filterCatalog();
 }
 
@@ -526,7 +530,11 @@ function filterCatalog() {
     const clearBtn = document.getElementById('btn-clear-catalog-search');
     const countEl = document.getElementById('catalog-match-count');
     const emptyState = document.getElementById('catalog-empty-state');
+    const seasonSelect = document.getElementById('catalog-season-filter');
+    const difficultySelect = document.getElementById('catalog-difficulty-filter');
     const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    const selectedSeason = seasonSelect ? seasonSelect.value.toUpperCase() : 'ALL';
+    const selectedDifficulty = difficultySelect ? difficultySelect.value : 'ALL';
 
     if (clearBtn) {
         clearBtn.style.display = query ? 'inline-flex' : 'none';
@@ -537,6 +545,9 @@ function filterCatalog() {
         const code = (item.getAttribute('data-course-code') || '').toLowerCase();
         const name = (item.getAttribute('data-course-name') || '').toLowerCase();
         const type = (item.getAttribute('data-course-type') || '').toUpperCase();
+        const category = (item.getAttribute('data-course-category') || type).toUpperCase();
+        const season = (item.getAttribute('data-course-season') || 'BOTH').toUpperCase();
+        const difficulty = String(item.getAttribute('data-course-difficulty') || '');
         const completed = item.getAttribute('data-completed') === 'true';
         const prereqsMet = item.getAttribute('data-prereqs-met') === 'true';
 
@@ -545,13 +556,18 @@ function filterCatalog() {
         if (activeCatalogFilter === 'READY') {
             matchesFilter = prereqsMet && !completed;
         } else if (activeCatalogFilter === 'CORE') {
-            matchesFilter = type === 'CORE';
+            matchesFilter = category === 'CORE';
         } else if (activeCatalogFilter === 'ELECTIVE') {
-            matchesFilter = type === 'ELECTIVE';
+            matchesFilter = category === 'ELECTIVE';
+        } else if (activeCatalogFilter === 'GENERAL') {
+            matchesFilter = category === 'GENERAL';
         } else if (activeCatalogFilter === 'UNCOMPLETED') {
             matchesFilter = !completed;
         }
-        const isVisible = matchesQuery && matchesFilter;
+        const matchesSeason = selectedSeason === 'ALL' || season === 'BOTH' || season === selectedSeason;
+        const matchesDifficulty = selectedDifficulty === 'ALL' || difficulty === selectedDifficulty;
+
+        const isVisible = matchesQuery && matchesFilter && matchesSeason && matchesDifficulty;
         item.style.display = isVisible ? 'flex' : 'none';
         if (isVisible) visibleCount++;
     });

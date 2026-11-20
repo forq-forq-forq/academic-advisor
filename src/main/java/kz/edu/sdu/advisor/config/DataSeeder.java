@@ -323,6 +323,7 @@ public class DataSeeder implements CommandLineRunner {
         );
 
         for (CourseSeed seed : catalog) {
+            String expectedSeason = seed.semester() % 2 == 1 ? "FALL" : "SPRING";
             Course course = courseRepository.findByCode(seed.code()).orElseGet(() -> {
                 Course c = new Course();
                 c.setCode(seed.code());
@@ -330,6 +331,7 @@ public class DataSeeder implements CommandLineRunner {
                 c.setCredits(seed.credits());
                 c.setDifficulty(seed.difficulty());
                 c.setDescription(seed.description());
+                c.setSeason(expectedSeason);
                 return courseRepository.save(c);
             });
             boolean updated = false;
@@ -339,6 +341,10 @@ public class DataSeeder implements CommandLineRunner {
             }
             if (course.getDescription() == null) {
                 course.setDescription(seed.description());
+                updated = true;
+            }
+            if (course.getSeason() == null || "BOTH".equalsIgnoreCase(course.getSeason())) {
+                course.setSeason(expectedSeason);
                 updated = true;
             }
             if (updated) {

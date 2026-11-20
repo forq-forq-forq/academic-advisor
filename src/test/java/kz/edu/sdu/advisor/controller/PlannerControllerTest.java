@@ -316,4 +316,46 @@ class PlannerControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error", containsString("Session expired")));
     }
+
+    @Test
+    @DisplayName("US-16: GET /planner renders type/season/difficulty filters and GET /planner/catalog filters by type, season, and difficulty")
+    void catalogFilters_shouldFilterByTypeSeasonAndDifficulty() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-filter=\"GENERAL\"")))
+                .andExpect(content().string(containsString("id=\"catalog-season-filter\"")))
+                .andExpect(content().string(containsString("id=\"catalog-difficulty-filter\"")));
+
+        mockMvc.perform(get("/planner/catalog")
+                        .session(session)
+                        .param("type", "CORE")
+                        .param("season", "SPRING")
+                        .param("difficulty", "4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].code", hasItem("CSS217")))
+                .andExpect(jsonPath("$[*].category", everyItem(is("CORE"))))
+                .andExpect(jsonPath("$[*].season", everyItem(is("SPRING"))))
+                .andExpect(jsonPath("$[*].difficulty", everyItem(is(4))));
+
+        mockMvc.perform(get("/planner/catalog")
+                        .session(session)
+                        .param("type", "GENERAL")
+                        .param("season", "FALL"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].code", hasItem("MDE171")))
+                .andExpect(jsonPath("$[*].category", everyItem(is("GENERAL"))))
+                .andExpect(jsonPath("$[*].season", everyItem(is("FALL"))));
+
+        mockMvc.perform(get("/planner/catalog")
+                        .session(session)
+                        .param("type", "ELECTIVE")
+                        .param("difficulty", "4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].code", hasItem("INF345")))
+                .andExpect(jsonPath("$[*].category", everyItem(is("ELECTIVE"))))
+                .andExpect(jsonPath("$[*].difficulty", everyItem(is(4))));
+    }
 }

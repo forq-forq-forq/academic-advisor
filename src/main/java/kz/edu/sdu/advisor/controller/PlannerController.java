@@ -73,6 +73,9 @@ public class PlannerController {
     @ResponseBody
     public ResponseEntity<?> searchCatalog(
             @RequestParam(value = "q", required = false) String query,
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "season", required = false) String season,
+            @RequestParam(value = "difficulty", required = false) Integer difficulty,
             HttpSession session) {
         Student student = authSessionHelper.resolveAuthenticatedStudent(session).orElse(null);
         if (student == null) {
@@ -82,11 +85,34 @@ public class PlannerController {
 
         CartDto cart = cartService.getCart(student.getStudentId());
         List<AvailableCourseDto> courses = buildAvailableCourses(student, cart);
+
         if (query != null && !query.isBlank()) {
             String normalized = query.trim().toLowerCase(Locale.ROOT);
             courses = courses.stream()
                     .filter(c -> (c.code() != null && c.code().toLowerCase(Locale.ROOT).contains(normalized))
                             || (c.name() != null && c.name().toLowerCase(Locale.ROOT).contains(normalized)))
+                    .toList();
+        }
+        if (type != null && !type.isBlank() && !"ALL".equalsIgnoreCase(type.trim())) {
+            String filterType = type.trim().toUpperCase(Locale.ROOT);
+            courses = courses.stream()
+                    .filter(c -> switch (filterType) {
+                        case "CORE", "ELECTIVE", "GENERAL" -> filterType.equalsIgnoreCase(c.category());
+                        case "READY" -> c.prerequisitesMet() && !c.completed();
+                        case "UNCOMPLETED" -> !c.completed();
+                        default -> true;
+                    })
+                    .toList();
+        }
+        if (season != null && !season.isBlank() && !"ALL".equalsIgnoreCase(season.trim())) {
+            String targetSeason = season.trim().toUpperCase(Locale.ROOT);
+            courses = courses.stream()
+                    .filter(c -> "BOTH".equalsIgnoreCase(c.season()) || targetSeason.equalsIgnoreCase(c.season()))
+                    .toList();
+        }
+        if (difficulty != null) {
+            courses = courses.stream()
+                    .filter(c -> c.difficulty() != null && c.difficulty().equals(difficulty))
                     .toList();
         }
         return ResponseEntity.ok(courses);
@@ -148,6 +174,10 @@ public class PlannerController {
                             .collect(Collectors.joining(", "));
                     CurriculumCourse cc = curriculumByCourseId.get(c.getId());
                     String courseType = cc != null && cc.getCourseType() != null ? cc.getCourseType() : "ELECTIVE";
+                    String category = resolveCourseCategory(c.getCode(), courseType);
+                    String season = c.getSeason() != null && !c.getSeason().isBlank()
+                            ? c.getSeason().toUpperCase(Locale.ROOT)
+                            : "BOTH";
                     Integer recommendedSemester = cc != null ? cc.getSemester() : null;
 
                     return new AvailableCourseDto(
@@ -158,6 +188,8 @@ public class PlannerController {
                             c.getDifficulty() != null ? c.getDifficulty() : 3,
                             c.getDescription(),
                             courseType,
+                            category,
+                            season,
                             recommendedSemester,
                             completedIds.contains(c.getId()),
                             enrolledIds.contains(c.getId()),
@@ -170,6 +202,19 @@ public class PlannerController {
                     );
                 })
                 .toList();
+    }
+
+    private String resolveCourseCategory(String code, String courseType) {
+        if ("GENERAL".equalsIgnoreCase(courseType)) {
+            return "GENERAL";
+        }
+        if (code != null && code.toUpperCase(Locale.ROOT).startsWith("MDE")) {
+            return "GENERAL";
+        }
+        if ("CORE".equalsIgnoreCase(courseType)) {
+            return "CORE";
+        }
+        return "ELECTIVE";
     }
 
     @PostMapping("/planner/cart/add")
