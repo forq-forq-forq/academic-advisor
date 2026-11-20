@@ -27,6 +27,7 @@ If any other document conflicts with this file, this file takes precedence.
 | Slide-Out Course Catalog Drawer (US-15) | `#catalog-drawer`, `#btn-toggle-catalog-drawer`, `GET /planner/catalog`, live code/name search | Implemented (`docs/US-15.md`) |
 | Catalog Multi-Facet Filters (US-16) | `Course.season` (`V8`), `AvailableCourseDto.category`/`season`, `type`/`season`/`difficulty` filters in UI and `GET /planner/catalog` | Implemented (`docs/US-16.md`) |
 | Course Detail Card (US-17) | `CourseDetailDto`, `GET /planner/courses/{courseId}`, `#course-detail-modal` with description, difficulty bar, prerequisite chain, and unlocked courses | Implemented (`docs/US-17.md`) |
+| 8-Semester Roadmap View (US-18) | `RoadmapItem` (`V9`), `RoadmapService`, `GET /planner/roadmap`, `#roadmap-board-section` with `#roadmap-semester-1..8` | Implemented (`docs/US-18.md`) |
 | Academic Standing & Progress (US-07) | `AcademicStandingDto`, `DashboardController` (`/dashboard`), SVG circular progress ring (`27 / 240 ECTS`), GPA badge & program summary | Implemented |
 | Enrolled Courses List (US-08) | `EnrolledCourseDto`, `Student.enrolledCourses`, `DashboardController` (`/dashboard`), semester course list with ECTS credit weights | Implemented |
 | Completed Course History (US-29) | `CourseCompletion` entity over `student_courses`, `CompletedCourseDto`, dashboard & profile tables | Implemented |

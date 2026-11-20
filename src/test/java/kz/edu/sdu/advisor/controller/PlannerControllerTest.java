@@ -388,4 +388,26 @@ class PlannerControllerTest {
                 .andExpect(jsonPath("$.code", is("CSS215")))
                 .andExpect(jsonPath("$.unlocksCourseCodes", hasItems("CSS217", "INF319")));
     }
+
+    @Test
+    @DisplayName("US-18: GET /planner renders 8-semester roadmap board and GET /planner/roadmap returns all 8 semesters")
+    void roadmapViewAndEndpoint_shouldReturnAllEightSemesters() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("roadmap"))
+                .andExpect(content().string(containsString("id=\"roadmap-board-section\"")))
+                .andExpect(content().string(containsString("id=\"roadmap-semester-1\"")))
+                .andExpect(content().string(containsString("id=\"roadmap-semester-8\"")))
+                .andExpect(content().string(containsString("roadmap-course-card")));
+
+        mockMvc.perform(get("/planner/roadmap").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.semesters", hasSize(8)))
+                .andExpect(jsonPath("$.semesters[0].semester", is(1)))
+                .andExpect(jsonPath("$.semesters[7].semester", is(8)))
+                .andExpect(jsonPath("$.totalCourses", greaterThanOrEqualTo(20)));
+    }
 }
