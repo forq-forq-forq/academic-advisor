@@ -480,6 +480,40 @@ function returnEnrolledToCart() {
 
 let activeCatalogFilter = 'ALL';
 
+function toggleCatalogDrawer(forceOpen) {
+    const drawer = document.getElementById('catalog-drawer');
+    const main = document.getElementById('planner-main');
+    const toggleBtn = document.getElementById('btn-toggle-catalog-drawer');
+    if (!drawer) return;
+
+    const currentlyOpen = drawer.classList.contains('open') && !drawer.classList.contains('collapsed');
+    const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !currentlyOpen;
+
+    drawer.classList.toggle('open', shouldOpen);
+    drawer.classList.toggle('collapsed', !shouldOpen);
+    if (main) {
+        main.classList.toggle('drawer-collapsed', !shouldOpen);
+    }
+    if (toggleBtn) {
+        toggleBtn.setAttribute('aria-expanded', String(shouldOpen));
+        toggleBtn.classList.toggle('active', shouldOpen);
+        toggleBtn.textContent = shouldOpen ? '≡ Hide Catalog' : '≡ Open Catalog';
+    }
+    if (shouldOpen) {
+        const searchInput = document.getElementById('catalog-search');
+        if (searchInput) searchInput.focus();
+    }
+}
+
+function clearCatalogSearch() {
+    const searchInput = document.getElementById('catalog-search');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    filterCatalog();
+}
+
 function setCatalogFilter(filter, btn) {
     activeCatalogFilter = filter;
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -489,7 +523,16 @@ function setCatalogFilter(filter, btn) {
 
 function filterCatalog() {
     const searchInput = document.getElementById('catalog-search');
+    const clearBtn = document.getElementById('btn-clear-catalog-search');
+    const countEl = document.getElementById('catalog-match-count');
+    const emptyState = document.getElementById('catalog-empty-state');
     const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    if (clearBtn) {
+        clearBtn.style.display = query ? 'inline-flex' : 'none';
+    }
+
+    let visibleCount = 0;
     document.querySelectorAll('.catalog-item').forEach(item => {
         const code = (item.getAttribute('data-course-code') || '').toLowerCase();
         const name = (item.getAttribute('data-course-name') || '').toLowerCase();
@@ -508,8 +551,17 @@ function filterCatalog() {
         } else if (activeCatalogFilter === 'UNCOMPLETED') {
             matchesFilter = !completed;
         }
-        item.style.display = (matchesQuery && matchesFilter) ? 'flex' : 'none';
+        const isVisible = matchesQuery && matchesFilter;
+        item.style.display = isVisible ? 'flex' : 'none';
+        if (isVisible) visibleCount++;
     });
+
+    if (countEl) {
+        countEl.textContent = visibleCount + (visibleCount === 1 ? ' course' : ' courses');
+    }
+    if (emptyState) {
+        emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
 }
 
 function escapeHtml(str) {
