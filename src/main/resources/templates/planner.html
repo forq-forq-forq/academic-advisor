@@ -272,6 +272,12 @@
                           th:text="${roadmap.overloadedSemesterCount > 0 ? ('⚠️ ' + roadmap.overloadedSemesterCount + ' Overloaded Semester(s)') : '✓ Load ≤ 30 ECTS'}">
                         ✓ Load ≤ 30 ECTS
                     </span>
+                    <span id="roadmap-season-conflicts"
+                          class="validation-pill"
+                          th:classappend="${roadmap.seasonConflictCount > 0 ? 'pill-warn' : 'pill-ok'}"
+                          th:text="${roadmap.seasonConflictCount > 0 ? ('⚠️ ' + roadmap.seasonConflictCount + ' Season Mismatch(es)') : '✓ Seasons Compatible'}">
+                        ✓ Seasons Compatible
+                    </span>
                 </div>
             </div>
 
@@ -317,10 +323,10 @@
                         <div class="roadmap-course-card"
                              th:each="card : ${sem.courses}"
                              th:id="'roadmap-card-' + ${card.courseId}"
-                             th:classappend="${card.prerequisiteViolation ? 'card-prereq-violation' : ''}"
+                             th:classappend="${(card.prerequisiteViolation ? 'card-prereq-violation ' : '') + (card.seasonMismatch ? 'card-season-mismatch' : '')}"
                              draggable="true"
                              ondragstart="handleRoadmapDragStart(event)"
-                             th:attr="data-course-id=${card.courseId},data-semester=${sem.semester}">
+                             th:attr="data-course-id=${card.courseId},data-semester=${sem.semester},data-season-mismatch=${card.seasonMismatch}">
                             <div class="roadmap-card-top">
                                 <span class="course-code" th:text="${card.code}">CSS105</span>
                                 <span class="credit-tag" th:text="${card.credits + ' ECTS'}">5 ECTS</span>
@@ -328,12 +334,17 @@
                             <div class="roadmap-card-name" th:text="${card.name}">Fundamentals of Programming</div>
                             <div class="roadmap-card-badges">
                                 <span class="badge-type" th:text="${card.category}">CORE</span>
+                                <span class="badge-season"
+                                      th:text="${card.season == 'FALL' ? 'Fall Only' : (card.season == 'SPRING' ? 'Spring Only' : 'Fall/Spring')}">Fall Only</span>
                                 <span class="roadmap-status-badge"
                                       th:classappend="'status-' + ${#strings.toLowerCase(card.status)}"
                                       th:text="${card.status}">PLANNED</span>
                             </div>
                             <div th:if="${card.prerequisiteViolation}" class="badge-roadmap-violation">
                                 ⚠️ Missing/out-of-order prereq: <span th:text="${#strings.listJoin(card.violatedPrerequisites, ', ')}"></span>
+                            </div>
+                            <div th:if="${card.seasonMismatch}" class="badge-season-conflict" th:text="${'🗓️ ' + card.seasonWarning}">
+                                🗓️ Season mismatch
                             </div>
                             <div class="roadmap-card-actions">
                                 <button type="button"

@@ -1470,3 +1470,19 @@ main.drawer-collapsed {
     font-size: 0.8rem;
     color: #475569;
 }
+
+/* ── Season Availability Flagging (US-21) ── */
+.roadmap-course-card.card-season-mismatch {
+    border: 2px solid #f59e0b;
+    background: #fffbeb;
+}
+
+.badge-season-conflict {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}

@@ -881,6 +881,13 @@ function renderRoadmapBoard(board) {
         overloadEl.textContent = ov > 0 ? (`⚠️ ${ov} Overloaded Semester(s)`) : '✓ Load ≤ 30 ECTS';
     }
 
+    const seasonConflictEl = document.getElementById('roadmap-season-conflicts');
+    if (seasonConflictEl) {
+        const sc = board.seasonConflictCount || 0;
+        seasonConflictEl.className = 'validation-pill ' + (sc > 0 ? 'pill-warn' : 'pill-ok');
+        seasonConflictEl.textContent = sc > 0 ? (`⚠️ ${sc} Season Mismatch(es)`) : '✓ Seasons Compatible';
+    }
+
     const grid = document.getElementById('roadmap-grid');
     if (!grid) return;
 
@@ -900,6 +907,10 @@ function renderRoadmapBoard(board) {
                 const violationHtml = card.prerequisiteViolation
                     ? `<div class="badge-roadmap-violation">⚠️ Missing/out-of-order prereq: ${escapeHtml((card.violatedPrerequisites || []).join(', '))}</div>`
                     : '';
+                const seasonWarningHtml = card.seasonMismatch
+                    ? `<div class="badge-season-conflict">🗓️ ${escapeHtml(card.seasonWarning || 'Season mismatch')}</div>`
+                    : '';
+                const seasonLabel = card.season === 'FALL' ? 'Fall Only' : (card.season === 'SPRING' ? 'Spring Only' : 'Fall/Spring');
                 const moveControlsHtml = card.status !== 'COMPLETED'
                     ? `<div class="roadmap-card-move-controls">
                            <select class="roadmap-move-select" aria-label="Move course to semester" data-course-id="${card.courseId}" onchange="moveRoadmapCourse(this.getAttribute('data-course-id'), this.value)">
@@ -908,8 +919,11 @@ function renderRoadmapBoard(board) {
                            <button type="button" class="btn-roadmap-remove" title="Remove from roadmap" data-course-id="${card.courseId}" onclick="removeRoadmapCourse(this.getAttribute('data-course-id'))">×</button>
                        </div>`
                     : '';
+                const cardClasses = 'roadmap-course-card'
+                    + (card.prerequisiteViolation ? ' card-prereq-violation' : '')
+                    + (card.seasonMismatch ? ' card-season-mismatch' : '');
                 return `
-                    <div class="roadmap-course-card${card.prerequisiteViolation ? ' card-prereq-violation' : ''}" id="roadmap-card-${card.courseId}" data-course-id="${card.courseId}" data-semester="${sem.semester}" draggable="true" ondragstart="handleRoadmapDragStart(event)">
+                    <div class="${cardClasses}" id="roadmap-card-${card.courseId}" data-course-id="${card.courseId}" data-semester="${sem.semester}" data-season-mismatch="${Boolean(card.seasonMismatch)}" draggable="true" ondragstart="handleRoadmapDragStart(event)">
                         <div class="roadmap-card-top">
                             <span class="course-code">${escapeHtml(card.code)}</span>
                             <span class="credit-tag">${card.credits} ECTS</span>
@@ -917,9 +931,11 @@ function renderRoadmapBoard(board) {
                         <div class="roadmap-card-name">${escapeHtml(card.name)}</div>
                         <div class="roadmap-card-badges">
                             <span class="badge-type">${escapeHtml(card.category || card.courseType)}</span>
+                            <span class="badge-season">${seasonLabel}</span>
                             <span class="roadmap-status-badge status-${escapeHtml((card.status || 'planned').toLowerCase())}">${escapeHtml(card.status)}</span>
                         </div>
                         ${violationHtml}
+                        ${seasonWarningHtml}
                         <div class="roadmap-card-actions">
                             <button type="button" class="btn-course-details" data-course-id="${card.courseId}" onclick="openCourseDetailModal(${card.courseId})">Details</button>
                             ${moveControlsHtml}

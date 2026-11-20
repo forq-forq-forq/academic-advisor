@@ -37,6 +37,7 @@ Project documentation for the Academic Advisor system.
 | [US-18](US-18.md) | 8-Semester Multi-Year Degree Roadmap board on `/planner` |
 | [US-19](US-19.md) | Drag-and-drop roadmap reordering with instant prerequisite & overload validation |
 | [US-20](US-20.md) | Pacing strategy rearrangement (`Balanced 4 years` vs `Fast-track`) |
+| [US-21](US-21.md) | Fall-only / Spring-only course availability mismatch flagging on roadmap |
 | [US-29](US-29.md) | Completed course history view |
 | [US-31](US-31.md) | Automatic credit-weighted cumulative GPA |
 

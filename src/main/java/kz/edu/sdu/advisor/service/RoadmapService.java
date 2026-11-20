@@ -185,7 +185,7 @@ public class RoadmapService {
             if ("FAST_TRACK".equals(normalized)) {
                 chosenSem = chooseFastTrackSemester(c, minSem, maxSem, credits, semCredits);
             } else {
-                chosenSem = chooseBalancedSemester(minSem, maxSem, recommendedSem, credits, semCredits);
+                chosenSem = chooseBalancedSemester(c, minSem, maxSem, recommendedSem, credits, semCredits);
             }
 
             item.setSemester(chosenSem);
@@ -282,6 +282,7 @@ public class RoadmapService {
     }
 
     private int chooseBalancedSemester(
+            Course course,
             int minSem,
             int maxSem,
             int recommendedSem,
@@ -289,18 +290,31 @@ public class RoadmapService {
             Map<Integer, Integer> semCredits) {
         int bestSem = minSem;
         int bestLoad = Integer.MAX_VALUE;
+        boolean bestSeasonMatch = false;
         int bestDistance = Integer.MAX_VALUE;
 
         for (int s = minSem; s <= maxSem; s++) {
             int load = semCredits.getOrDefault(s, 0);
+            boolean seasonMatch = isSeasonCompatible(course, s);
             int distance = Math.abs(s - Math.min(maxSem, Math.max(minSem, recommendedSem)));
-            if (load < bestLoad || (load == bestLoad && distance < bestDistance)) {
+            if (load < bestLoad
+                    || (load == bestLoad && seasonMatch && !bestSeasonMatch)
+                    || (load == bestLoad && seasonMatch == bestSeasonMatch && distance < bestDistance)) {
                 bestLoad = load;
+                bestSeasonMatch = seasonMatch;
                 bestDistance = distance;
                 bestSem = s;
             }
         }
         return bestSem;
+    }
+
+    private boolean isSeasonCompatible(Course course, int semester) {
+        if (course == null || course.getSeason() == null || "BOTH".equalsIgnoreCase(course.getSeason())) {
+            return true;
+        }
+        String semesterSeason = (semester % 2 == 1) ? "FALL" : "SPRING";
+        return semesterSeason.equalsIgnoreCase(course.getSeason());
     }
 
     private int chooseFastTrackSemester(
@@ -539,7 +553,9 @@ public class RoadmapService {
 
                 boolean seasonMismatch = false;
                 String seasonWarning = null;
-                if (!"BOTH".equalsIgnoreCase(courseSeason) && !courseSeason.equalsIgnoreCase(semesterSeason)) {
+                if (!"COMPLETED".equals(status)
+                        && !"BOTH".equalsIgnoreCase(courseSeason)
+                        && !courseSeason.equalsIgnoreCase(semesterSeason)) {
                     seasonMismatch = true;
                     String offeringLabel = "FALL".equalsIgnoreCase(courseSeason) ? "Fall" : "Spring";
                     seasonWarning = course.getCode() + " is offered only in " + offeringLabel
