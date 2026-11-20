@@ -521,4 +521,39 @@ class PlannerControllerTest {
                 .andExpect(content().string(containsString("id=\"plan-drafts-panel\"")))
                 .andExpect(content().string(containsString("Safe plan")));
     }
+
+    @Test
+    @DisplayName("US-23: GET /planner renders PDF export buttons and GET /planner/export/pdf returns application/pdf with course summary")
+    void exportPlanPdf_shouldReturnValidPdfDownload() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+        Course inf202 = courseRepository.findByCode("INF202").orElseThrow();
+
+        mockMvc.perform(post("/planner/cart/add")
+                        .session(session)
+                        .param("courseId", inf202.getId().toString()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"btn-export-pdf\"")))
+                .andExpect(content().string(containsString("id=\"btn-export-roadmap-pdf\"")));
+
+        byte[] bytes = mockMvc.perform(get("/planner/export/pdf")
+                        .session(session)
+                        .param("scope", "all"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(org.springframework.http.MediaType.APPLICATION_PDF))
+                .andExpect(header().string("Content-Disposition", containsString("academic-plan-240103000.pdf")))
+                .andReturn()
+                .getResponse()
+                .getContentAsByteArray();
+
+        String pdf = new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1);
+        org.assertj.core.api.Assertions.assertThat(pdf)
+                .startsWith("%PDF-1.4")
+                .contains("INF202")
+                .contains("5 ECTS")
+                .contains("%%EOF");
+    }
 }
