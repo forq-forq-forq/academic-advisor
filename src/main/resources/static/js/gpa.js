@@ -72,6 +72,29 @@ function renderGpaSimulation(result) {
     if (deltaEl) deltaEl.textContent = result.formattedGpaDelta || '0.00';
     if (standingEl) standingEl.textContent = result.projectedStandingLabel || '';
 
+    const probationBox = document.getElementById('gpa-probation-warning');
+    const probationMsg = document.getElementById('gpa-probation-msg');
+    if (probationBox) {
+        probationBox.style.display = result.academicProbationRisk ? 'flex' : 'none';
+        if (probationMsg && result.probationWarningMessage) {
+            probationMsg.textContent = result.probationWarningMessage;
+        }
+    }
+
+    const scholarshipBox = document.getElementById('gpa-scholarship-warning');
+    const scholarshipMsg = document.getElementById('gpa-scholarship-msg');
+    if (scholarshipBox) {
+        scholarshipBox.style.display = result.belowScholarshipThreshold ? 'flex' : 'none';
+        if (scholarshipMsg && result.scholarshipWarningMessage) {
+            scholarshipMsg.textContent = result.scholarshipWarningMessage;
+        }
+    }
+
+    const safeBox = document.getElementById('gpa-safe-banner');
+    if (safeBox) {
+        safeBox.style.display = result.riskLevel === 'SAFE' ? 'flex' : 'none';
+    }
+
     if (Array.isArray(result.items)) {
         result.items.forEach(item => {
             const cell = document.getElementById('points-cell-' + item.courseId);

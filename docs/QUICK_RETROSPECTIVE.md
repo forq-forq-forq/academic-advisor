@@ -117,38 +117,41 @@ Each sprint concludes with a Quick Retrospective ceremony following the 4-quadra
 ## 🏃‍♂️ Sprint 4: Visual Course Planner & 4-Year Roadmap (v1.0 Part 1)
 
 * **Timeline:** November 2026
-* **Sprint Focus:** Interactive 8-semester timeline grid, collapsible Course Explorer drawer, drag-and-drop course allocation, and real-time prerequisite conflict highlighting.
+* **Sprint Focus:** Slide-out Course Catalog Drawer (`US-15`), Multi-facet Course Filters (`US-16`), Interactive Course Detail Modal (`US-17`), 8-Semester Degree Roadmap (`US-18`), Drag-and-Drop Reordering & Instant Prerequisite/Overload Validation (`US-19`), Pacing Strategy Rearrangement (`US-20`), and Season Availability Flagging (`US-21`).
+* **Completed Stories:** `US-15`, `US-16`, `US-17`, `US-18`, `US-19`, `US-20`, `US-21`.
 
 ### ⏩ Continue
-* *...to be filled by the team during the Sprint 4 Retrospective...*
+* **Sequential Atomic PRs:** Merging each user story cleanly into `main` before branching the next kept `PlannerController`, `RoadmapService`, and UI assets free of merge conflicts.
+* **Pure-Server Validation + Instant UI Sync:** Computing prerequisite conflicts, overload thresholds (`> 30 ECTS`), and Fall/Spring mismatches server-side inside `RoadmapService` guaranteed consistent behavior across page renders and AJAX updates.
 
 ### ⛔ Stop
-* *...to be filled by the team during the Sprint 4 Retrospective...*
+* **Blindly Seeding Unchecked Electives:** Initializing electives without verifying upstream prerequisites caused spurious roadmap conflicts until `arePrereqsPlacedBefore` and topological downstream depth bounds were enforced.
 
 ### 🌸 Invent
-* *...to be filled by the team during the Sprint 4 Retrospective...*
+* **Combined Drag-and-Drop + Accessible Dropdown Controls:** Pairing HTML5 drag-and-drop with semester `<select>` controls on roadmap cards preserved both visual interactivity and keyboard/testability ergonomics.
 
 ### 💪 Act
-* *...to be filled by the team during the Sprint 4 Retrospective...*
+1. [x] **Backend & Frontend:** Deliver saved plan drafts (`US-22`), PDF export (`US-23`), and the standalone GPA Simulator (`US-25`, `US-26`) in Sprint 5.
 
 ---
 
-## 🏃‍♂️ Sprint 5: Career Elective Matching, GPA Simulator & Polish (v1.0 Part 2)
+## 🏃‍♂️ Sprint 5: Plan Drafts, PDF Export & GPA Simulator (v1.0 Part 2)
 
 * **Timeline:** November 2026
-* **Sprint Focus:** Area Electives recommendation engine tailored to career specializations (Frontend/Backend/Data Science), standalone GPA Simulator & risk calculator, and PDF roadmap export.
+* **Sprint Focus:** Multi-scenario Plan Drafts in Planner & Profile (`US-22`), Pure-Java PDF 1.4 Export (`US-23`), GPA Planner & Cumulative GPA Simulator (`US-25`), and Scholarship / Academic Probation Risk Warnings (`US-26`).
+* **Completed Stories:** `US-22`, `US-23`, `US-25`, `US-26`.
 
 ### ⏩ Continue
-* *...to be filled by the team during the Sprint 5 Retrospective...*
+* **Zero-External-Dependency PDF Generation & Static Asset Discipline:** Writing a pure-Java PDF 1.4 writer (`PlanPdfExportService`) and strictly separating CSS/JS assets (`StaticAssetsArchitectureTest`) kept Docker builds and CI fast and deterministic.
 
 ### ⛔ Stop
-* *...to be filled by the team during the Sprint 5 Retrospective...*
+* **Bulk-Deleting Managed Entities Before Re-Insertion:** Calling `deleteAllInBatch` inside an active Hibernate session risked L1 cache key collisions on SQLite until switched to managed `deleteAll` + `flush`.
 
 ### 🌸 Invent
-* *...to be filled by the team during the Sprint 5 Retrospective...*
+* **Cart/Enrolled Fallback in GPA Simulation:** Automatically sourcing upcoming courses from the Semester Cart (or Currently Enrolled courses when the cart is empty) makes `/gpa` immediately useful without manual course re-entry.
 
 ### 💪 Act
-* *...to be filled by the team during the Sprint 5 Retrospective...*
+1. [ ] **Team:** Proceed to v2.0 Document Intelligence (PDF transcript/syllabus parsing) and Advisor Approval Portal in Sprints 6–7.
 
 ---
 

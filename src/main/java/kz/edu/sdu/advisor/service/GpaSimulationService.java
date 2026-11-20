@@ -33,6 +33,8 @@ import java.util.Objects;
 public class GpaSimulationService {
 
     public static final String DEFAULT_EXPECTED_GRADE = "B+";
+    public static final double SCHOLARSHIP_GPA_THRESHOLD = 3.00;
+    public static final double PROBATION_GPA_THRESHOLD = 2.00;
 
     public static final List<String> GPA_LETTER_GRADES = List.of(
             "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "F", "FX", "AW"
@@ -119,6 +121,36 @@ public class GpaSimulationService {
         String formattedDelta = (delta > 0 ? "+" : "") + String.format(Locale.US, "%.2f", delta);
         String standingLabel = resolveStandingLabel(projectedCumulativeGpa);
 
+        boolean hasFailingGrade = items.stream()
+                .anyMatch(item -> "F".equals(item.expectedGrade())
+                        || "FX".equals(item.expectedGrade())
+                        || "AW".equals(item.expectedGrade()));
+        boolean gpaBelowScholarship = projectedCumulativeGpa != null
+                && projectedCumulativeGpa < SCHOLARSHIP_GPA_THRESHOLD;
+        boolean belowScholarshipThreshold = gpaBelowScholarship || hasFailingGrade;
+        boolean academicProbationRisk = projectedCumulativeGpa != null
+                && projectedCumulativeGpa < PROBATION_GPA_THRESHOLD;
+
+        String riskLevel = academicProbationRisk
+                ? "PROBATION_DANGER"
+                : (belowScholarshipThreshold ? "SCHOLARSHIP_WARNING" : "SAFE");
+
+        String scholarshipWarningMessage = null;
+        if (gpaBelowScholarship && hasFailingGrade) {
+            scholarshipWarningMessage = "Scholarship Risk: Projected cumulative GPA (" + formattedProjected
+                    + ") drops below the 3.00 threshold and includes a failing grade (F/FX/AW).";
+        } else if (gpaBelowScholarship) {
+            scholarshipWarningMessage = "Scholarship Risk: Projected cumulative GPA (" + formattedProjected
+                    + ") drops below the 3.00 state scholarship threshold.";
+        } else if (hasFailingGrade) {
+            scholarshipWarningMessage = "Scholarship Risk: A failing grade (F/FX/AW) disqualifies state scholarship retention even if GPA is 3.00 or higher.";
+        }
+
+        String probationWarningMessage = academicProbationRisk
+                ? "Academic Probation Alert: Projected cumulative GPA (" + formattedProjected
+                        + ") falls below 2.00, which triggers academic probation standing."
+                : null;
+
         return new GpaSimulationResultDto(
                 baseline.currentGpa(),
                 formattedCurrent,
@@ -131,6 +163,12 @@ public class GpaSimulationService {
                 delta,
                 formattedDelta,
                 standingLabel,
+                belowScholarshipThreshold,
+                hasFailingGrade,
+                academicProbationRisk,
+                riskLevel,
+                scholarshipWarningMessage,
+                probationWarningMessage,
                 items
         );
     }
