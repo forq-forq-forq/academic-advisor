@@ -33,6 +33,7 @@ Project documentation for the Academic Advisor system.
 | [US-10](US-10.md) | Dashboard adaptive Recommended Next Action hero card |
 | [US-15](US-15.md) | Slide-out Course Catalog drawer and live code/title search on `/planner` |
 | [US-16](US-16.md) | Course Catalog filtering by category (`CORE`/`ELECTIVE`/`GENERAL`), season, and difficulty |
+| [US-17](US-17.md) | Interactive Course Detail Card modal with transitive prerequisite chain and season availability |
 | [US-29](US-29.md) | Completed course history view |
 | [US-31](US-31.md) | Automatic credit-weighted cumulative GPA |
 

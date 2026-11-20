@@ -8,6 +8,7 @@ import kz.edu.sdu.advisor.model.Prerequisite;
 import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.AvailableCourseDto;
 import kz.edu.sdu.advisor.model.dto.CartDto;
+import kz.edu.sdu.advisor.model.dto.CourseDetailDto;
 import kz.edu.sdu.advisor.model.dto.EnrolledCourseDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.CurriculumCourseRepository;
@@ -23,8 +24,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -116,6 +119,121 @@ public class PlannerController {
                     .toList();
         }
         return ResponseEntity.ok(courses);
+    }
+
+    @GetMapping("/planner/courses/{courseId}")
+    @ResponseBody
+    public ResponseEntity<?> getCourseDetail(
+            @PathVariable("courseId") Long courseId,
+            HttpSession session) {
+        Student student = authSessionHelper.resolveAuthenticatedStudent(session).orElse(null);
+        if (student == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+
+        CartDto cart = cartService.getCart(student.getStudentId());
+        AvailableCourseDto course = buildAvailableCourses(student, cart).stream()
+                .filter(c -> c.id().equals(courseId))
+                .findFirst()
+                .orElse(null);
+
+        if (course == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Course not found: " + courseId));
+        }
+
+        List<Prerequisite> allPrerequisites = prerequisiteRepository.findAllWithCourses();
+        Map<Long, List<Course>> prereqMap = allPrerequisites.stream()
+                .filter(p -> p.getCourse() != null && p.getPrerequisiteCourse() != null)
+                .collect(Collectors.groupingBy(
+                        p -> p.getCourse().getId(),
+                        Collectors.mapping(Prerequisite::getPrerequisiteCourse, Collectors.toList())
+                ));
+
+        List<String> chain = new ArrayList<>();
+        collectPrerequisiteChain(courseId, prereqMap, new HashSet<>(), new LinkedHashSet<>(), chain);
+
+        List<String> unlocks = allPrerequisites.stream()
+                .filter(p -> p.getPrerequisiteCourse() != null
+                        && courseId.equals(p.getPrerequisiteCourse().getId())
+                        && p.getCourse() != null)
+                .map(p -> p.getCourse().getCode())
+                .distinct()
+                .sorted()
+                .toList();
+
+        int diff = course.difficulty() != null ? course.difficulty() : 3;
+        String difficultyLabel = formatDifficultyLabel(diff);
+        String seasonLabel = formatSeasonLabel(course.season());
+        String description = (course.description() != null && !course.description().isBlank())
+                ? course.description()
+                : "SDU curriculum course (" + course.code() + ").";
+
+        CourseDetailDto detail = new CourseDetailDto(
+                course.id(),
+                course.code(),
+                course.name(),
+                course.credits(),
+                diff,
+                difficultyLabel,
+                description,
+                course.courseType(),
+                course.category(),
+                course.recommendedSemester(),
+                seasonLabel,
+                course.prerequisiteCodes(),
+                chain,
+                unlocks,
+                course.completed(),
+                course.enrolled(),
+                course.inCart(),
+                course.prerequisitesMet(),
+                course.missingSummary()
+        );
+        return ResponseEntity.ok(detail);
+    }
+
+    private void collectPrerequisiteChain(
+            Long courseId,
+            Map<Long, List<Course>> prereqMap,
+            Set<Long> visiting,
+            Set<String> visitedCodes,
+            List<String> orderedChain) {
+        if (!visiting.add(courseId)) {
+            return;
+        }
+        List<Course> direct = prereqMap.getOrDefault(courseId, List.of());
+        for (Course req : direct) {
+            if (req.getId() != null) {
+                collectPrerequisiteChain(req.getId(), prereqMap, visiting, visitedCodes, orderedChain);
+            }
+            if (req.getCode() != null && visitedCodes.add(req.getCode())) {
+                orderedChain.add(req.getCode());
+            }
+        }
+        visiting.remove(courseId);
+    }
+
+    private String formatDifficultyLabel(int difficulty) {
+        return switch (difficulty) {
+            case 1 -> "1/5 — Very Light";
+            case 2 -> "2/5 — Light";
+            case 3 -> "3/5 — Moderate";
+            case 4 -> "4/5 — Challenging";
+            case 5 -> "5/5 — Very Challenging";
+            default -> difficulty + "/5";
+        };
+    }
+
+    private String formatSeasonLabel(String season) {
+        if ("FALL".equalsIgnoreCase(season)) {
+            return "Fall";
+        }
+        if ("SPRING".equalsIgnoreCase(season)) {
+            return "Spring";
+        }
+        return "Fall & Spring";
     }
 
     protected List<AvailableCourseDto> buildAvailableCourses(Student student, CartDto cart) {

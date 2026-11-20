@@ -333,6 +333,11 @@
                 </div>
                 <div class="catalog-item-actions">
                     <button type="button"
+                            class="btn-course-details"
+                            th:attr="data-course-id=${course.id}"
+                            onclick="openCourseDetailModal(this.getAttribute('data-course-id'))"
+                            title="View full course details, prerequisite chain, and difficulty">📋 Details</button>
+                    <button type="button"
                             class="btn-explain"
                             th:attr="data-course-code=${course.code}"
                             onclick="window.openCopilotWithPrompt && window.openCopilotWithPrompt('Explain course ' + this.getAttribute('data-course-code'), true)"
@@ -354,6 +359,66 @@
         </ul>
     </aside>
 </main>
+
+<!-- Course Detail Card Modal (US-17) -->
+<div id="course-detail-modal" class="course-modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="detail-course-name">
+    <div class="course-modal-card">
+        <div class="course-modal-header">
+            <div>
+                <div class="detail-badges-row">
+                    <span id="detail-course-code" class="course-code">CSS217</span>
+                    <span id="detail-course-credits" class="credit-tag">5 ECTS</span>
+                    <span id="detail-course-category" class="badge-type">CORE</span>
+                    <span id="detail-course-season" class="badge-season">Spring</span>
+                </div>
+                <h3 id="detail-course-name" class="detail-modal-title">Course Title</h3>
+            </div>
+            <button type="button"
+                    id="btn-close-course-detail"
+                    class="btn-close-drawer"
+                    onclick="closeCourseDetailModal()"
+                    aria-label="Close course details">✕</button>
+        </div>
+
+        <div class="course-modal-body">
+            <div class="detail-section">
+                <span class="detail-section-label">Course Description</span>
+                <p id="detail-course-description" class="detail-description"></p>
+            </div>
+
+            <div class="detail-meta-grid">
+                <div class="detail-meta-box">
+                    <span class="detail-section-label">Difficulty Rating</span>
+                    <div id="detail-course-difficulty" class="detail-meta-value">3/5 — Moderate</div>
+                    <div class="detail-difficulty-track">
+                        <div id="detail-difficulty-bar" class="detail-difficulty-fill"></div>
+                    </div>
+                </div>
+                <div class="detail-meta-box">
+                    <span class="detail-section-label">Recommended Term</span>
+                    <div id="detail-recommended-semester" class="detail-meta-value">Semester 4</div>
+                    <div id="detail-course-status" class="detail-status-note">Eligible</div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <span class="detail-section-label">Prerequisite Chain</span>
+                <div id="detail-prereq-chain" class="detail-chain-list">None</div>
+            </div>
+
+            <div class="detail-section">
+                <span class="detail-section-label">Unlocks Downstream Courses</span>
+                <div id="detail-unlocks-chain" class="detail-chain-list">None</div>
+            </div>
+        </div>
+
+        <div class="course-modal-footer">
+            <button type="button" id="detail-btn-explain" class="btn-explain">ℹ️ Ask AI Copilot</button>
+            <button type="button" id="detail-btn-add-cart" class="btn-add">+ Add to Cart</button>
+            <button type="button" class="btn-secondary-modal" onclick="closeCourseDetailModal()">Close</button>
+        </div>
+    </div>
+</div>
 
 <div th:replace="~{fragments/copilot :: copilotWidget}"></div>
 
