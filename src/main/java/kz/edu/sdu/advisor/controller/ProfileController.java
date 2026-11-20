@@ -8,6 +8,7 @@ import kz.edu.sdu.advisor.model.dto.CompletedCourseDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import kz.edu.sdu.advisor.service.CumulativeGpaService;
+import kz.edu.sdu.advisor.service.PlanDraftService;
 import kz.edu.sdu.advisor.service.TranscriptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class ProfileController {
     private final TranscriptService transcriptService;
     private final CourseRepository courseRepository;
     private final CumulativeGpaService cumulativeGpaService;
+    private final PlanDraftService planDraftService;
 
     @GetMapping("/profile")
     public String showProfile(HttpSession session, Model model) {
@@ -63,6 +65,7 @@ public class ProfileController {
         model.addAttribute("courseIdByCode", courseIdByCode);
         model.addAttribute("supportedGrades", TranscriptService.SUPPORTED_GRADES);
         model.addAttribute("semesterOptions", SEMESTER_OPTIONS);
+        model.addAttribute("planDrafts", planDraftService.getDrafts(student.getStudentId()));
         return "profile";
     }
 

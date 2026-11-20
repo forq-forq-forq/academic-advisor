@@ -961,3 +961,131 @@ function renderRoadmapBoard(board) {
         grid.appendChild(col);
     });
 }
+
+function setDraftName(name) {
+    const input = document.getElementById('draft-name-input');
+    if (input) {
+        input.value = name;
+        input.focus();
+    }
+}
+
+function savePlanDraft() {
+    hideAlert();
+    const input = document.getElementById('draft-name-input');
+    const name = input ? input.value.trim() : '';
+    if (!name) {
+        showAlert('Please enter a draft name (e.g. Safe plan or Ambitious plan).');
+        return;
+    }
+    const pacingSelect = document.getElementById('pacing-strategy-select');
+    const strategy = pacingSelect ? pacingSelect.value : 'BALANCED';
+
+    fetch('/planner/drafts/save?name=' + encodeURIComponent(name) + '&pacingStrategy=' + encodeURIComponent(strategy), {
+        method: 'POST',
+        headers: Object.assign({ 'Accept': 'application/json' }, window.advisorCsrfHeaders ? window.advisorCsrfHeaders() : {})
+    })
+        .then(async res => {
+            if (res.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showAlert(data.error || 'Failed to save plan draft.');
+                return null;
+            }
+            return data;
+        })
+        .then(data => {
+            if (data && Array.isArray(data.drafts)) {
+                if (input) input.value = '';
+                renderPlanDrafts(data.drafts);
+            }
+        })
+        .catch(() => showAlert('Unable to save plan draft.'));
+}
+
+function loadPlanDraft(draftId) {
+    hideAlert();
+    fetch('/planner/drafts/' + encodeURIComponent(draftId) + '/load', {
+        method: 'POST',
+        headers: Object.assign({ 'Accept': 'application/json' }, window.advisorCsrfHeaders ? window.advisorCsrfHeaders() : {})
+    })
+        .then(async res => {
+            if (res.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showAlert(data.error || 'Failed to load plan draft.');
+                return null;
+            }
+            return data;
+        })
+        .then(data => {
+            if (data) {
+                if (data.cart) renderCart(data.cart);
+                if (data.roadmap) renderRoadmapBoard(data.roadmap);
+            }
+        })
+        .catch(() => showAlert('Unable to load plan draft.'));
+}
+
+function deletePlanDraft(draftId) {
+    hideAlert();
+    fetch('/planner/drafts/' + encodeURIComponent(draftId) + '/delete', {
+        method: 'POST',
+        headers: Object.assign({ 'Accept': 'application/json' }, window.advisorCsrfHeaders ? window.advisorCsrfHeaders() : {})
+    })
+        .then(async res => {
+            if (res.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showAlert(data.error || 'Failed to delete plan draft.');
+                return null;
+            }
+            return data;
+        })
+        .then(data => {
+            if (data && Array.isArray(data.drafts)) {
+                renderPlanDrafts(data.drafts);
+            }
+        })
+        .catch(() => showAlert('Unable to delete plan draft.'));
+}
+
+function renderPlanDrafts(drafts) {
+    const emptyEl = document.getElementById('saved-drafts-empty');
+    const listEl = document.getElementById('saved-drafts-list');
+    if (!listEl || !emptyEl) return;
+
+    if (!Array.isArray(drafts) || drafts.length === 0) {
+        emptyEl.style.display = 'block';
+        listEl.style.display = 'none';
+        listEl.innerHTML = '';
+        return;
+    }
+    emptyEl.style.display = 'none';
+    listEl.style.display = 'flex';
+    listEl.innerHTML = drafts.map(d => `
+        <li class="cart-item draft-item" id="draft-item-${d.id}">
+            <div class="item-info">
+                <div class="item-code-credits">
+                    <span class="course-code">${escapeHtml(d.name)}</span>
+                    <span class="credit-tag">${d.totalCredits} ECTS</span>
+                    <span class="badge-type">${escapeHtml(d.pacingStrategy || 'BALANCED')}</span>
+                </div>
+                <span class="course-name">${escapeHtml(d.cartCodesSummary || 'Saved plan')}</span>
+            </div>
+            <div class="draft-item-actions">
+                <button type="button" class="btn-course-details" data-draft-id="${d.id}" onclick="loadPlanDraft(${d.id})">Load</button>
+                <button type="button" class="btn-cancel-enrolled" data-draft-id="${d.id}" onclick="deletePlanDraft(${d.id})">Delete</button>
+            </div>
+        </li>
+    `).join('');
+}

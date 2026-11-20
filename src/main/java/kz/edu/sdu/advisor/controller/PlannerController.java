@@ -10,12 +10,15 @@ import kz.edu.sdu.advisor.model.dto.AvailableCourseDto;
 import kz.edu.sdu.advisor.model.dto.CartDto;
 import kz.edu.sdu.advisor.model.dto.CourseDetailDto;
 import kz.edu.sdu.advisor.model.dto.EnrolledCourseDto;
+import kz.edu.sdu.advisor.model.dto.LoadedPlanDraftDto;
+import kz.edu.sdu.advisor.model.dto.PlanDraftDto;
 import kz.edu.sdu.advisor.model.dto.RoadmapBoardDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.CurriculumCourseRepository;
 import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
 import kz.edu.sdu.advisor.service.AuthSessionHelper;
 import kz.edu.sdu.advisor.service.CartService;
+import kz.edu.sdu.advisor.service.PlanDraftService;
 import kz.edu.sdu.advisor.service.RoadmapService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +50,7 @@ public class PlannerController {
     private final PrerequisiteRepository prerequisiteRepository;
     private final CartService cartService;
     private final RoadmapService roadmapService;
+    private final PlanDraftService planDraftService;
 
     @GetMapping("/planner")
     public String showPlanner(HttpSession session, Model model) {
@@ -65,6 +69,7 @@ public class PlannerController {
         List<EnrolledCourseDto> enrolledCourses = cartService.getEnrolledCourses(studentId);
         int enrolledCredits = enrolledCourses.stream().mapToInt(EnrolledCourseDto::credits).sum();
         RoadmapBoardDto roadmap = roadmapService.getRoadmap(studentId);
+        List<PlanDraftDto> planDrafts = planDraftService.getDrafts(studentId);
 
         model.addAttribute("student", student);
         model.addAttribute("cart", cart);
@@ -73,6 +78,7 @@ public class PlannerController {
         model.addAttribute("availableCourses", availableCourseDtos);
         model.addAttribute("completedCourseCodes", completedCodes);
         model.addAttribute("roadmap", roadmap);
+        model.addAttribute("planDrafts", planDrafts);
 
         return "planner";
     }
@@ -136,6 +142,91 @@ public class PlannerController {
         try {
             return ResponseEntity.ok(roadmapService.applyPacingStrategy(studentId, strategy));
         } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+
+    @GetMapping("/planner/drafts")
+    @ResponseBody
+    public ResponseEntity<?> listPlanDrafts(HttpSession session) {
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+        return ResponseEntity.ok(planDraftService.getDrafts(studentId));
+    }
+
+    @PostMapping("/planner/drafts/save")
+    @ResponseBody
+    public ResponseEntity<?> savePlanDraft(
+            @RequestParam("name") String name,
+            @RequestParam(value = "pacingStrategy", required = false) String pacingStrategy,
+            HttpSession session) {
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+        try {
+            PlanDraftDto saved = planDraftService.saveDraft(studentId, name, pacingStrategy);
+            List<PlanDraftDto> drafts = planDraftService.getDrafts(studentId);
+            return ResponseEntity.ok(Map.of("draft", saved, "drafts", drafts));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+
+    @PostMapping("/planner/drafts/{draftId}/load")
+    public Object loadPlanDraft(
+            @PathVariable("draftId") Long draftId,
+            @RequestParam(value = "redirect", required = false) String redirect,
+            HttpSession session) {
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:/login";
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+        try {
+            LoadedPlanDraftDto loaded = planDraftService.loadDraft(studentId, draftId);
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:" + (redirect.startsWith("/") ? redirect : "/" + redirect);
+            }
+            return ResponseEntity.ok(loaded);
+        } catch (IllegalArgumentException ex) {
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:" + (redirect.startsWith("/") ? redirect : "/" + redirect);
+            }
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+
+    @PostMapping("/planner/drafts/{draftId}/delete")
+    public Object deletePlanDraft(
+            @PathVariable("draftId") Long draftId,
+            @RequestParam(value = "redirect", required = false) String redirect,
+            HttpSession session) {
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:/login";
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+        try {
+            planDraftService.deleteDraft(studentId, draftId);
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:" + (redirect.startsWith("/") ? redirect : "/" + redirect);
+            }
+            return ResponseEntity.ok(Map.of("drafts", planDraftService.getDrafts(studentId)));
+        } catch (IllegalArgumentException ex) {
+            if (redirect != null && !redirect.isBlank()) {
+                return "redirect:" + (redirect.startsWith("/") ? redirect : "/" + redirect);
+            }
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         }
     }

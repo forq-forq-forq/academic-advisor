@@ -292,3 +292,56 @@ main {
     border: 1px dashed #cbd5e0;
     border-radius: 8px;
 }
+
+/* ── Saved Plan Drafts in Profile (US-22) ── */
+.drafts-section-title {
+    margin-bottom: 0.75rem;
+}
+
+.profile-drafts-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0;
+    margin: 0;
+}
+
+.profile-draft-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+}
+
+.profile-draft-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.profile-draft-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.draft-strategy-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 0.12rem 0.45rem;
+    border-radius: 4px;
+}
+
+.profile-draft-summary {
+    font-size: 0.82rem;
+    color: #4a5568;
+    margin: 0;
+}

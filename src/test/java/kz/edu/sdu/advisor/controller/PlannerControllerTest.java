@@ -489,4 +489,36 @@ class PlannerControllerTest {
                 .andExpect(jsonPath("$.semesters[4].courses[?(@.code=='INF202')].seasonMismatch", hasItem(true)))
                 .andExpect(jsonPath("$.semesters[4].courses[?(@.code=='INF202')].seasonWarning", hasItem(containsString("offered only in Spring"))));
     }
+
+    @Test
+    @DisplayName("US-22: Planner exposes saved plan drafts endpoints (save, list, load, delete)")
+    void planDraftEndpoints_shouldSaveListLoadAndDeleteDrafts() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+        Course inf202 = courseRepository.findByCode("INF202").orElseThrow();
+
+        mockMvc.perform(post("/planner/cart/add")
+                        .session(session)
+                        .param("courseId", inf202.getId().toString()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/planner/drafts/save")
+                        .session(session)
+                        .param("name", "Safe plan")
+                        .param("pacingStrategy", "BALANCED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.draft.name", is("Safe plan")))
+                .andExpect(jsonPath("$.draft.totalCredits", is(5)))
+                .andExpect(jsonPath("$.drafts", hasSize(1)));
+
+        mockMvc.perform(get("/planner/drafts").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name", is("Safe plan")));
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"plan-drafts-panel\"")))
+                .andExpect(content().string(containsString("Safe plan")));
+    }
 }
