@@ -31,6 +31,7 @@ Project documentation for the Academic Advisor system.
 | [US-05](US-05.md) | Self-service `/forgot-password` & `/reset-password` flow with 30m single-use tokens |
 | [US-09](US-09.md) | Dashboard course registration alert banners (`Fall 2026 Course Registration`) |
 | [US-10](US-10.md) | Dashboard adaptive Recommended Next Action hero card |
+| [US-15](US-15.md) | Slide-out Course Catalog drawer and live code/title search on `/planner` |
 | [US-29](US-29.md) | Completed course history view |
 | [US-31](US-31.md) | Automatic credit-weighted cumulative GPA |
 

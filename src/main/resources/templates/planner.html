@@ -40,7 +40,25 @@
     </div>
 </header>
 
-<main>
+<main id="planner-main">
+    <!-- Top Workspace Toolbar with Slide-Out Catalog Toggle (US-15) -->
+    <div class="planner-toolbar">
+        <div class="planner-toolbar-title">
+            <h2>Course Planner</h2>
+            <span class="planner-toolbar-subtitle">Plan your semester cart and search the university course catalog</span>
+        </div>
+        <div class="planner-toolbar-actions">
+            <button type="button"
+                    id="btn-toggle-catalog-drawer"
+                    class="btn-toggle-drawer active"
+                    aria-controls="catalog-drawer"
+                    aria-expanded="true"
+                    onclick="toggleCatalogDrawer()">
+                ≡ Course Catalog
+            </button>
+        </div>
+    </div>
+
     <!-- Prerequisite / Cart Error Notification Banner (US-12) -->
     <div id="planner-alert" class="planner-alert" style="display: none;" role="alert">
         <div class="alert-content">
@@ -211,15 +229,37 @@
         </div>
     </section>
 
-    <!-- Right Column: Course Catalog Quick Add for Testing/MVP -->
-    <aside class="panel catalog-panel" aria-label="Course Catalog">
-        <h2>Available Courses</h2>
-        <p class="subtext">Browse courses to add to your semester plan.</p>
+    <!-- Right Column: Slide-Out Course Catalog Drawer (US-15) -->
+    <aside id="catalog-drawer" class="panel catalog-panel catalog-drawer open" aria-label="Course Catalog">
+        <div class="catalog-drawer-header">
+            <div>
+                <h2>Available Courses</h2>
+                <p class="subtext">Browse and search courses to add to your semester plan.</p>
+            </div>
+            <div class="catalog-drawer-meta">
+                <span id="catalog-match-count"
+                      class="catalog-match-count"
+                      th:text="${#lists.size(availableCourses) + ' courses'}">0 courses</span>
+                <button type="button"
+                        id="btn-close-catalog-drawer"
+                        class="btn-close-drawer"
+                        onclick="toggleCatalogDrawer(false)"
+                        aria-label="Close catalog panel">✕</button>
+            </div>
+        </div>
 
         <div class="catalog-controls">
-            <input type="text" id="catalog-search" class="catalog-search"
-                   placeholder="Search by course code or title (e.g. INF106, CSS215, Database)..."
-                   oninput="filterCatalog()">
+            <div class="catalog-search-row">
+                <input type="text" id="catalog-search" class="catalog-search"
+                       placeholder="Search by course code or title (e.g. INF106, CSS215, Database)..."
+                       oninput="filterCatalog()">
+                <button type="button"
+                        id="btn-clear-catalog-search"
+                        class="btn-clear-search"
+                        onclick="clearCatalogSearch()"
+                        aria-label="Clear search"
+                        style="display: none;">✕</button>
+            </div>
             <div class="catalog-filters">
                 <button type="button" class="filter-chip active" data-filter="ALL" onclick="setCatalogFilter('ALL', this)">All</button>
                 <button type="button" class="filter-chip" data-filter="READY" onclick="setCatalogFilter('READY', this)">Prereqs Met</button>
@@ -227,6 +267,10 @@
                 <button type="button" class="filter-chip" data-filter="ELECTIVE" onclick="setCatalogFilter('ELECTIVE', this)">Elective</button>
                 <button type="button" class="filter-chip" data-filter="UNCOMPLETED" onclick="setCatalogFilter('UNCOMPLETED', this)">Hide Completed</button>
             </div>
+        </div>
+
+        <div id="catalog-empty-state" class="catalog-empty-state" style="display: none;">
+            No courses match your search query or filters.
         </div>
 
         <ul class="course-list" id="catalog-list">

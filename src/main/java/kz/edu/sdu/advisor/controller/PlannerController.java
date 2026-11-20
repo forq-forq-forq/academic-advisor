@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,6 +51,48 @@ public class PlannerController {
         String studentId = student.getStudentId();
 
         CartDto cart = cartService.getCart(studentId);
+        List<AvailableCourseDto> availableCourseDtos = buildAvailableCourses(student, cart);
+        List<String> completedCodes = student.getCompletedCourses() == null
+                ? List.of()
+                : student.getCompletedCourses().stream().map(Course::getCode).toList();
+
+        List<EnrolledCourseDto> enrolledCourses = cartService.getEnrolledCourses(studentId);
+        int enrolledCredits = enrolledCourses.stream().mapToInt(EnrolledCourseDto::credits).sum();
+
+        model.addAttribute("student", student);
+        model.addAttribute("cart", cart);
+        model.addAttribute("enrolledCourses", enrolledCourses);
+        model.addAttribute("enrolledCredits", enrolledCredits);
+        model.addAttribute("availableCourses", availableCourseDtos);
+        model.addAttribute("completedCourseCodes", completedCodes);
+
+        return "planner";
+    }
+
+    @GetMapping("/planner/catalog")
+    @ResponseBody
+    public ResponseEntity<?> searchCatalog(
+            @RequestParam(value = "q", required = false) String query,
+            HttpSession session) {
+        Student student = authSessionHelper.resolveAuthenticatedStudent(session).orElse(null);
+        if (student == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+
+        CartDto cart = cartService.getCart(student.getStudentId());
+        List<AvailableCourseDto> courses = buildAvailableCourses(student, cart);
+        if (query != null && !query.isBlank()) {
+            String normalized = query.trim().toLowerCase(Locale.ROOT);
+            courses = courses.stream()
+                    .filter(c -> (c.code() != null && c.code().toLowerCase(Locale.ROOT).contains(normalized))
+                            || (c.name() != null && c.name().toLowerCase(Locale.ROOT).contains(normalized)))
+                    .toList();
+        }
+        return ResponseEntity.ok(courses);
+    }
+
+    protected List<AvailableCourseDto> buildAvailableCourses(Student student, CartDto cart) {
         List<Course> allCourses = courseRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
 
         Set<Long> inCartCourseIds = cart.items().stream()
@@ -90,11 +133,7 @@ public class PlannerController {
         Set<Long> satisfiedIds = new HashSet<>(completedIds);
         satisfiedIds.addAll(inCartCourseIds);
 
-        List<String> completedCodes = student.getCompletedCourses() == null
-                ? List.of()
-                : student.getCompletedCourses().stream().map(Course::getCode).toList();
-
-        List<AvailableCourseDto> availableCourseDtos = allCourses.stream()
+        return allCourses.stream()
                 .map(c -> {
                     List<Course> prereqs = prereqMap.getOrDefault(c.getId(), List.of());
                     List<Course> missing = prereqs.stream()
@@ -131,18 +170,6 @@ public class PlannerController {
                     );
                 })
                 .toList();
-
-        List<EnrolledCourseDto> enrolledCourses = cartService.getEnrolledCourses(studentId);
-        int enrolledCredits = enrolledCourses.stream().mapToInt(EnrolledCourseDto::credits).sum();
-
-        model.addAttribute("student", student);
-        model.addAttribute("cart", cart);
-        model.addAttribute("enrolledCourses", enrolledCourses);
-        model.addAttribute("enrolledCredits", enrolledCredits);
-        model.addAttribute("availableCourses", availableCourseDtos);
-        model.addAttribute("completedCourseCodes", completedCodes);
-
-        return "planner";
     }
 
     @PostMapping("/planner/cart/add")

@@ -284,4 +284,36 @@ class PlannerControllerTest {
                 .andExpect(jsonPath("$.enrolledCourses", hasSize(0)))
                 .andExpect(jsonPath("$.cart.items", hasSize(4)));
     }
+
+    @Test
+    @DisplayName("US-15: GET /planner renders slide-out catalog drawer and GET /planner/catalog searches by code or name")
+    void catalogDrawerAndSearchEndpoint_shouldRenderAndFilterCourses() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"catalog-drawer\"")))
+                .andExpect(content().string(containsString("id=\"btn-toggle-catalog-drawer\"")))
+                .andExpect(content().string(containsString("id=\"catalog-search\"")))
+                .andExpect(content().string(containsString("id=\"catalog-match-count\"")));
+
+        mockMvc.perform(get("/planner/catalog")
+                        .session(session)
+                        .param("q", "INF202"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].code", hasItem("INF202")))
+                .andExpect(jsonPath("$", hasSize(1)));
+
+        mockMvc.perform(get("/planner/catalog")
+                        .session(session)
+                        .param("q", "Algorithms"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].code", hasItems("CSS215", "INF319")));
+
+        mockMvc.perform(get("/planner/catalog")
+                        .header("Accept", "application/json"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error", containsString("Session expired")));
+    }
 }
