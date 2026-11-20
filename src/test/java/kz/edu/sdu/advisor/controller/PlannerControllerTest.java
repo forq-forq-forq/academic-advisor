@@ -1,8 +1,12 @@
 package kz.edu.sdu.advisor.controller;
 
 import kz.edu.sdu.advisor.model.Course;
+import kz.edu.sdu.advisor.model.CourseCompletion;
+import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.repository.CartItemRepository;
+import kz.edu.sdu.advisor.repository.CourseCompletionRepository;
 import kz.edu.sdu.advisor.repository.CourseRepository;
+import kz.edu.sdu.advisor.repository.StudentRepository;
 import kz.edu.sdu.advisor.service.CartService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +39,12 @@ class PlannerControllerTest {
 
     @Autowired
     private CourseRepository courseRepository;
+
+    @Autowired
+    private CourseCompletionRepository courseCompletionRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
 
     @Autowired
     private CartService cartService;
@@ -555,5 +565,31 @@ class PlannerControllerTest {
                 .contains("INF202")
                 .contains("5 ECTS")
                 .contains("%%EOF");
+    }
+
+    @Test
+    @DisplayName("Hide Completed toggle renders cleanly and recognizes completed courses from both student entity and transcript completions")
+    void hideCompletedFilter_shouldRecognizeAllCompletedSourcesAndExcludeFromUncompletedCatalog() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+
+        Student student = studentRepository.findByStudentId(VALID_STUDENT_ID).orElseThrow();
+        Course inf202 = courseRepository.findByCode("INF202").orElseThrow();
+        courseCompletionRepository.saveAndFlush(new CourseCompletion(student.getId(), inf202, "A", "Fall 2025"));
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"btn-hide-completed\"")))
+                .andExpect(content().string(containsString("toggleHideCompleted(this)")))
+                .andExpect(content().string(containsString("is-completed")))
+                .andExpect(content().string(containsString("data-completed=\"true\"")));
+
+        mockMvc.perform(get("/planner/catalog")
+                        .session(session)
+                        .param("type", "UNCOMPLETED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].code", not(hasItem("INF106"))))
+                .andExpect(jsonPath("$[*].code", not(hasItem("INF202"))))
+                .andExpect(jsonPath("$[*].completed", everyItem(is(false))));
     }
 }

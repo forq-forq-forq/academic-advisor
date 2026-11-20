@@ -480,7 +480,7 @@
                 <button type="button" class="filter-chip" data-filter="CORE" onclick="setCatalogFilter('CORE', this)">Core</button>
                 <button type="button" class="filter-chip" data-filter="ELECTIVE" onclick="setCatalogFilter('ELECTIVE', this)">Area Elective</button>
                 <button type="button" class="filter-chip" data-filter="GENERAL" onclick="setCatalogFilter('GENERAL', this)">General</button>
-                <button type="button" class="filter-chip" data-filter="UNCOMPLETED" onclick="setCatalogFilter('UNCOMPLETED', this)">Hide Completed</button>
+                <button type="button" id="btn-hide-completed" class="filter-chip toggle-chip" data-filter="UNCOMPLETED" aria-pressed="false" onclick="toggleHideCompleted(this)">Hide Completed</button>
             </div>
             <div class="catalog-subfilters">
                 <div class="subfilter-group">
@@ -513,6 +513,7 @@
             <li class="catalog-item"
                 th:each="course : ${availableCourses}"
                 th:id="'catalog-item-' + ${course.id}"
+                th:classappend="${course.completed ? 'is-completed' : ''}"
                 draggable="true"
                 ondragstart="handleRoadmapDragStart(event)"
                 th:attr="data-course-id=${course.id},data-course-code=${course.code},data-course-name=${course.name},data-course-type=${course.courseType},data-course-category=${course.category},data-course-season=${course.season},data-course-difficulty=${course.difficulty},data-completed=${course.completed},data-enrolled=${course.enrolled},data-prereqs-met=${course.prerequisitesMet},data-has-prereqs=${course.hasPrerequisites},data-prereqs=${#strings.listJoin(course.prerequisiteCodes, ',')}">
@@ -565,7 +566,7 @@
                             onclick="cancelEnrolledCourse(this.getAttribute('data-course-id'))"
                             title="Отменить принятый курс">↩️ Отменить</button>
                     <span th:if="${!course.enrolled and course.inCart}" class="badge-in-cart">In Cart</span>
-                    <button th:if="${!course.enrolled and !course.inCart}"
+                    <button th:if="${!course.enrolled and !course.inCart and !course.completed}"
                             type="button"
                             class="btn-add"
                             th:attr="data-course-id=${course.id}"

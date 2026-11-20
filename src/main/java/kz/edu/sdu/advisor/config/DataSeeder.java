@@ -462,6 +462,9 @@ public class DataSeeder implements CommandLineRunner {
             if (student.getCareerGoal() == null) {
                 student.setCareerGoal("Backend & Cloud Engineering");
             }
+            if (student.getCompletedCourses() == null || student.getCompletedCourses().isEmpty()) {
+                student.setCompletedCourses(new java.util.HashSet<>(buildDemoCompletedCourses(courses)));
+            }
             studentRepository.save(student);
         } else {
             log.info("Seeding demo student: {}", studentId);
@@ -478,16 +481,7 @@ public class DataSeeder implements CommandLineRunner {
             student.setAccount(account);
 
             // Completed courses: Semesters 1 and 2 (8 courses = 41 ECTS)
-            student.setCompletedCourses(Set.of(
-                    courses.get("INF106"),
-                    courses.get("CSS105"),
-                    courses.get("MAT137"),
-                    courses.get("MAT156"),
-                    courses.get("MDE171"),
-                    courses.get("INF114"),
-                    courses.get("INF108"),
-                    courses.get("MAT138")
-            ));
+            student.setCompletedCourses(new java.util.HashSet<>(buildDemoCompletedCourses(courses)));
 
             // Currently enrolled courses: Semester 3 (4 courses = 20 ECTS)
             student.setEnrolledCourses(Set.of(
@@ -501,6 +495,19 @@ public class DataSeeder implements CommandLineRunner {
             account.setStudent(student);
             log.info("Demo student seeded with major IS (SITAM), 41 completed ECTS, 20 enrolled ECTS");
         }
+    }
+
+    private Set<Course> buildDemoCompletedCourses(Map<String, Course> courses) {
+        return Set.of(
+                courses.get("INF106"),
+                courses.get("CSS105"),
+                courses.get("MAT137"),
+                courses.get("MAT156"),
+                courses.get("MDE171"),
+                courses.get("INF114"),
+                courses.get("INF108"),
+                courses.get("MAT138")
+        );
     }
 
     private void seedRegistrationPeriods() {

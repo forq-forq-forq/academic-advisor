@@ -6,228 +6,184 @@ import kz.edu.sdu.advisor.model.dto.CartItemDto;
 import kz.edu.sdu.advisor.model.dto.RoadmapBoardDto;
 import kz.edu.sdu.advisor.model.dto.RoadmapCourseCardDto;
 import kz.edu.sdu.advisor.model.dto.RoadmapSemesterDto;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * Generates downloadable PDF 1.4 documents summarizing the student's Semester Cart
- * and/or 4-Year Degree Roadmap (US-23) with zero external PDF dependencies.
+ * Generates templated, styled PDF 1.4 academic study plan documents summarizing
+ * the student's Semester Cart and/or 4-Year Degree Roadmap (US-23) via {@link PdfTemplateEngine}.
  */
 @Service
 public class PlanPdfExportService {
 
-    private static final int LINES_PER_PAGE = 48;
-    private static final int MAX_LINE_CHARS = 88;
+    private final PdfTemplateEngine pdfTemplateEngine;
+
+    @Autowired
+    public PlanPdfExportService(PdfTemplateEngine pdfTemplateEngine) {
+        this.pdfTemplateEngine = pdfTemplateEngine;
+    }
+
+    public PlanPdfExportService() {
+        this(new PdfTemplateEngine());
+    }
 
     public byte[] generatePlanPdf(Student student, CartDto cart, RoadmapBoardDto roadmap, String scope) {
         String normalizedScope = scope != null ? scope.trim().toLowerCase(Locale.ROOT) : "all";
-        List<PdfLine> lines = buildReportLines(student, cart, roadmap, normalizedScope);
-        List<List<PdfLine>> pages = paginate(lines);
-        return buildPdfDocument(pages);
-    }
+        PdfTemplateEngine.PdfTemplateConfig template = pdfTemplateEngine.getConfig();
 
-    private List<PdfLine> buildReportLines(
-            Student student,
-            CartDto cart,
-            RoadmapBoardDto roadmap,
-            String scope) {
-
-        List<PdfLine> lines = new ArrayList<>();
         String name = student != null && student.getName() != null ? student.getName() : "Student";
         String studentId = student != null && student.getStudentId() != null ? student.getStudentId() : "-";
-        String majorName = (student != null && student.getMajor() != null)
+        String majorName = (student != null && student.getMajor() != null && student.getMajor().getName() != null)
                 ? student.getMajor().getName()
                 : "Information Systems";
         String catalogYear = (student != null && student.getCatalogYear() != null)
                 ? String.valueOf(student.getCatalogYear())
                 : "2024";
+        String currentSemester = (student != null && student.getCurrentSemester() != null)
+                ? "Semester " + student.getCurrentSemester()
+                : "Semester 1";
+        String gpaText = (student != null && student.getGpa() != null)
+                ? String.format(Locale.US, "%.2f", student.getGpa())
+                : "0.00";
+        String careerGoal = (student != null && student.getCareerGoal() != null && !student.getCareerGoal().isBlank())
+                ? student.getCareerGoal()
+                : "B.Sc. Degree Completion";
 
-        lines.add(new PdfLine("SDU Academic Advisor - Study Plan Export", true));
-        lines.add(new PdfLine("Student: " + name + " (" + studentId + ")", false));
-        lines.add(new PdfLine("Major: " + majorName + " | Catalog Year: " + catalogYear, false));
-        lines.add(new PdfLine("--------------------------------------------------------------------------", false));
+        PdfTemplateEngine.PdfRenderSession session = pdfTemplateEngine.newSession(
+                template.branding.headerTitle,
+                name + " (" + studentId + ")");
 
-        if (!"roadmap".equals(scope) && cart != null) {
-            lines.add(new PdfLine("SEMESTER CART PLAN", true));
-            lines.add(new PdfLine(String.format(
-                    "Workload Summary: %d / %d ECTS (%s)",
-                    cart.totalCredits(), cart.maxCredits(), cart.workloadState()), false));
-            if (cart.exceedsLimit()) {
-                lines.add(new PdfLine("WARNING: Credit limit exceeded by " + cart.excessCredits() + " ECTS", false));
+        session.renderHeaderBanner(
+                template.branding.headerTitle,
+                template.branding.headerSubtitle,
+                "Generated: " + LocalDate.now(),
+                "SCOPE: " + normalizedScope.toUpperCase(Locale.ROOT));
+
+        session.renderProfileCard(
+                "Student: " + name + " (" + studentId + ")",
+                "Major: " + majorName + " | Catalog Year: " + catalogYear,
+                currentSemester + " | Cumulative GPA: " + gpaText,
+                careerGoal);
+
+        if (!"roadmap".equals(normalizedScope) && cart != null) {
+            renderCartSection(session, template, cart);
+        }
+
+        if (!"cart".equals(normalizedScope) && roadmap != null) {
+            renderRoadmapSection(session, template, roadmap);
+        }
+
+        return session.toPdfBytes();
+    }
+
+    private void renderCartSection(
+            PdfTemplateEngine.PdfRenderSession session,
+            PdfTemplateEngine.PdfTemplateConfig template,
+            CartDto cart) {
+
+        List<CartItemDto> items = cart.items() != null ? cart.items() : List.of();
+        session.renderSectionHeader(template.branding.cartSectionTitle, items.size() + " course(s)");
+
+        String summaryLine = String.format(Locale.US,
+                "Workload Summary: %d / %d ECTS (%s)",
+                cart.totalCredits(), cart.maxCredits(), cart.workloadState());
+        session.renderCartSummaryCard(
+                summaryLine,
+                cart.workloadState(),
+                cart.totalCredits(),
+                cart.maxCredits(),
+                items.size());
+
+        if (cart.exceedsLimit()) {
+            session.renderAlertBanner(
+                    "WARNING: Credit limit exceeded by " + cart.excessCredits() + " ECTS",
+                    true);
+        }
+
+        if (items.isEmpty()) {
+            session.renderEmptyBox("No courses in semester cart.");
+        } else {
+            session.renderTableHeader(template.cartColumns);
+            for (int i = 0; i < items.size(); i++) {
+                CartItemDto item = items.get(i);
+                session.renderCartRow(
+                        i + 1,
+                        item.code(),
+                        item.name(),
+                        item.credits(),
+                        i % 2 == 1,
+                        template.cartColumns);
             }
-            if (cart.items() == null || cart.items().isEmpty()) {
-                lines.add(new PdfLine("  (No courses in semester cart)", false));
+            session.renderCartTotalRow(cart.totalCredits(), items.size());
+        }
+    }
+
+    private void renderRoadmapSection(
+            PdfTemplateEngine.PdfRenderSession session,
+            PdfTemplateEngine.PdfTemplateConfig template,
+            RoadmapBoardDto roadmap) {
+
+        session.renderSectionHeader(template.branding.roadmapSectionTitle, roadmap.totalCredits() + " ECTS Total");
+
+        String summaryLine = String.format(Locale.US,
+                "Total Roadmap: %d ECTS across %d courses | Pacing: %s",
+                roadmap.totalCredits(), roadmap.totalCourses(), roadmap.activePacingStrategy());
+        session.renderRoadmapOverviewStrip(
+                summaryLine,
+                roadmap.activePacingStrategy(),
+                roadmap.prerequisiteConflictCount(),
+                roadmap.overloadedSemesterCount(),
+                roadmap.seasonConflictCount());
+
+        if (roadmap.semesters() == null || roadmap.semesters().isEmpty()) {
+            session.renderEmptyBox("No roadmap semesters configured.");
+            return;
+        }
+
+        for (RoadmapSemesterDto sem : roadmap.semesters()) {
+            List<RoadmapCourseCardDto> courses = sem.courses() != null ? sem.courses() : List.of();
+            int minRequiredHeight = courses.isEmpty() ? 58 : 72;
+            String semHeaderTitle = String.format(Locale.US,
+                    "%s - %d ECTS [%s]",
+                    sem.title(), sem.totalCredits(), sem.workloadState());
+
+            session.renderSemesterHeader(semHeaderTitle, sem.workloadState(), sem.overloaded(), minRequiredHeight);
+
+            if (courses.isEmpty()) {
+                session.renderEmptyBox("No courses scheduled in " + sem.title() + ".");
             } else {
-                for (CartItemDto item : cart.items()) {
-                    addWrapped(lines, String.format("  * %s - %s (%d ECTS)",
-                            item.code(), item.name(), item.credits()), false);
+                session.renderTableHeader(template.roadmapColumns);
+                for (int i = 0; i < courses.size(); i++) {
+                    RoadmapCourseCardDto card = courses.get(i);
+                    String warningNote = buildCardWarningNote(card);
+                    session.renderRoadmapCourseRow(
+                            card.code(),
+                            card.name(),
+                            card.category(),
+                            card.season(),
+                            card.credits(),
+                            card.status(),
+                            warningNote,
+                            i % 2 == 1,
+                            template.roadmapColumns);
                 }
-            }
-            lines.add(new PdfLine("", false));
-        }
-
-        if (!"cart".equals(scope) && roadmap != null) {
-            lines.add(new PdfLine("4-YEAR DEGREE ROADMAP (8 SEMESTERS)", true));
-            lines.add(new PdfLine(String.format(
-                    "Total Roadmap: %d ECTS across %d courses | Pacing: %s",
-                    roadmap.totalCredits(), roadmap.totalCourses(), roadmap.activePacingStrategy()), false));
-            lines.add(new PdfLine("", false));
-
-            if (roadmap.semesters() != null) {
-                for (RoadmapSemesterDto sem : roadmap.semesters()) {
-                    lines.add(new PdfLine(String.format("%s - %d ECTS [%s]",
-                            sem.title(), sem.totalCredits(), sem.workloadState()), true));
-                    if (sem.courses() == null || sem.courses().isEmpty()) {
-                        lines.add(new PdfLine("  (No courses scheduled)", false));
-                    } else {
-                        for (RoadmapCourseCardDto card : sem.courses()) {
-                            addWrapped(lines, String.format("  - %s: %s (%d ECTS, %s, %s)",
-                                    card.code(), card.name(), card.credits(), card.category(), card.status()), false);
-                        }
-                    }
-                    lines.add(new PdfLine("", false));
-                }
+                session.moveDown(10);
             }
         }
-        return lines;
     }
 
-    private void addWrapped(List<PdfLine> lines, String text, boolean bold) {
-        String clean = sanitizeAscii(text);
-        while (clean.length() > MAX_LINE_CHARS) {
-            int split = clean.lastIndexOf(' ', MAX_LINE_CHARS);
-            if (split <= 10) {
-                split = MAX_LINE_CHARS;
-            }
-            lines.add(new PdfLine(clean.substring(0, split), bold));
-            clean = "    " + clean.substring(split).trim();
+    private String buildCardWarningNote(RoadmapCourseCardDto card) {
+        List<String> parts = new java.util.ArrayList<>();
+        if (card.prerequisiteViolation() && card.violatedPrerequisites() != null && !card.violatedPrerequisites().isEmpty()) {
+            parts.add("Prereq conflict: " + String.join(", ", card.violatedPrerequisites()));
         }
-        lines.add(new PdfLine(clean, bold));
+        if (card.seasonMismatch() && card.seasonWarning() != null && !card.seasonWarning().isBlank()) {
+            parts.add(card.seasonWarning());
+        }
+        return String.join(" | ", parts);
     }
-
-    private List<List<PdfLine>> paginate(List<PdfLine> lines) {
-        List<List<PdfLine>> pages = new ArrayList<>();
-        for (int i = 0; i < lines.size(); i += LINES_PER_PAGE) {
-            pages.add(lines.subList(i, Math.min(lines.size(), i + LINES_PER_PAGE)));
-        }
-        if (pages.isEmpty()) {
-            pages.add(List.of(new PdfLine("SDU Academic Advisor - Empty Plan", true)));
-        }
-        return pages;
-    }
-
-    private byte[] buildPdfDocument(List<List<PdfLine>> pages) {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        writeAscii(out, "%PDF-1.4\n");
-
-        List<Long> offsets = new ArrayList<>();
-        offsets.add(0L); // object 0 free placeholder
-
-        int pageCount = pages.size();
-        // Object 1: Catalog, Object 2: Pages, Object 3: Helvetica, Object 4: Helvetica-Bold
-        // Then for each page i: Content object (5 + 2*i), Page object (6 + 2*i)
-        List<Integer> pageObjectIds = new ArrayList<>();
-        for (int i = 0; i < pageCount; i++) {
-            pageObjectIds.add(6 + 2 * i);
-        }
-
-        // Obj 1: Catalog
-        offsets.add((long) out.size());
-        writeAscii(out, "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
-
-        // Obj 2: Pages
-        offsets.add((long) out.size());
-        StringBuilder kids = new StringBuilder();
-        for (Integer pid : pageObjectIds) {
-            kids.append(pid).append(" 0 R ");
-        }
-        writeAscii(out, "2 0 obj\n<< /Type /Pages /Kids [" + kids.toString().trim() + "] /Count " + pageCount + " >>\nendobj\n");
-
-        // Obj 3: Font F1 (Helvetica)
-        offsets.add((long) out.size());
-        writeAscii(out, "3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n");
-
-        // Obj 4: Font F2 (Helvetica-Bold)
-        offsets.add((long) out.size());
-        writeAscii(out, "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n");
-
-        for (int i = 0; i < pageCount; i++) {
-            int contentObjId = 5 + 2 * i;
-            int pageObjId = 6 + 2 * i;
-            String streamContent = buildPageContentStream(pages.get(i), i + 1, pageCount);
-            byte[] streamBytes = streamContent.getBytes(StandardCharsets.ISO_8859_1);
-
-            offsets.add((long) out.size());
-            writeAscii(out, contentObjId + " 0 obj\n<< /Length " + streamBytes.length + " >>\nstream\n");
-            out.writeBytes(streamBytes);
-            writeAscii(out, "\nendstream\nendobj\n");
-
-            offsets.add((long) out.size());
-            writeAscii(out, pageObjId + " 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-                    + "/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents " + contentObjId + " 0 R >>\nendobj\n");
-        }
-
-        long xrefOffset = out.size();
-        int totalObjects = offsets.size();
-        writeAscii(out, "xref\n0 " + totalObjects + "\n");
-        writeAscii(out, "0000000000 65535 f \n");
-        for (int i = 1; i < totalObjects; i++) {
-            writeAscii(out, String.format(Locale.US, "%010d 00000 n \n", offsets.get(i)));
-        }
-        writeAscii(out, "trailer\n<< /Size " + totalObjects + " /Root 1 0 R >>\nstartxref\n" + xrefOffset + "\n%%EOF\n");
-        return out.toByteArray();
-    }
-
-    private String buildPageContentStream(List<PdfLine> pageLines, int pageNumber, int totalPages) {
-        StringBuilder sb = new StringBuilder();
-        int y = 752;
-        for (PdfLine line : pageLines) {
-            String font = line.bold() ? "/F2" : "/F1";
-            int size = line.bold() ? 11 : 10;
-            sb.append("BT ").append(font).append(" ").append(size).append(" Tf 46 ").append(y)
-              .append(" Td (").append(escapePdfString(sanitizeAscii(line.text()))).append(") Tj ET\n");
-            y -= 14;
-        }
-        sb.append("BT /F1 9 Tf 46 28 Td (Page ").append(pageNumber).append(" of ").append(totalPages)
-          .append(") Tj ET\n");
-        return sb.toString();
-    }
-
-    private String sanitizeAscii(String text) {
-        if (text == null) return "";
-        String replaced = text
-                .replace('\u2014', '-')
-                .replace('\u2013', '-')
-                .replace('\u2264', '<')
-                .replace('\u2265', '>')
-                .replace('\u2022', '*');
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < replaced.length(); i++) {
-            char ch = replaced.charAt(i);
-            if (ch >= 32 && ch <= 126) {
-                sb.append(ch);
-            } else {
-                sb.append(' ');
-            }
-        }
-        return sb.toString();
-    }
-
-    private String escapePdfString(String text) {
-        return text
-                .replace("\\", "\\\\")
-                .replace("(", "\\(")
-                .replace(")", "\\)");
-    }
-
-    private void writeAscii(ByteArrayOutputStream out, String s) {
-        out.writeBytes(s.getBytes(StandardCharsets.ISO_8859_1));
-    }
-
-    private record PdfLine(String text, boolean bold) {}
 }
