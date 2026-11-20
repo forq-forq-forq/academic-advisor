@@ -123,6 +123,23 @@ public class PlannerController {
         }
     }
 
+    @PostMapping("/planner/roadmap/pacing")
+    @ResponseBody
+    public ResponseEntity<?> applyRoadmapPacing(
+            @RequestParam("strategy") String strategy,
+            HttpSession session) {
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+        try {
+            return ResponseEntity.ok(roadmapService.applyPacingStrategy(studentId, strategy));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+
     @GetMapping("/planner/catalog")
     @ResponseBody
     public ResponseEntity<?> searchCatalog(

@@ -275,6 +275,24 @@
                 </div>
             </div>
 
+            <!-- AI Pacing Strategy Selector (US-20) -->
+            <div id="roadmap-pacing-controls" class="roadmap-pacing-controls">
+                <div class="pacing-selector-group">
+                    <label for="pacing-strategy-select" class="pacing-label">Pacing Strategy:</label>
+                    <select id="pacing-strategy-select" class="catalog-select pacing-select">
+                        <option value="BALANCED" th:selected="${roadmap.activePacingStrategy == 'BALANCED'}">Balanced 4 years</option>
+                        <option value="FAST_TRACK" th:selected="${roadmap.activePacingStrategy == 'FAST_TRACK'}">Fast-track: light 4th year for internship</option>
+                    </select>
+                    <button type="button"
+                            id="btn-apply-pacing"
+                            class="btn-apply-pacing"
+                            onclick="applyRoadmapPacing()">✨ Rearrange Roadmap</button>
+                </div>
+                <p id="roadmap-pacing-summary" class="roadmap-pacing-summary" th:text="${roadmap.pacingSummary}">
+                    Balanced 4-year distribution aligned with your curriculum.
+                </p>
+            </div>
+
             <div id="roadmap-grid" class="roadmap-grid">
                 <div class="roadmap-semester-col"
                      th:each="sem : ${roadmap.semesters}"
