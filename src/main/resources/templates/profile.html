@@ -171,6 +171,36 @@
         <div class="empty-state" th:if="${#lists.isEmpty(completedCourses)}">
             <p>No completed courses in your transcript yet. Use the form on the left to add your completed courses and grades.</p>
         </div>
+
+        <!-- Saved Plan Drafts Section (US-22) -->
+        <div id="profile-plan-drafts-section" class="form-section">
+            <h3 class="drafts-section-title">💾 Saved Plan Drafts</h3>
+            <div class="empty-state" th:if="${#lists.isEmpty(planDrafts)}">
+                <p>No saved plan drafts yet. Visit the Course Planner to save scenarios like "Safe plan" or "Ambitious plan".</p>
+            </div>
+            <ul class="profile-drafts-list" th:if="${!#lists.isEmpty(planDrafts)}">
+                <li class="profile-draft-card" th:each="draft : ${planDrafts}">
+                    <div class="profile-draft-info">
+                        <div class="profile-draft-header">
+                            <strong th:text="${draft.name}">Safe plan</strong>
+                            <span class="grade-pill" th:text="${draft.totalCredits + ' ECTS'}">20 ECTS</span>
+                            <span class="draft-strategy-tag" th:text="${draft.pacingStrategy}">BALANCED</span>
+                        </div>
+                        <p class="profile-draft-summary" th:text="${draft.cartCodesSummary}">CSS215, INF202</p>
+                    </div>
+                    <div class="action-row">
+                        <form th:action="@{'/planner/drafts/' + ${draft.id} + '/load'}" method="post">
+                            <input type="hidden" name="redirect" value="/planner">
+                            <button type="submit" class="btn-edit">Load in Planner</button>
+                        </form>
+                        <form th:action="@{'/planner/drafts/' + ${draft.id} + '/delete'}" method="post">
+                            <input type="hidden" name="redirect" value="/profile">
+                            <button type="submit" class="btn-delete">Delete</button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+        </div>
     </section>
 </main>
 

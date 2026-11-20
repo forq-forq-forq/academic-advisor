@@ -21,6 +21,7 @@ erDiagram
     courses ||--o{ cart_items : planned_in
     students ||--o{ roadmap_items : schedules
     courses ||--o{ roadmap_items : scheduled_in
+    students ||--o{ plan_drafts : saves
 
     cart_items {
         BIGINT id PK "Auto-generated"
@@ -33,6 +34,17 @@ erDiagram
         BIGINT student_id FK "References students.id"
         BIGINT course_id FK "References courses.id"
         INTEGER semester "Target semester 1-8"
+    }
+
+    plan_drafts {
+        BIGINT id PK "Auto-generated"
+        BIGINT student_id FK "References students.id"
+        VARCHAR name "Draft name (e.g. Safe plan)"
+        VARCHAR pacing_strategy "BALANCED or FAST_TRACK"
+        INTEGER total_credits "Total draft ECTS"
+        TEXT items_json "Serialized cart and roadmap JSON"
+        TIMESTAMP created_at "Creation timestamp"
+        TIMESTAMP updated_at "Last update timestamp"
     }
 
     faculties {
@@ -230,6 +242,21 @@ Stores multi-year 8-semester roadmap placements per student (US-18).
 | `semester` | INTEGER | NOT NULL | Target semester number (`1`–`8`). |
 
 **Unique constraint:** `(student_id, course_id)`
+
+### `plan_drafts`
+
+Stores saved named semester & roadmap plan drafts per student (US-22).
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | BIGINT | PK, AUTO | Database primary key. |
+| `student_id` | BIGINT | FK → `students.id`, NOT NULL | Student owning the draft. |
+| `name` | VARCHAR(120) | NOT NULL | Draft title (e.g. `Safe plan`, `Ambitious plan`). |
+| `pacing_strategy` | VARCHAR(40) | — | Strategy (`BALANCED`, `FAST_TRACK`). |
+| `total_credits` | INTEGER | NOT NULL, DEFAULT 0 | Total ECTS credits saved in the draft. |
+| `items_json` | TEXT | NOT NULL | Serialized cart course IDs and roadmap placements. |
+| `created_at` | TIMESTAMP | NOT NULL | Creation timestamp. |
+| `updated_at` | TIMESTAMP | NOT NULL | Last modified timestamp. |
 
 ### `password_reset_tokens`
 

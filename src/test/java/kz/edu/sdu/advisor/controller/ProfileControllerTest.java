@@ -5,6 +5,7 @@ import kz.edu.sdu.advisor.model.Student;
 import kz.edu.sdu.advisor.model.dto.CompletedCourseDto;
 import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.StudentRepository;
+import kz.edu.sdu.advisor.service.PlanDraftService;
 import kz.edu.sdu.advisor.service.TranscriptService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,9 @@ class ProfileControllerTest {
 
     @Autowired
     private TranscriptService transcriptService;
+
+    @Autowired
+    private PlanDraftService planDraftService;
 
     private MockHttpSession authSession(String studentId) {
         MockHttpSession session = new MockHttpSession();
@@ -148,5 +152,16 @@ class ProfileControllerTest {
         Student updated = studentRepository.findByStudentId("240103000").orElseThrow();
         assertEquals(5, updated.getCurrentSemester());
         assertEquals("AI / Machine Learning Engineer", updated.getCareerGoal());
+    }
+
+    @Test
+    void showProfileRendersSavedPlanDraftsSection() throws Exception {
+        planDraftService.saveDraft("240103000", "Ambitious plan", "FAST_TRACK");
+
+        mockMvc.perform(get("/profile").session(authSession("240103000")))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("planDrafts"))
+                .andExpect(content().string(containsString("id=\"profile-plan-drafts-section\"")))
+                .andExpect(content().string(containsString("Ambitious plan")));
     }
 }

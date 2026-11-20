@@ -247,6 +247,58 @@
                 </li>
             </ul>
         </div>
+
+        <!-- Saved Plan Drafts Panel (US-22) -->
+        <div id="plan-drafts-panel" class="plan-drafts-panel">
+            <div class="planner-enrolled-header">
+                <h3 class="planner-enrolled-title">💾 Saved Plan Drafts</h3>
+                <div class="draft-presets">
+                    <button type="button" class="filter-chip" onclick="setDraftName('Safe plan')">Safe plan</button>
+                    <button type="button" class="filter-chip" onclick="setDraftName('Ambitious plan')">Ambitious plan</button>
+                </div>
+            </div>
+            <div class="draft-save-row">
+                <input type="text"
+                       id="draft-name-input"
+                       class="catalog-search"
+                       placeholder="Draft name (e.g. Safe plan, Ambitious plan)...">
+                <button type="button"
+                        id="btn-save-draft"
+                        class="btn-apply-pacing"
+                        onclick="savePlanDraft()">💾 Save Draft</button>
+            </div>
+            <div id="saved-drafts-empty"
+                 class="cart-placeholder draft-empty-box"
+                 th:style="${#lists.isEmpty(planDrafts) ? 'display: block;' : 'display: none;'}">
+                No saved drafts yet. Save your current cart &amp; roadmap as "Safe plan" or "Ambitious plan".
+            </div>
+            <ul id="saved-drafts-list"
+                class="cart-items"
+                th:style="${#lists.isEmpty(planDrafts) ? 'display: none;' : 'display: flex;'}">
+                <li class="cart-item draft-item"
+                    th:each="draft : ${planDrafts}"
+                    th:id="'draft-item-' + ${draft.id}">
+                    <div class="item-info">
+                        <div class="item-code-credits">
+                            <span class="course-code" th:text="${draft.name}">Safe plan</span>
+                            <span class="credit-tag" th:text="${draft.totalCredits + ' ECTS'}">20 ECTS</span>
+                            <span class="badge-type" th:text="${draft.pacingStrategy}">BALANCED</span>
+                        </div>
+                        <span class="course-name" th:text="${draft.cartCodesSummary}">CSS215, INF202</span>
+                    </div>
+                    <div class="draft-item-actions">
+                        <button type="button"
+                                class="btn-course-details"
+                                th:attr="data-draft-id=${draft.id}"
+                                onclick="loadPlanDraft(this.getAttribute('data-draft-id'))">Load</button>
+                        <button type="button"
+                                class="btn-cancel-enrolled"
+                                th:attr="data-draft-id=${draft.id}"
+                                onclick="deletePlanDraft(this.getAttribute('data-draft-id'))">Delete</button>
+                    </div>
+                </li>
+            </ul>
+        </div>
     </section>
 
         <!-- Multi-Year 8-Semester Interactive Roadmap Board (US-18) -->
