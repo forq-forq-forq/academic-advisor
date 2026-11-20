@@ -33,6 +33,7 @@ If any other document conflicts with this file, this file takes precedence.
 | Season Availability Flagging (US-21) | `seasonMismatch`, `seasonWarning`, `seasonConflictCount`, `#roadmap-season-conflicts`, `.card-season-mismatch` & `.badge-season-conflict` | Implemented (`docs/US-21.md`) |
 | Multiple Plan Drafts (US-22) | `PlanDraft` (`V10`), `PlanDraftService`, `/planner/drafts/*` endpoints, `#plan-drafts-panel`, `#profile-plan-drafts-section` | Implemented (`docs/US-22.md`) |
 | PDF Plan Export (US-23) | `PlanPdfExportService` (pure-Java PDF 1.4), `GET /planner/export/pdf`, `#btn-export-pdf`, `#btn-export-roadmap-pdf` | Implemented (`docs/US-23.md`) |
+| GPA Planner & Simulation (US-25) | `GpaSimulationService`, `GpaController` (`/gpa`, `POST /gpa/simulate`), `gpa.html`, `gpa.js`, `gpa.css` | Implemented (`docs/US-25.md`) |
 | Academic Standing & Progress (US-07) | `AcademicStandingDto`, `DashboardController` (`/dashboard`), SVG circular progress ring (`27 / 240 ECTS`), GPA badge & program summary | Implemented |
 | Enrolled Courses List (US-08) | `EnrolledCourseDto`, `Student.enrolledCourses`, `DashboardController` (`/dashboard`), semester course list with ECTS credit weights | Implemented |
 | Completed Course History (US-29) | `CourseCompletion` entity over `student_courses`, `CompletedCourseDto`, dashboard & profile tables | Implemented |

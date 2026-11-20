@@ -1,0 +1,292 @@
+/* GPA Planner styles (US-25) */
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f0f4f8;
+    color: #2d3748;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    background: #4c6ef5;
+    color: #fff;
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+header .brand {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+header h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+header .nav-links {
+    display: flex;
+    gap: 0.5rem;
+}
+
+header .nav-links a {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+}
+
+header .nav-links a:hover, header .nav-links a.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+header .user-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+header .student-info {
+    font-size: 0.875rem;
+    opacity: 0.95;
+}
+
+header a.logout {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.825rem;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+}
+
+main {
+    flex: 1;
+    max-width: 1080px;
+    width: 100%;
+    margin: 1.5rem auto;
+    padding: 0 1rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.panel {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    padding: 1.5rem;
+}
+
+.gpa-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.1rem;
+}
+
+.panel-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.gpa-subtext {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+}
+
+.gpa-preset-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-preset {
+    background: #edf2ff;
+    color: #3b5bdb;
+    border: 1px solid #bac8ff;
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-preset:hover {
+    background: #dbe4ff;
+}
+
+.gpa-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.kpi-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.kpi-card.highlight {
+    background: #edf2ff;
+    border-color: #91a7ff;
+}
+
+.kpi-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.kpi-value {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.kpi-projected-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+}
+
+.kpi-delta {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #3b5bdb;
+}
+
+.kpi-meta {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.kpi-standing {
+    display: inline-block;
+    align-self: flex-start;
+    background: #ffffff;
+    border: 1px solid #bac8ff;
+    color: #364fc7;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+}
+
+.courses-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.btn-simulate {
+    background: #4c6ef5;
+    color: #ffffff;
+    border: none;
+    padding: 0.45rem 0.95rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-simulate:hover {
+    background: #3b5bdb;
+}
+
+.gpa-table-wrapper {
+    overflow-x: auto;
+}
+
+.gpa-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.gpa-table th, .gpa-table td {
+    text-align: left;
+    padding: 0.75rem 0.6rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.gpa-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+}
+
+.course-cell-code {
+    font-weight: 700;
+    color: #3b5bdb;
+}
+
+.course-cell-name {
+    font-size: 0.82rem;
+    color: #475569;
+}
+
+.source-pill {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+}
+
+.gpa-grade-select {
+    padding: 0.35rem 0.6rem;
+    border: 1.5px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1e293b;
+    background: #ffffff;
+}
+
+.grade-points-cell {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.gpa-empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1.5px dashed #cbd5e0;
+    border-radius: 8px;
+}
+
+.gpa-error-alert {
+    background: #fff5f5;
+    border: 1px solid #feb2b2;
+    color: #9b2c2c;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}

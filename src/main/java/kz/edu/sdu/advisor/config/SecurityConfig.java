@@ -133,6 +133,7 @@ public class SecurityConfig {
         return uri.startsWith("/api/")
                 || uri.startsWith("/dashboard/chat")
                 || uri.startsWith("/planner/cart")
+                || uri.startsWith("/gpa/simulate")
                 || (accept != null && accept.contains("application/json"));
     }
 
