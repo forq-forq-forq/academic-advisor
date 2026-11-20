@@ -75,6 +75,9 @@ erDiagram
         VARCHAR code UK "Course code (e.g. CS101)"
         VARCHAR name "NOT NULL"
         INTEGER credits "Credit hours (ECTS)"
+        INTEGER difficulty "Difficulty 1-5 (default 3)"
+        VARCHAR description "Course summary"
+        VARCHAR season "FALL, SPRING, BOTH"
     }
 
     prerequisites {
@@ -178,6 +181,9 @@ Stores the course catalog.
 | `code` | VARCHAR | NOT NULL, UNIQUE | Course code (e.g. `"CS101"`). |
 | `name` | VARCHAR | NOT NULL | Course title. |
 | `credits` | INTEGER | NOT NULL | Number of credit hours (ECTS). |
+| `difficulty` | INTEGER | DEFAULT 3 | Course difficulty rating (1–5). |
+| `description` | VARCHAR(500) | — | Course overview text. |
+| `season` | VARCHAR(16) | DEFAULT `'BOTH'` | Offering term (`FALL`, `SPRING`, `BOTH`). |
 
 ### `prerequisites`
 
