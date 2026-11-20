@@ -410,4 +410,33 @@ class PlannerControllerTest {
                 .andExpect(jsonPath("$.semesters[7].semester", is(8)))
                 .andExpect(jsonPath("$.totalCourses", greaterThanOrEqualTo(20)));
     }
+
+    @Test
+    @DisplayName("US-19: POST /planner/roadmap/move validates prerequisites and overload, and /remove deletes course from roadmap")
+    void roadmapMoveAndRemoveEndpoints_shouldValidateAndPersistChanges() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+        Course css217 = courseRepository.findByCode("CSS217").orElseThrow();
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("draggable=\"true\"")))
+                .andExpect(content().string(containsString("id=\"roadmap-validation-bar\"")));
+
+        // Move CSS217 to Semester 2 -> triggers prerequisiteViolation because CSS215 is in Semester 3
+        mockMvc.perform(post("/planner/roadmap/move")
+                        .session(session)
+                        .param("courseId", css217.getId().toString())
+                        .param("targetSemester", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.prerequisiteConflictCount", greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.semesters[1].courses[?(@.code=='CSS217')].prerequisiteViolation", hasItem(true)));
+
+        // Remove CSS217 from roadmap
+        mockMvc.perform(post("/planner/roadmap/remove")
+                        .session(session)
+                        .param("courseId", css217.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.semesters[1].courses[?(@.code=='CSS217')]", empty()));
+    }
 }

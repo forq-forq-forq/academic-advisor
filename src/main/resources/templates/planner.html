@@ -255,9 +255,23 @@
                 <div>
                     <h2 class="cart-title">🗓️ 4-Year Degree Roadmap (8 Semesters)</h2>
                     <p class="roadmap-subtitle">
-                        Overview of all 8 semesters (<span id="roadmap-total-credits" th:text="${roadmap.totalCredits}">0</span> ECTS across
+                        Drag &amp; drop courses between semesters (<span id="roadmap-total-credits" th:text="${roadmap.totalCredits}">0</span> ECTS across
                         <span id="roadmap-total-courses" th:text="${roadmap.totalCourses}">0</span> courses)
                     </p>
+                </div>
+                <div id="roadmap-validation-bar" class="roadmap-validation-bar">
+                    <span id="roadmap-prereq-conflicts"
+                          class="validation-pill"
+                          th:classappend="${roadmap.prerequisiteConflictCount > 0 ? 'pill-danger' : 'pill-ok'}"
+                          th:text="${roadmap.prerequisiteConflictCount > 0 ? ('⚠️ ' + roadmap.prerequisiteConflictCount + ' Prereq Conflict(s)') : '✓ Prereqs Valid'}">
+                        ✓ Prereqs Valid
+                    </span>
+                    <span id="roadmap-overload-count"
+                          class="validation-pill"
+                          th:classappend="${roadmap.overloadedSemesterCount > 0 ? 'pill-warn' : 'pill-ok'}"
+                          th:text="${roadmap.overloadedSemesterCount > 0 ? ('⚠️ ' + roadmap.overloadedSemesterCount + ' Overloaded Semester(s)') : '✓ Load ≤ 30 ECTS'}">
+                        ✓ Load ≤ 30 ECTS
+                    </span>
                 </div>
             </div>
 
@@ -266,13 +280,17 @@
                      th:each="sem : ${roadmap.semesters}"
                      th:id="'roadmap-semester-' + ${sem.semester}"
                      th:attr="data-semester=${sem.semester},data-season=${sem.season}"
-                     th:classappend="${sem.overloaded ? 'semester-overloaded' : ''}">
+                     th:classappend="${sem.overloaded ? 'semester-overloaded' : ''}"
+                     ondragover="handleRoadmapDragOver(event)"
+                     ondragleave="handleRoadmapDragLeave(event)"
+                     ondrop="handleRoadmapDrop(event)">
                     <div class="roadmap-semester-header">
                         <div>
                             <h3 class="roadmap-sem-title" th:text="${sem.title}">Semester 1 (Fall)</h3>
                             <span class="roadmap-sem-load"
                                   th:classappend="'state-' + ${#strings.toLowerCase(sem.workloadState)}"
                                   th:text="${sem.workloadState}">Balanced</span>
+                            <span th:if="${sem.overloaded}" class="badge-overload-warning">⚠️ Overload (&gt;30 ECTS)</span>
                         </div>
                         <span class="roadmap-sem-credits" th:text="${sem.totalCredits + ' ECTS'}">0 ECTS</span>
                     </div>
@@ -281,6 +299,9 @@
                         <div class="roadmap-course-card"
                              th:each="card : ${sem.courses}"
                              th:id="'roadmap-card-' + ${card.courseId}"
+                             th:classappend="${card.prerequisiteViolation ? 'card-prereq-violation' : ''}"
+                             draggable="true"
+                             ondragstart="handleRoadmapDragStart(event)"
                              th:attr="data-course-id=${card.courseId},data-semester=${sem.semester}">
                             <div class="roadmap-card-top">
                                 <span class="course-code" th:text="${card.code}">CSS105</span>
@@ -293,15 +314,34 @@
                                       th:classappend="'status-' + ${#strings.toLowerCase(card.status)}"
                                       th:text="${card.status}">PLANNED</span>
                             </div>
+                            <div th:if="${card.prerequisiteViolation}" class="badge-roadmap-violation">
+                                ⚠️ Missing/out-of-order prereq: <span th:text="${#strings.listJoin(card.violatedPrerequisites, ', ')}"></span>
+                            </div>
                             <div class="roadmap-card-actions">
                                 <button type="button"
                                         class="btn-course-details"
                                         th:attr="data-course-id=${card.courseId}"
                                         onclick="openCourseDetailModal(this.getAttribute('data-course-id'))">Details</button>
+                                <div class="roadmap-card-move-controls" th:if="${card.status != 'COMPLETED'}">
+                                    <select class="roadmap-move-select"
+                                            aria-label="Move course to semester"
+                                            th:attr="data-course-id=${card.courseId}"
+                                            onchange="moveRoadmapCourse(this.getAttribute('data-course-id'), this.value)">
+                                        <option th:each="s : ${#numbers.sequence(1, 8)}"
+                                                th:value="${s}"
+                                                th:selected="${s == sem.semester}"
+                                                th:text="${'Sem ' + s}">Sem 1</option>
+                                    </select>
+                                    <button type="button"
+                                            class="btn-roadmap-remove"
+                                            title="Remove from roadmap"
+                                            th:attr="data-course-id=${card.courseId}"
+                                            onclick="removeRoadmapCourse(this.getAttribute('data-course-id'))">×</button>
+                                </div>
                             </div>
                         </div>
                         <div class="roadmap-empty-slot" th:if="${#lists.isEmpty(sem.courses)}">
-                            No courses planned for this semester yet.
+                            Drop a course here
                         </div>
                     </div>
                 </div>
@@ -379,6 +419,8 @@
             <li class="catalog-item"
                 th:each="course : ${availableCourses}"
                 th:id="'catalog-item-' + ${course.id}"
+                draggable="true"
+                ondragstart="handleRoadmapDragStart(event)"
                 th:attr="data-course-id=${course.id},data-course-code=${course.code},data-course-name=${course.name},data-course-type=${course.courseType},data-course-category=${course.category},data-course-season=${course.season},data-course-difficulty=${course.difficulty},data-completed=${course.completed},data-enrolled=${course.enrolled},data-prereqs-met=${course.prerequisitesMet},data-has-prereqs=${course.hasPrerequisites},data-prereqs=${#strings.listJoin(course.prerequisiteCodes, ',')}">
                 <div class="item-info">
                     <div class="item-code-credits">

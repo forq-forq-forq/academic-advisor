@@ -1315,3 +1315,107 @@ main.drawer-collapsed {
     font-size: 0.76rem;
     color: #64748b;
 }
+
+/* ── Drag-and-Drop & Instant Validation (US-19) ── */
+.roadmap-validation-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+}
+
+.validation-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.22rem 0.6rem;
+    border-radius: 9999px;
+}
+
+.validation-pill.pill-ok {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.validation-pill.pill-warn {
+    background: #fef9c3;
+    color: #854d0e;
+    border: 1px solid #fde047;
+}
+
+.validation-pill.pill-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+}
+
+.roadmap-semester-col.semester-overloaded {
+    background: #fefce8;
+    border: 2px solid #eab308;
+}
+
+.roadmap-semester-col.drag-over {
+    border: 2px dashed #4c6ef5;
+    background: #eef2ff;
+}
+
+.badge-overload-warning {
+    display: inline-block;
+    margin-top: 0.25rem;
+    background: #fef08a;
+    color: #854d0e;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+}
+
+.roadmap-course-card[draggable="true"] {
+    cursor: grab;
+}
+
+.roadmap-course-card.card-prereq-violation {
+    background: #fff5f5;
+    border: 2px solid #e53e3e;
+}
+
+.badge-roadmap-violation {
+    background: #fee2e2;
+    color: #9b2c2c;
+    border: 1px solid #feb2b2;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+.roadmap-card-move-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.roadmap-move-select {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.25rem;
+    background: #f8fafc;
+    color: #334155;
+}
+
+.btn-roadmap-remove {
+    background: transparent;
+    border: 1px solid #fecdd3;
+    color: #be123c;
+    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.btn-roadmap-remove:hover {
+    background: #ffe4e6;
+}
