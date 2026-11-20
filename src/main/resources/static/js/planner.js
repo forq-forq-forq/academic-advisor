@@ -736,12 +736,113 @@ function switchPlannerView(viewName) {
     }
 }
 
+let draggedRoadmapCourseId = null;
+
+function handleRoadmapDragStart(event) {
+    const card = event.currentTarget;
+    draggedRoadmapCourseId = card ? card.getAttribute('data-course-id') : null;
+    if (event.dataTransfer && draggedRoadmapCourseId) {
+        event.dataTransfer.setData('text/plain', draggedRoadmapCourseId);
+        event.dataTransfer.effectAllowed = 'move';
+    }
+}
+
+function handleRoadmapDragOver(event) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = 'move';
+    }
+    event.currentTarget.classList.add('drag-over');
+}
+
+function handleRoadmapDragLeave(event) {
+    event.currentTarget.classList.remove('drag-over');
+}
+
+function handleRoadmapDrop(event) {
+    event.preventDefault();
+    const col = event.currentTarget;
+    col.classList.remove('drag-over');
+    const targetSemester = col.getAttribute('data-semester');
+    const courseId = (event.dataTransfer && event.dataTransfer.getData('text/plain')) || draggedRoadmapCourseId;
+    draggedRoadmapCourseId = null;
+    if (courseId && targetSemester) {
+        moveRoadmapCourse(courseId, targetSemester);
+    }
+}
+
+function moveRoadmapCourse(courseId, targetSemester) {
+    hideAlert();
+    fetch('/planner/roadmap/move?courseId=' + encodeURIComponent(courseId) + '&targetSemester=' + encodeURIComponent(targetSemester), {
+        method: 'POST',
+        headers: Object.assign({ 'Accept': 'application/json' }, window.advisorCsrfHeaders ? window.advisorCsrfHeaders() : {})
+    })
+        .then(async res => {
+            if (res.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showAlert(data.error || 'Failed to move course on roadmap.');
+                return null;
+            }
+            return data;
+        })
+        .then(board => {
+            if (board) {
+                renderRoadmapBoard(board);
+            }
+        })
+        .catch(() => showAlert('Unable to update roadmap placement.'));
+}
+
+function removeRoadmapCourse(courseId) {
+    hideAlert();
+    fetch('/planner/roadmap/remove?courseId=' + encodeURIComponent(courseId), {
+        method: 'POST',
+        headers: Object.assign({ 'Accept': 'application/json' }, window.advisorCsrfHeaders ? window.advisorCsrfHeaders() : {})
+    })
+        .then(async res => {
+            if (res.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showAlert(data.error || 'Failed to remove course from roadmap.');
+                return null;
+            }
+            return data;
+        })
+        .then(board => {
+            if (board) {
+                renderRoadmapBoard(board);
+            }
+        })
+        .catch(() => showAlert('Unable to remove course from roadmap.'));
+}
+
 function renderRoadmapBoard(board) {
     if (!board || !Array.isArray(board.semesters)) return;
     const totalCreditsEl = document.getElementById('roadmap-total-credits');
     const totalCoursesEl = document.getElementById('roadmap-total-courses');
     if (totalCreditsEl) totalCreditsEl.textContent = board.totalCredits;
     if (totalCoursesEl) totalCoursesEl.textContent = board.totalCourses;
+
+    const prereqConflictEl = document.getElementById('roadmap-prereq-conflicts');
+    if (prereqConflictEl) {
+        const count = board.prerequisiteConflictCount || 0;
+        prereqConflictEl.className = 'validation-pill ' + (count > 0 ? 'pill-danger' : 'pill-ok');
+        prereqConflictEl.textContent = count > 0 ? (`⚠️ ${count} Prereq Conflict(s)`) : '✓ Prereqs Valid';
+    }
+
+    const overloadEl = document.getElementById('roadmap-overload-count');
+    if (overloadEl) {
+        const ov = board.overloadedSemesterCount || 0;
+        overloadEl.className = 'validation-pill ' + (ov > 0 ? 'pill-warn' : 'pill-ok');
+        overloadEl.textContent = ov > 0 ? (`⚠️ ${ov} Overloaded Semester(s)`) : '✓ Load ≤ 30 ECTS';
+    }
 
     const grid = document.getElementById('roadmap-grid');
     if (!grid) return;
@@ -753,32 +854,52 @@ function renderRoadmapBoard(board) {
         col.id = 'roadmap-semester-' + sem.semester;
         col.setAttribute('data-semester', String(sem.semester));
         col.setAttribute('data-season', sem.season || 'FALL');
+        col.setAttribute('ondragover', 'handleRoadmapDragOver(event)');
+        col.setAttribute('ondragleave', 'handleRoadmapDragLeave(event)');
+        col.setAttribute('ondrop', 'handleRoadmapDrop(event)');
 
         const cardsHtml = Array.isArray(sem.courses) && sem.courses.length > 0
-            ? sem.courses.map(card => `
-                <div class="roadmap-course-card" id="roadmap-card-${card.courseId}" data-course-id="${card.courseId}" data-semester="${sem.semester}">
-                    <div class="roadmap-card-top">
-                        <span class="course-code">${escapeHtml(card.code)}</span>
-                        <span class="credit-tag">${card.credits} ECTS</span>
+            ? sem.courses.map(card => {
+                const violationHtml = card.prerequisiteViolation
+                    ? `<div class="badge-roadmap-violation">⚠️ Missing/out-of-order prereq: ${escapeHtml((card.violatedPrerequisites || []).join(', '))}</div>`
+                    : '';
+                const moveControlsHtml = card.status !== 'COMPLETED'
+                    ? `<div class="roadmap-card-move-controls">
+                           <select class="roadmap-move-select" aria-label="Move course to semester" data-course-id="${card.courseId}" onchange="moveRoadmapCourse(this.getAttribute('data-course-id'), this.value)">
+                               ${[1,2,3,4,5,6,7,8].map(s => `<option value="${s}" ${s === sem.semester ? 'selected' : ''}>Sem ${s}</option>`).join('')}
+                           </select>
+                           <button type="button" class="btn-roadmap-remove" title="Remove from roadmap" data-course-id="${card.courseId}" onclick="removeRoadmapCourse(this.getAttribute('data-course-id'))">×</button>
+                       </div>`
+                    : '';
+                return `
+                    <div class="roadmap-course-card${card.prerequisiteViolation ? ' card-prereq-violation' : ''}" id="roadmap-card-${card.courseId}" data-course-id="${card.courseId}" data-semester="${sem.semester}" draggable="true" ondragstart="handleRoadmapDragStart(event)">
+                        <div class="roadmap-card-top">
+                            <span class="course-code">${escapeHtml(card.code)}</span>
+                            <span class="credit-tag">${card.credits} ECTS</span>
+                        </div>
+                        <div class="roadmap-card-name">${escapeHtml(card.name)}</div>
+                        <div class="roadmap-card-badges">
+                            <span class="badge-type">${escapeHtml(card.category || card.courseType)}</span>
+                            <span class="roadmap-status-badge status-${escapeHtml((card.status || 'planned').toLowerCase())}">${escapeHtml(card.status)}</span>
+                        </div>
+                        ${violationHtml}
+                        <div class="roadmap-card-actions">
+                            <button type="button" class="btn-course-details" data-course-id="${card.courseId}" onclick="openCourseDetailModal(${card.courseId})">Details</button>
+                            ${moveControlsHtml}
+                        </div>
                     </div>
-                    <div class="roadmap-card-name">${escapeHtml(card.name)}</div>
-                    <div class="roadmap-card-badges">
-                        <span class="badge-type">${escapeHtml(card.category || card.courseType)}</span>
-                        <span class="roadmap-status-badge status-${escapeHtml((card.status || 'planned').toLowerCase())}">${escapeHtml(card.status)}</span>
-                    </div>
-                    <div class="roadmap-card-actions">
-                        <button type="button" class="btn-course-details" data-course-id="${card.courseId}" onclick="openCourseDetailModal(${card.courseId})">Details</button>
-                    </div>
-                </div>
-            `).join('')
-            : '<div class="roadmap-empty-slot">No courses planned for this semester yet.</div>';
+                `;
+            }).join('')
+            : '<div class="roadmap-empty-slot">Drop a course here</div>';
 
         const stateClass = 'state-' + (sem.workloadState || 'light').toLowerCase();
+        const overloadBadge = sem.overloaded ? '<span class="badge-overload-warning">⚠️ Overload (&gt;30 ECTS)</span>' : '';
         col.innerHTML = `
             <div class="roadmap-semester-header">
                 <div>
                     <h3 class="roadmap-sem-title">${escapeHtml(sem.title)}</h3>
                     <span class="roadmap-sem-load ${stateClass}">${escapeHtml(sem.workloadState)}</span>
+                    ${overloadBadge}
                 </div>
                 <span class="roadmap-sem-credits">${sem.totalCredits} ECTS</span>
             </div>

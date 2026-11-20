@@ -1,7 +1,10 @@
 package kz.edu.sdu.advisor.service;
 
+import kz.edu.sdu.advisor.model.Course;
 import kz.edu.sdu.advisor.model.dto.RoadmapBoardDto;
+import kz.edu.sdu.advisor.model.dto.RoadmapCourseCardDto;
 import kz.edu.sdu.advisor.model.dto.RoadmapSemesterDto;
+import kz.edu.sdu.advisor.repository.CourseRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,9 @@ class RoadmapServiceTest {
 
     @Autowired
     private RoadmapService roadmapService;
+
+    @Autowired
+    private CourseRepository courseRepository;
 
     @Test
     @DisplayName("US-18: getRoadmap populates all 8 semesters with completed, enrolled, and planned curriculum courses")
@@ -39,5 +45,39 @@ class RoadmapServiceTest {
                 .anyMatch(c -> "CSS105".equals(c.code()) && "COMPLETED".equals(c.status()));
         assertThat(board.semesters().get(2).courses())
                 .anyMatch(c -> "CSS215".equals(c.code()) && "ENROLLED".equals(c.status()));
+    }
+
+    @Test
+    @DisplayName("US-19: moving a course before its prerequisite flags prerequisiteViolation and overloading >30 ECTS flags semester overloaded")
+    void moveAndRemoveCourse_shouldFlagPrerequisiteAndOverloadViolations() {
+        roadmapService.getRoadmap("240103000");
+        Course css217 = courseRepository.findByCode("CSS217").orElseThrow();
+
+        // CSS217 requires CSS215 (enrolled in Sem 3); moving CSS217 to Sem 2 triggers prerequisiteViolation
+        RoadmapBoardDto afterViolation = roadmapService.moveCourseToSemester("240103000", css217.getId(), 2);
+        RoadmapCourseCardDto movedCard = afterViolation.semesters().get(1).courses().stream()
+                .filter(c -> "CSS217".equals(c.code()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(movedCard.prerequisiteViolation()).isTrue();
+        assertThat(movedCard.violatedPrerequisites()).contains("CSS215");
+        assertThat(afterViolation.prerequisiteConflictCount()).isGreaterThanOrEqualTo(1);
+
+        // Moving extra courses into Sem 4 (> 30 ECTS) flags semester overloaded
+        Course inf345 = courseRepository.findByCode("INF345").orElseThrow();
+        Course inf317 = courseRepository.findByCode("INF317").orElseThrow();
+        roadmapService.moveCourseToSemester("240103000", inf345.getId(), 4);
+        RoadmapBoardDto overloadedBoard = roadmapService.moveCourseToSemester("240103000", inf317.getId(), 4);
+
+        RoadmapSemesterDto sem4 = overloadedBoard.semesters().get(3);
+        assertThat(sem4.totalCredits()).isGreaterThan(30);
+        assertThat(sem4.overloaded()).isTrue();
+        assertThat(sem4.workloadState()).isEqualTo("Overload");
+
+        // Removing a course removes it from the board
+        RoadmapBoardDto afterRemove = roadmapService.removeCourseFromRoadmap("240103000", inf317.getId());
+        assertThat(afterRemove.semesters().get(3).courses())
+                .noneMatch(c -> "INF317".equals(c.code()));
     }
 }

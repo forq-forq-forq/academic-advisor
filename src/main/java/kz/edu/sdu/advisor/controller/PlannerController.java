@@ -88,6 +88,41 @@ public class PlannerController {
         return ResponseEntity.ok(roadmapService.getRoadmap(studentId));
     }
 
+    @PostMapping("/planner/roadmap/move")
+    @ResponseBody
+    public ResponseEntity<?> moveRoadmapCourse(
+            @RequestParam("courseId") Long courseId,
+            @RequestParam("targetSemester") int targetSemester,
+            HttpSession session) {
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+        try {
+            return ResponseEntity.ok(roadmapService.moveCourseToSemester(studentId, courseId, targetSemester));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+
+    @PostMapping("/planner/roadmap/remove")
+    @ResponseBody
+    public ResponseEntity<?> removeRoadmapCourse(
+            @RequestParam("courseId") Long courseId,
+            HttpSession session) {
+        String studentId = resolveStudentId(session);
+        if (studentId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Session expired. Please log in again."));
+        }
+        try {
+            return ResponseEntity.ok(roadmapService.removeCourseFromRoadmap(studentId, courseId));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+
     @GetMapping("/planner/catalog")
     @ResponseBody
     public ResponseEntity<?> searchCatalog(

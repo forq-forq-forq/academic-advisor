@@ -10,6 +10,7 @@ import kz.edu.sdu.advisor.model.dto.RoadmapBoardDto;
 import kz.edu.sdu.advisor.model.dto.RoadmapCourseCardDto;
 import kz.edu.sdu.advisor.model.dto.RoadmapSemesterDto;
 import kz.edu.sdu.advisor.repository.CartItemRepository;
+import kz.edu.sdu.advisor.repository.CourseRepository;
 import kz.edu.sdu.advisor.repository.CurriculumCourseRepository;
 import kz.edu.sdu.advisor.repository.PrerequisiteRepository;
 import kz.edu.sdu.advisor.repository.RoadmapItemRepository;
@@ -43,6 +44,7 @@ public class RoadmapService {
 
     private final RoadmapItemRepository roadmapItemRepository;
     private final StudentRepository studentRepository;
+    private final CourseRepository courseRepository;
     private final CurriculumCourseRepository curriculumCourseRepository;
     private final PrerequisiteRepository prerequisiteRepository;
     private final CartItemRepository cartItemRepository;
@@ -58,6 +60,47 @@ public class RoadmapService {
         }
         return buildBoard(student, items, DEFAULT_PACING_STRATEGY,
                 "Balanced 4-year distribution aligned with your curriculum.");
+    }
+
+    @Transactional
+    public RoadmapBoardDto moveCourseToSemester(String studentId, Long courseId, int targetSemester) {
+        if (targetSemester < 1 || targetSemester > TOTAL_SEMESTERS) {
+            throw new IllegalArgumentException("Target semester must be between 1 and " + TOTAL_SEMESTERS + ".");
+        }
+        Student student = studentRepository.findByStudentId(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found: " + studentId));
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+
+        if (roadmapItemRepository.findByStudent_StudentIdOrderBySemesterAscCourse_CodeAsc(studentId).isEmpty()) {
+            initializeDefaultRoadmap(student);
+        }
+
+        RoadmapItem item = roadmapItemRepository.findByStudent_StudentIdAndCourse_Id(studentId, courseId)
+                .orElseGet(() -> new RoadmapItem(student, course, targetSemester));
+        item.setSemester(targetSemester);
+        roadmapItemRepository.saveAndFlush(item);
+
+        List<RoadmapItem> updatedItems = roadmapItemRepository.findByStudent_StudentIdOrderBySemesterAscCourse_CodeAsc(studentId);
+        return buildBoard(student, updatedItems, DEFAULT_PACING_STRATEGY,
+                "Custom placement updated (Semester " + targetSemester + ").");
+    }
+
+    @Transactional
+    public RoadmapBoardDto removeCourseFromRoadmap(String studentId, Long courseId) {
+        Student student = studentRepository.findByStudentId(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found: " + studentId));
+
+        if (roadmapItemRepository.findByStudent_StudentIdOrderBySemesterAscCourse_CodeAsc(studentId).isEmpty()) {
+            initializeDefaultRoadmap(student);
+        }
+
+        roadmapItemRepository.deleteByStudent_StudentIdAndCourse_Id(studentId, courseId);
+        roadmapItemRepository.flush();
+
+        List<RoadmapItem> updatedItems = roadmapItemRepository.findByStudent_StudentIdOrderBySemesterAscCourse_CodeAsc(studentId);
+        return buildBoard(student, updatedItems, DEFAULT_PACING_STRATEGY,
+                "Course removed from roadmap.");
     }
 
     protected List<RoadmapItem> initializeDefaultRoadmap(Student student) {
