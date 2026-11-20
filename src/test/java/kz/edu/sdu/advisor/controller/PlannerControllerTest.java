@@ -466,4 +466,27 @@ class PlannerControllerTest {
                 .andExpect(jsonPath("$.activePacingStrategy", is("BALANCED")))
                 .andExpect(jsonPath("$.prerequisiteConflictCount", is(0)));
     }
+
+    @Test
+    @DisplayName("US-21: GET /planner displays season badges and moving Spring-only course to Fall semester flags seasonConflictCount")
+    void roadmapSeasonAvailability_shouldFlagSeasonMismatchInUiAndJson() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("authenticatedStudentId", VALID_STUDENT_ID);
+        Course inf202 = courseRepository.findByCode("INF202").orElseThrow();
+
+        mockMvc.perform(get("/planner").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"roadmap-season-conflicts\"")))
+                .andExpect(content().string(containsString("Spring Only")))
+                .andExpect(content().string(containsString("Fall Only")));
+
+        mockMvc.perform(post("/planner/roadmap/move")
+                        .session(session)
+                        .param("courseId", inf202.getId().toString())
+                        .param("targetSemester", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.seasonConflictCount", greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.semesters[4].courses[?(@.code=='INF202')].seasonMismatch", hasItem(true)))
+                .andExpect(jsonPath("$.semesters[4].courses[?(@.code=='INF202')].seasonWarning", hasItem(containsString("offered only in Spring"))));
+    }
 }

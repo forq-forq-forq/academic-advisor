@@ -99,4 +99,40 @@ class RoadmapServiceTest {
         assertThat(fastTrack.prerequisiteConflictCount()).isZero();
         assertThat(fastTrackYear4Credits).isLessThan(balancedYear4Credits);
     }
+
+    @Test
+    @DisplayName("US-21: placing a Spring-only course in a Fall semester flags seasonMismatch and warning")
+    void seasonMismatchFlagging_shouldFlagFallOnlyAndSpringOnlyConflicts() {
+        roadmapService.getRoadmap("240103000");
+        Course inf202 = courseRepository.findByCode("INF202").orElseThrow(); // Sem 4 -> SPRING
+        Course inf381 = courseRepository.findByCode("INF381").orElseThrow(); // Sem 5 -> FALL
+
+        // Move Spring-only INF202 into Fall Semester 5 -> flagged
+        RoadmapBoardDto mismatchBoard = roadmapService.moveCourseToSemester("240103000", inf202.getId(), 5);
+        RoadmapCourseCardDto inf202Card = mismatchBoard.semesters().get(4).courses().stream()
+                .filter(c -> "INF202".equals(c.code()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(inf202Card.seasonMismatch()).isTrue();
+        assertThat(inf202Card.seasonWarning()).contains("offered only in Spring");
+        assertThat(mismatchBoard.seasonConflictCount()).isGreaterThanOrEqualTo(1);
+
+        // Move INF202 back to Spring Semester 6 -> no mismatch
+        RoadmapBoardDto validBoard = roadmapService.moveCourseToSemester("240103000", inf202.getId(), 6);
+        RoadmapCourseCardDto fixedInf202Card = validBoard.semesters().get(5).courses().stream()
+                .filter(c -> "INF202".equals(c.code()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(fixedInf202Card.seasonMismatch()).isFalse();
+        assertThat(fixedInf202Card.seasonWarning()).isNull();
+
+        // Move Fall-only INF381 into Spring Semester 6 -> flagged
+        RoadmapBoardDto fallInSpring = roadmapService.moveCourseToSemester("240103000", inf381.getId(), 6);
+        RoadmapCourseCardDto inf381Card = fallInSpring.semesters().get(5).courses().stream()
+                .filter(c -> "INF381".equals(c.code()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(inf381Card.seasonMismatch()).isTrue();
+        assertThat(inf381Card.seasonWarning()).contains("offered only in Fall");
+    }
 }

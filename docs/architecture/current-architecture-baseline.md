@@ -30,6 +30,7 @@ If any other document conflicts with this file, this file takes precedence.
 | 8-Semester Roadmap View (US-18) | `RoadmapItem` (`V9`), `RoadmapService`, `GET /planner/roadmap`, `#roadmap-board-section` with `#roadmap-semester-1..8` | Implemented (`docs/US-18.md`) |
 | Roadmap Drag & Drop + Validation (US-19) | `POST /planner/roadmap/move`, `POST /planner/roadmap/remove`, HTML5 drag-and-drop, `.card-prereq-violation` (red), `.semester-overloaded` (yellow) | Implemented (`docs/US-19.md`) |
 | Pacing Strategy Rearrangement (US-20) | `RoadmapService.applyPacingStrategy`, `POST /planner/roadmap/pacing`, `#pacing-strategy-select` (`BALANCED` / `FAST_TRACK`) | Implemented (`docs/US-20.md`) |
+| Season Availability Flagging (US-21) | `seasonMismatch`, `seasonWarning`, `seasonConflictCount`, `#roadmap-season-conflicts`, `.card-season-mismatch` & `.badge-season-conflict` | Implemented (`docs/US-21.md`) |
 | Academic Standing & Progress (US-07) | `AcademicStandingDto`, `DashboardController` (`/dashboard`), SVG circular progress ring (`27 / 240 ECTS`), GPA badge & program summary | Implemented |
 | Enrolled Courses List (US-08) | `EnrolledCourseDto`, `Student.enrolledCourses`, `DashboardController` (`/dashboard`), semester course list with ECTS credit weights | Implemented |
 | Completed Course History (US-29) | `CourseCompletion` entity over `student_courses`, `CompletedCourseDto`, dashboard & profile tables | Implemented |
